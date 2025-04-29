@@ -7,13 +7,13 @@ export default function Home() {
   const [websocket, setWebsocket] = useState(null);
   const [wsConnectionStatus, setWsConnectionStatus] = useState("disconnected");
   const [simulationState, setSimulationState] = useState(null);
-  // const [simUpdateInterval, setSimUpdateInterval] = useState(null);
   const memoryRef = useRef([]);
 
   const wsMessageHandler = (event) => {
     if (event.data) {
       const messageData = JSON.parse(event.data);
       if (messageData.type === "simulation_state") {
+        console.log("Received simulation state:", messageData.data);
         setSimulationState(messageData.data);
         // Save the message to memory
         memoryRef.current.push(messageData.data);

@@ -17,13 +17,13 @@ class UE:
         self.velocity_x = 0
         self.velocity_y = 0
         self.connected_RU_list = set()
-        self.served_by_RU = None
+        self.served_by_BS = None
         self.min_prb = min_prb
         self.allocated_prb = 0
         self.connected = False
         self.time_ramaining = connection_time
         self.dist_to_connected_RU_dict = {}
-        self.served_by_RU_history = []
+        self.served_by_BS_history = []
 
     def to_json(self):
         return {
@@ -33,13 +33,13 @@ class UE:
             "velocity_x": self.velocity_x,
             "velocity_y": self.velocity_y,
             "connected_RU_list": [ru.ru_id for ru in self.connected_RU_list],
-            "served_by_RU": self.served_by_RU.ru_id if self.served_by_RU else None,
+            "served_by_BS": self.served_by_BS.ru_id if self.served_by_BS else None,
             "min_prb": self.min_prb,
             "allocated_prb": self.allocated_prb,
             "connected": self.connected,
             "time_ramaining": self.time_ramaining,
             "dist_to_connected_RU_dict": self.dist_to_connected_RU_dict,
-            "served_by_RU_history": [ru_id for ru_id in self.served_by_RU_history],
+            "served_by_BS_history": [ru_id for ru_id in self.served_by_BS_history],
         }
 
     def dist_to(self, obj):
