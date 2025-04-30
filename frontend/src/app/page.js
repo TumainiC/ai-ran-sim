@@ -10,6 +10,7 @@ export default function Home() {
   const memoryRef = useRef([]);
 
   const wsMessageHandler = (event) => {
+    console.log("WebSocket message received:", event);
     if (event.data) {
       const messageData = JSON.parse(event.data);
       if (messageData.type === "simulation_state") {
@@ -45,17 +46,9 @@ export default function Home() {
 
   const onStartSimulation = () => {
     websocket.send("start_simulation");
-    // setSimUpdateInterval(setInterval(() => {
-    //   if (websocket.readyState !== 1) {
-    //     clearInterval(simUpdateInterval);
-    //     return;
-    //   }
-    //   websocket.send("get_simulation_state");
-    // }, 1000));
   }
 
   const onStopSimulation = () => {
-    // clearInterval(simUpdateInterval);
     websocket.send("stop_simulation");
   }
 

@@ -12,7 +12,7 @@ async def websocket_handler(websocket):
         message = await websocket.recv()
         if message == "start_simulation":
             await websocket.send(json.dumps({"type": "log", "data": "Starting simulation"}))
-            asyncio.create_task(simulation_engine.start())
+            asyncio.create_task(simulation_engine.start_simulation())
         elif message == "stop_simulation":
             await websocket.send(json.dumps({"type": "log", "data": "Stopping simulation"}))
             simulation_engine.stop()
