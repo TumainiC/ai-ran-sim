@@ -12,6 +12,7 @@ class UE:
         target_x=0,
         target_y=0,
         speed=0,
+        simulation_engine=None,
         connection_time=settings.UE_DEFAULT_TIMEOUT,
     ):
         self.ue_imsi = ue_imsi
@@ -27,6 +28,10 @@ class UE:
         )
         self.speed = speed
         self.time_ramaining = connection_time
+        self.simulation_engine = simulation_engine
+
+        # channel quality data
+        self.bs_rsrp_list = {}
 
         self.slice = None
         self.qos_profile = None
@@ -40,11 +45,41 @@ class UE:
         self.dist_to_reachable_BS_dict = {}
         self.history_of_serving_BS = []
 
+        self.estimate_rsrp_from_all_bs()
+
     @property
     def target_reached(self):
         return self.dist_to_target == 0
+    
+    @property
+    def need_handover(self):
+        # check if the rsrp by the current serving BS is less than the rsrp by the other BSs
+        # if the UE is not connected to any BS, return False
+        if self.served_by_BS is None:
+            return False
+        if len(self.bs_rsrp_list) == 0:
+            return False
+        if self.served_by_BS.bs_id not in self.bs_rsrp_list:
+            return False
+        current_rsrp = self.bs_rsrp_list[self.served_by_BS.bs_id]
+        for bs_id, rsrp in self.bs_rsrp_list.items():
+            if bs_id != self.served_by_BS.bs_id and rsrp > current_rsrp:
+                return True
+        return False
+        
 
-    def register(self, base_station):
+    def register(self, base_station = None):
+        if base_station is None:
+            # select the best base station based on RSRP
+            bs_id = self.select_best_bs()
+            if bs_id is None:
+                print(f"UE {self.ue_imsi}: No base station available for registration.")
+                return None
+            base_station = self.simulation_engine.base_station_list[bs_id]
+            if base_station is None:
+                print(f"UE {self.ue_imsi}: Base station {bs_id} not found.")
+                return None
+
         print(f"UE {self.ue_imsi}: Initiating registration...")
         slice_info, ue_qos_profile, dl_bitrate, ul_bitrate, latency = (
             base_station.handle_registration(self)
@@ -88,25 +123,32 @@ class UE:
             base_station.position_y,
         )
         if distance == 0:
-            return (
-                base_station.ref_signal_transmit_power
-            )  # No path loss at the same location
-        path_loss_db = 10 * path_loss_exponent * math.log10(distance)
+            path_loss_db = settings.CHANNEL_REFERENCE_PASS_LOSS
+        else:
+            path_loss_db = (
+                settings.CHANNEL_REFERENCE_PASS_LOSS
+                + 10
+                * path_loss_exponent
+                * math.log10(distance / settings.CHANNEL_PASS_LOSS_REF_DISTANCE)
+            )
         rsrp = base_station.ref_signal_transmit_power - path_loss_db  # in dBm
         return rsrp
 
-    def select_best_bs(self, base_station_list):
-        candidates = []
-        for bs in base_station_list:
+    def estimate_rsrp_from_all_bs(self):
+        for bs in self.simulation_engine.base_station_list.values():
             rsrp = self.calculate_rsrp(bs)
-            print("UE {}: RSRP from BS {}: {} dB".format(self.ue_imsi, bs.bs_id, rsrp))
-            if rsrp > -110:  # Acceptable signal strength
-                candidates.append((bs, rsrp))
-        if not candidates:
-            return None
-        # Sort by RSRP only.
-        candidates.sort(key=lambda x: x[1], reverse=True)
-        return candidates[0][0]  # Best gNB
+            self.bs_rsrp_list[bs.bs_id] = rsrp
+            # print("UE {}: RSRP from BS {}: {} dB".format(self.ue_imsi, bs.bs_id, rsrp))
+
+    def select_best_bs(self):
+        bs_id_selected = None
+        max_rsrp = -math.inf
+        for bs_id, rsrp in self.bs_rsrp_list.items():
+            if rsrp > max_rsrp:
+                max_rsrp = rsrp
+                bs_id_selected = bs_id
+        return bs_id_selected
+
 
     def deregister(self, base_station):
         print(f"UE {self.ue_imsi}: Sending deregistration request.")
@@ -143,6 +185,9 @@ class UE:
     def step(self, delta_time):
         # move the UE towards the target position
         self.move_towards_target(delta_time)
+        
+        # update the rsrp in every step
+        self.estimate_rsrp_from_all_bs()
 
         # update the time remaining for the UE
         self.time_ramaining -= delta_time
@@ -164,6 +209,7 @@ class UE:
             "latency": self.latency,
             "served_by_BS": self.served_by_BS.bs_id if self.served_by_BS else None,
             "connected": self.connected,
+            "need_handover": self.need_handover,
             "time_ramaining": self.time_ramaining,
             "history_of_serving_BS": [bs_id for bs_id in self.history_of_serving_BS],
         }

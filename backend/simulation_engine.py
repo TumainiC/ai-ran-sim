@@ -105,17 +105,14 @@ class SimulationEngine:
             target_x=target_x,
             target_y=target_y,
             speed=speed,
+            simulation_engine=self,
         )
-        best_base_station = ue.select_best_bs(self.base_station_list.values())
-        if best_base_station is None:
-            print(f"UE {ue.ue_imsi} could not find a suitable base station.")
-            return None
-        ue.register(best_base_station)
+        ue.register()
         if not ue.connected:
-            print(f"UE {ue.ue_imsi} failed to register to BS {best_base_station.bs_id}")
+            print(f"UE {ue.ue_imsi} failed to register.")
             return None
 
-        print(f"UE {ue.ue_imsi} registered to BS {best_base_station.bs_id}")
+        print(f"UE {ue.ue_imsi} registered to BS {ue.served_by_BS.bs_id}.")
         self.ue_list[ue.ue_imsi] = ue
         self.global_UE_counter += 1
         return ue
