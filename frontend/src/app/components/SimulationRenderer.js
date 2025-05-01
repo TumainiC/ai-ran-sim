@@ -42,57 +42,61 @@ export default function SimulationRenderer({ simulationState }) {
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     simulationState.base_stations.forEach((bsData) => {
+      bsData.cells.forEach((cellData) => {
+        // cellData = {
+        //     "frequency_band": "n1",
+        //     "carrier_frequency": 2100,  // in MHz, e.g., from 700 to 28000)
+        //     "bandwidth": 20e6,
+        //     "max_prbs": 106,
+        //     "cell_radius": 300,
+        //     "position_x": 200,
+        //     "position_y": 200,
+        //     "cell_radius": 150,
+        // }
+        const { position_x, position_y, cell_radius, carrier_frequency } =
+          cellData;
+        // Determine the fill color based on the frequency
+        let fillColor;
+        if (carrier_frequency < 3000) {
+          fillColor = "rgba(135, 206, 250, 0.5)"; // Light blue for low frequencies
+        } else if (carrier_frequency < 20000) {
+          fillColor = "rgba(144, 238, 144, 0.5)"; // Light green for mid frequencies
+        } else {
+          fillColor = "rgba(255, 182, 193, 0.5)"; // Light pink for high frequencies
+        }
 
-        bsData.cells.forEach((cellData) => {
-            // cellData = {
-            //     "frequency_band": "n1",
-            //     "carrier_frequency": 2100,  // in MHz, e.g., from 700 to 28000)
-            //     "bandwidth": 20e6,
-            //     "max_prbs": 106,
-            //     "cell_radius": 300,
-            //     "position_x": 200,
-            //     "position_y": 200,
-            //     "cell_radius": 150,
-            // }
-            const { position_x, position_y, cell_radius, carrier_frequency } = cellData;
-            // Determine the fill color based on the frequency
-            let fillColor;
-            if (carrier_frequency < 3000) {
-                fillColor = "rgba(135, 206, 250, 0.5)"; // Light blue for low frequencies
-            } else if (carrier_frequency < 20000) {
-                fillColor = "rgba(144, 238, 144, 0.5)"; // Light green for mid frequencies
-            } else {
-                fillColor = "rgba(255, 182, 193, 0.5)"; // Light pink for high frequencies
-            }
+        // Create a radial gradient
+        const gradient = ctx.createRadialGradient(
+          position_x,
+          position_y,
+          0, // Inner circle (center, radius 0)
+          position_x,
+          position_y,
+          cell_radius // Outer circle (center, radius)
+        );
+        gradient.addColorStop(0, fillColor); // Inner color
+        gradient.addColorStop(1, "rgba(255, 255, 255, 0)"); // Outer transparent color
 
-            // Create a radial gradient
-            const gradient = ctx.createRadialGradient(
-                position_x, position_y, 0, // Inner circle (center, radius 0)
-                position_x, position_y, cell_radius // Outer circle (center, radius)
-            );
-            gradient.addColorStop(0, fillColor); // Inner color
-            gradient.addColorStop(1, "rgba(255, 255, 255, 0)"); // Outer transparent color
+        // Draw the circle with the gradient
+        ctx.beginPath();
+        ctx.arc(position_x, position_y, cell_radius, 0, 2 * Math.PI, false);
+        ctx.fillStyle = gradient;
+        ctx.fill();
 
-            // Draw the circle with the gradient
-            ctx.beginPath();
-            ctx.arc(position_x, position_y, cell_radius, 0, 2 * Math.PI, false);
-            ctx.fillStyle = gradient;
-            ctx.fill();
+        // Draw the circle's border
+        ctx.setLineDash([5, 5]); // Set the dash pattern: 5px dash, 5px gap
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "lightgray";
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset the dash pattern to solid for future drawings
+      });
 
-            // Draw the circle's border
-            ctx.setLineDash([5, 5]); // Set the dash pattern: 5px dash, 5px gap
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = "lightgray";            
-            ctx.stroke();
-            ctx.setLineDash([]); // Reset the dash pattern to solid for future drawings
-        })
-
-        // Draw the base station's label
-        const { bs_id, position_x, position_y } = bsData;
-        ctx.font = "14px Arial";
-        ctx.fillStyle = "black";
-        ctx.textAlign = "center";
-        ctx.fillText(`${bs_id}`, position_x, position_y - 10); // Label above the base station
+      // Draw the base station's label
+      const { bs_id, position_x, position_y } = bsData;
+      ctx.font = "14px Arial";
+      ctx.fillStyle = "black";
+      ctx.textAlign = "center";
+      ctx.fillText(`${bs_id}`, position_x, position_y - 10); // Label above the base station
     });
   }, [simulationState]);
 
@@ -169,58 +173,41 @@ export default function SimulationRenderer({ simulationState }) {
     simulationState.UE_list !== null
   ) {
     statsRendered = (
-      <div className="gap-1 max-h-[90vh] overflow-auto flex-grow">
+      <div className="gap-1">
         <div className="divider">Network Dashboard</div>
-        <div className="flex flex-row gap-2 items-center">
-          <div className="stat">
-            <div className="stat-title">Connected / Total UEs</div>
-            <div className="stat-value">
-              {simulationState.UE_list.filter((ue) => ue.connected).length}{" / "}
-              {simulationState.UE_list.length}
-            </div>
-          </div>
 
-          <div className="stat">
-            <div className="stat-title">BSs</div>
-            <div className="stat-value">
-              {simulationState.base_stations.length}
+        {/* bs_id, cell_id, carrier_frequency, allocated_prb/max_prb/load, prb_ue_allocation_dict */}
+        <div className="grid grid-cols-4 gap-2 items-center px-6">
+          {simulationState.base_stations.map((bs) => (
+            <div
+              key={bs.bs_id + "_bs"}
+              className="border-1 border-gray-300 p-2 rounded-md"
+            >
+              <div className="text-center">Base Station: {bs.bs_id}</div>
+              {bs.cells.map((cell) => (
+                <div key={cell.cell_id + "_cell"}>
+                  <div className="divider">Cell: {cell.cell_id}</div>
+                  <div className="grid grid-cols-2 gap-2 items-center">
+                    <div>Carrier Frequency</div>
+                    <div>{cell.carrier_frequency}</div>
+                    <div>Bandwidth</div>
+                    <div>{cell.bandwidth / 1e6} MHz</div>
+                    <div>Allocated / Map PRB</div>
+                    <div>
+                      {cell.allocated_prb} / {cell.max_prbs}
+                    </div>
+                    <div>Load</div>
+                    <div>{cell.current_load * 100} %</div>
+                    <div>Cell Radius</div>
+                    <div>{cell.cell_radius * 10} m</div>
+                    <div>Served UEs</div>
+                    <div>{Object.entries(cell.prb_ue_allocation_dict)}</div>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+          ))}
         </div>
-
-        {simulationState.base_stations.map((bs) => (
-          <div key={bs.bs_id + "_stats"}>
-            <div className="flex flex-row gap-2 items-center">
-              <div key={bs.bs_id + "_id"} className="stat">
-                <div className="stat-title">Base Station ID</div>
-                <div className="stat-value">{bs.bs_id}</div>
-              </div>
-              <div key={bs.bs_id + "_connected_ue"} className="stat">
-                <div className="stat-title">Served UEs</div>
-                <div className="stat-value">{bs.ue_registry.length}</div>
-              </div>
-              <div key={bs.bs_id + "_allowcated_prb"} className="stat">
-                <div className="stat-title">RPB (allocated / total)</div>
-                <div className="stat-value">
-                  <span
-                    className={
-                      bs.allocated_prb <= bs.max_prb * 0.8
-                        ? "text-green-500"
-                        : "text-red-500"
-                    }>
-                  {bs.allocated_prb} / {bs.max_prb}
-                  </span>
-                </div>
-              </div>
-              <div key={bs.bs_id + "_current_load"} className="stat">
-                <div className="stat-title">Current Load</div>
-                <div className="stat-value">
-                  {Math.round(bs.current_load * 100)} %
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
 
         <div className="divider">Logs</div>
         <div className="log-container">
