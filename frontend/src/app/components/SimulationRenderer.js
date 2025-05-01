@@ -188,20 +188,16 @@ export default function SimulationRenderer({ simulationState }) {
                 <div key={cell.cell_id + "_cell"}>
                   <div className="divider">Cell: {cell.cell_id}</div>
                   <div className="grid grid-cols-2 gap-2 items-center">
-                    <div>Carrier Frequency</div>
-                    <div>{cell.carrier_frequency}</div>
-                    <div>Bandwidth</div>
-                    <div>{cell.bandwidth / 1e6} MHz</div>
-                    <div>Allocated / Map PRB</div>
+                    <div>Carrier Frequency <br/> / Bandwidth </div>
+                    <div>{cell.carrier_frequency} / {cell.bandwidth / 1e6} MHz</div>
+                    <div>Allocated / Max PRB <br/> / Load</div>
                     <div>
-                      {cell.allocated_prb} / {cell.max_prbs}
+                      {cell.allocated_prb} / {cell.max_prbs} / {cell.current_load * 100} %
                     </div>
-                    <div>Load</div>
-                    <div>{cell.current_load * 100} %</div>
                     <div>Cell Radius</div>
                     <div>{cell.cell_radius * 10} m</div>
                     <div>Served UEs</div>
-                    <div>{Object.entries(cell.prb_ue_allocation_dict)}</div>
+                    <div>{Object.keys(cell.prb_ue_allocation_dict).length}</div>
                   </div>
                 </div>
               ))}
