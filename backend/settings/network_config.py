@@ -41,6 +41,7 @@ SIM_SPAWN_UE_AFTER_LOAD_HISTORY_STABLIZED = True
 CHANNEL_PATH_LOSS_EXPONENT = 3.5
 CHANNEL_PASS_LOSS_REF_DISTANCE = 1
 CHANNEL_REFERENCE_PASS_LOSS = 0
+CHANNEL_PASS_LOSS_MODEL = "urban_macro"
 
 
 # ---------------------------
@@ -48,6 +49,40 @@ CHANNEL_REFERENCE_PASS_LOSS = 0
 # ---------------------------
 RAN_BS_LOAD_HISTORY_LENGTH = 3
 RAN_BS_REF_SIGNAL_DEFAULT_TRASNMIT_POWER = 40
+
+# Indicates that the UE is initiating signaling procedures such as Attach, Detach, or Tracking Area Update (TAU).
+RAN_RRC_CONNECTION_EST_CAUSE_MO_SIGNALLING = "mo-Signalling"
+# Used when the UE wants to transmit user data, such as initiating a data session.
+RAN_RRC_CONNECTION_EST_CAUSE_MO_DATA = "mo-Data"
+# Signifies that the UE is responding to a paging message, typically for mobile-terminated services like incoming calls or messages.
+RAN_RRC_CONNECTION_EST_CAUSE_MT_ACCESS = "mt-Access"
+# Used when the UE is attempting to establish a connection for an emergency call.
+RAN_RRC_CONNECTION_EST_CAUSE_EMERGENCY = "emergency"
+
+
+# Initial Registration
+# Purpose: Occurs when the UE connects to the 5G network for the first time or after being deregistered.
+# Triggers: UE power-on, SIM card change, or network re-entry after being out of coverage.
+# Outcome: The network assigns a 5G-GUTI (Globally Unique Temporary UE Identity) and establishes necessary contexts for the UE.​
+RAN_RRC_REGISTERATION_TYPE_INITIAL = "initial_registration"
+
+# Mobility Registration Update
+# Purpose: Updates the UE's registration when it moves to a new Tracking Area (TA) not covered by its current registration.
+# Triggers: UE movement across different TAs.
+# Outcome: The network updates the UE's location information to ensure continued service delivery.​
+RAN_RRC_REGISTERATION_TYPE_MOBILITY = "mobility_registration_update"
+
+# Periodic Registration Update
+# Purpose: Confirms the UE's presence in the network at regular intervals.
+# Triggers: Expiration of a network-defined timer (e.g., T3512).
+# Outcome: Maintains the UE's active status and updates any necessary information.​
+RAN_RRC_REGISTERATION_TYPE_PERIODIC = "periodic_registration_update"
+
+# Emergency Registration
+# Purpose: Allows the UE to register for emergency services without prior registration.
+# Triggers: Initiation of an emergency call or service.
+# Outcome: The network permits access to emergency services even if the UE lacks valid credentials.​
+RAN_RRC_REGISTERATION_TYPE_EMERGENCY = "emergency_registration"
 
 
 def RAN_BS_DEFAULT_CELLS(bs_id):
@@ -59,6 +94,7 @@ def RAN_BS_DEFAULT_CELLS(bs_id):
             "bandwidth": 20e6,
             "max_prbs": 106,
             "cell_radius": 300,
+            "transmit_power": 40,
         },
         {
             "cell_id": f"{bs_id}_cell_mid_freq",
@@ -67,6 +103,7 @@ def RAN_BS_DEFAULT_CELLS(bs_id):
             "bandwidth": 100e6,
             "max_prbs": 273,
             "cell_radius": 150,
+            "transmit_power": 40,
         },
         {
             "cell_id": f"{bs_id}_cell_high_freq",
@@ -75,6 +112,7 @@ def RAN_BS_DEFAULT_CELLS(bs_id):
             "bandwidth": 400e6,
             "max_prbs": 264,
             "cell_radius": 50,
+            "transmit_power": 40,
         },
     ]
 

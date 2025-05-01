@@ -97,7 +97,7 @@ class SimulationEngine:
             speed=speed,
             simulation_engine=self,
         )
-        ue.register()
+        ue.power_up()
         if not ue.connected:
             print(f"UE {ue.ue_imsi} failed to register.")
             return None
@@ -144,14 +144,8 @@ class SimulationEngine:
 
     def step(self, delta_time):
         self.logs = []
-        # self.update_BSs(delta_time)
-
         self.spawn_UEs()
         self.step_UEs(delta_time)
-        # print("***")
-        # for ru in self.base_station.RU_list:
-        #     ru.update_current_load()
-        #     ru.save_load_history()
 
     async def start_simulation(self):
         assert not self.sim_started

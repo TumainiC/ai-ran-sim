@@ -7,13 +7,25 @@ class CoreNetwork:
         self.simulation_engine = simulation_engine
         self.active_ues = {}
 
-    def authenticate_and_register(self, ue):
-        print(f"CoreNetwork: Authenticating UE {ue.ue_imsi}...")
-        slice_info = self.select_network_slice(ue)
-        qos_profile = self.assign_qos(ue, slice_info)
+    def handle_initial_ue_message(self, ue, ngap_message):
+        authentication_request = {}
+        return authentication_request
 
-        self.active_ues[ue.ue_imsi] = {"slice": slice_info, "qos": qos_profile}
-        return slice_info, qos_profile
+    def handle_authetication_response(self, ue, nas_message):
+        security_mode_command_msg = {}
+        return security_mode_command_msg
+
+    def handle_security_mode_complete_msg(self, ue, nas_message):
+        slice_info = self.select_network_slice(ue)
+        registeration_accept_msg = {
+            "slice_info": slice_info,
+            "qos_profile": self.assign_qos(ue, slice_info),
+        }
+        self.active_ues[ue.ue_imsi] = {**registeration_accept_msg}
+        return registeration_accept_msg
+    
+    def handle_registration_complete_msg(self, ue, nas_message):
+        return {}
 
     def select_network_slice(self, ue):
         # Simple logic: random or capability-based

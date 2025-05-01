@@ -14,10 +14,11 @@ class Cell:
         self.bandwidth = cell_init_data["bandwidth"]
         self.max_prbs = cell_init_data["max_prbs"]
         self.cell_radius = cell_init_data["cell_radius"]
+        self.transmit_power = cell_init_data["transmit_power"]
 
         self.prb_ue_allocation_dict = {}
         self.allocated_prb = 0
-
+    
     @property
     def current_load(self):
         return self.allocated_prb / self.max_prbs
@@ -29,6 +30,45 @@ class Cell:
     @property
     def postion_y(self):
         return self.base_station.position_y
+
+    def get_ue_prb_allocation(self, ue):
+        if ue.ue_imsi in self.prb_ue_allocation_dict:
+            return self.prb_ue_allocation_dict[ue.ue_imsi]
+        else:
+            return 0
+
+    def update_allocated_prb_and_load(self):
+        # calculate total allocated prb from ue allocation dict
+        self.allocated_prb = sum(self.prb_ue_allocation_dict.values())
+        self.current_load = self.allocated_prb / self.max_prb
+
+    def allocate_prb(self, ue, ue_qos_profile):
+        print(f"{self.cell_id}: Allocating PRB for UE {ue.ue_imsi}")
+        # prb should be calculated based on multiple factors.
+        # for now, we are just assigning a random number of PRBs
+        prb_allocation = random.randint(5, 10)
+        prb_allocation = min(prb_allocation, self.max_prb - self.allocated_prb)
+        self.prb_ue_allocation_dict[ue.ue_imsi] = prb_allocation
+        self.update_allocated_prb_and_load()
+        return prb_allocation
+
+    def estimate_bitrate_and_latency(self, prbs, qos):
+        mcs_efficiency = 5  # bits/symbol as example
+        subcarriers = 12  # per PRB
+        symbol_duration = 0.0005  # 0.5 ms
+        bandwidth = prbs * subcarriers * mcs_efficiency
+        dl_bitrate = bandwidth / symbol_duration  # simplistic estimation
+        ul_bitrate = dl_bitrate * 0.8  # assume UL is a bit lower
+
+        latency = qos.get("latency", 20) + random.uniform(1, 5)
+
+        print(
+            f"Cell {self.cell_id}: Estimated DL bitrate: {dl_bitrate:.2f} bps, "
+            f"UL bitrate: {ul_bitrate:.2f} bps, Latency: {latency:.2f} ms"
+        )
+
+        return dl_bitrate, ul_bitrate, latency
+
 
     def to_json(self):
         return {
@@ -65,6 +105,38 @@ class BaseStation:
             for cell_init_data in bs_init_data["cells"]
         ]
         self.ue_registry = {}
+        self.ue_perf_monitor = {}
+
+    def handle_random_access(self, ue, random_access_preamble):
+        random_access_response = {}
+        return random_access_response
+    
+    def handle_RRC_connection_request(self, ue, rrc_connection_request):
+        rrc_connection_response = {}
+        return rrc_connection_response
+
+    def handle_RRC_connection_complete_and_register(self, ue, rrc_connection_complete_msg):
+        ngap_message = rrc_connection_complete_msg["nas"]
+        amf_authentication_request = self.core_network.handle_initial_ue_message(ue, ngap_message)
+        return amf_authentication_request
+    
+    def handle_authentication_response(self, ue, nas_message):
+        return self.core_network.handle_authentication_response(ue, nas_message)
+    
+    def handle_security_mode_complete_msg(self, ue, nas_message):
+        registeration_accept_msg = self.core_network.handle_security_mode_complete_msg(ue, nas_message)
+        self.ue_registry[ue.ue_imsi] = {
+            "ue": ue,
+            "slice_info": registeration_accept_msg["slice_info"],
+            "qos_profile": registeration_accept_msg["qos_profile"],
+            "cell": ue.current_cell
+        }
+        ue.current_cell.allocate_prb(ue, registeration_accept_msg["qos_profile"])
+        return registeration_accept_msg
+
+    
+    def handle_registration_complete_msg(self, ue, nas_message):
+        return self.core_network.handle_registration_complete_msg(ue, nas_message)
 
     def handle_registration(self, ue):
         print(f"gNB {self.cell_id}: Handling registration for UE {ue.ue_imsi}")
@@ -75,39 +147,6 @@ class BaseStation:
             ue_prb_allocation, ue_qos_profile
         )
         return ue_slice_info, ue_qos_profile, dl_bitrate, ul_bitrate, latency
-
-    def update_allocated_prb_and_load(self):
-        # calculate total allocated prb from ue allocation dict
-        self.allocated_prb = sum(self.prb_ue_allocation_dict.values())
-        self.current_load = self.allocated_prb / self.max_prb
-
-    def allocate_prb(self, ue, ue_qos_profile):
-        print(f"gNB {self.cell_id}: Configuring QoS for UE {ue.ue_imsi}")
-        # prb should be calculated based on multiple factors.
-        # for now, we are just assigning a random number of PRBs
-        prb_allocation = random.randint(5, 10)
-        prb_allocation = min(prb_allocation, self.max_prb - self.allocated_prb)
-        self.prb_ue_allocation_dict[ue.ue_imsi] = prb_allocation
-        self.update_allocated_prb_and_load()
-        return prb_allocation
-
-    def estimate_bitrate_and_latency(self, prbs, qos):
-        mcs_efficiency = 5  # bits/symbol as example
-        subcarriers = 12  # per PRB
-        symbol_duration = 0.0005  # 0.5 ms
-        bandwidth = prbs * subcarriers * mcs_efficiency
-        dl_bitrate = bandwidth / symbol_duration  # simplistic estimation
-        ul_bitrate = dl_bitrate * 0.8  # assume UL is a bit lower
-
-        latency = qos.get("latency", 20) + random.uniform(1, 5)
-
-        # ue.update_performance_metrics(dl_bitrate, ul_bitrate, latency)
-        print(
-            f"gNB {self.cell_id}: Estimated DL bitrate: {dl_bitrate:.2f} bps, "
-            f"UL bitrate: {ul_bitrate:.2f} bps, Latency: {latency:.2f} ms"
-        )
-
-        return dl_bitrate, ul_bitrate, latency
 
     def handle_deregistration(self, ue):
         self.core_network.deregister_ue(ue)

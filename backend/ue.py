@@ -1,4 +1,5 @@
 import math
+from backend.utils.channel_utils import get_pass_loss_model
 from utils import dist_between
 import settings
 
@@ -33,122 +34,190 @@ class UE:
         # channel quality data
         self.bs_rsrp_list = {}
 
-        self.slice = None
+        self.slice_info = None
         self.qos_profile = None
         self.connected = False
         self.bitrate = {"downlink": 0, "uplink": 0}
         self.latency = 0
 
         self.reachable_BS_list = set()
-        self.served_by_BS = None
+        self.current_cell = None
 
         self.dist_to_reachable_BS_dict = {}
-        self.history_of_serving_BS = []
+        self.serving_cell_history = []
 
-        self.estimate_rsrp_from_all_bs()
+    @property
+    def current_bs(self):
+        if self.current_cell is None:
+            return None
+        return self.current_cell.base_station
 
     @property
     def target_reached(self):
         return self.dist_to_target == 0
-    
+
     @property
     def need_handover(self):
         # check if the rsrp by the current serving BS is less than the rsrp by the other BSs
         # if the UE is not connected to any BS, return False
-        if self.served_by_BS is None:
+        if self.current_cell is None:
             return False
         if len(self.bs_rsrp_list) == 0:
             return False
-        if self.served_by_BS.cell_id not in self.bs_rsrp_list:
+        if self.current_cell.cell_id not in self.bs_rsrp_list:
             return False
-        current_rsrp = self.bs_rsrp_list[self.served_by_BS.cell_id]
+        current_rsrp = self.bs_rsrp_list[self.current_cell.cell_id]
         for cell_id, rsrp in self.bs_rsrp_list.items():
-            if cell_id != self.served_by_BS.cell_id and rsrp > current_rsrp:
+            if cell_id != self.current_cell.cell_id and rsrp > current_rsrp:
                 return True
         return False
-        
 
-    def register(self, base_station = None):
-        if base_station is None:
-            # select the best base station based on RSRP
-            cell_id = self.select_best_bs()
-            if cell_id is None:
-                print(f"UE {self.ue_imsi}: No base station available for registration.")
-                return None
-            base_station = self.simulation_engine.base_station_list[cell_id]
-            if base_station is None:
-                print(f"UE {self.ue_imsi}: Base station {cell_id} not found.")
-                return None
+    def cell_search_and_synchronization(self):
+        # cell search and synchronization
+        cell_list = self.simulation_engine.cell_list
 
-        print(f"UE {self.ue_imsi}: Initiating registration...")
-        slice_info, ue_qos_profile, dl_bitrate, ul_bitrate, latency = (
-            base_station.handle_registration(self)
+        # Synchronization Signal Block (SSB) detection
+        SSBs_detected = []
+        pass_loss_model = get_pass_loss_model(settings.CHANNEL_PASS_LOSS_MODEL)
+        for cell in cell_list:
+            # Check if the cell is within the UE's range
+            distance = dist_between(
+                self.position_x,
+                self.position_y,
+                cell.position_x,
+                cell.position_y,
+            )
+            received_power = cell.transmit_power - pass_loss_model(
+                distance_m=distance, frequency_in_ghz=cell.carrier_frequency / 1000
+            )
+            if received_power > settings.UE_SSB_DETECTION_THRESHOLD:
+                SSBs_detected.append(
+                    {
+                        "cell": cell,
+                        "received_power": received_power,
+                    }
+                )
+
+        print(
+            f"UE {self.ue_imsi}: Detected SSBs: {[cell['cell'].cell_id for cell in SSBs_detected]}"
         )
-        self.slice = slice_info
-        self.qos_profile = ue_qos_profile
+
+        return SSBs_detected
+
+    def cell_selection_and_camping(self, SSBs_detected):
+        # Sort SSBs by received power
+        SSBs_detected.sort(key=lambda x: x["received_power"], reverse=True)
+        # Select the best SSB
+        self.current_cell = SSBs_detected[0]["cell"]
+        return True
+
+    def random_access_procedure(self):
+        random_access_preamble = {}
+        random_access_response = self.current_bs.handle_random_access(
+            self, random_access_preamble
+        )
+        return True
+
+    def request_RRC_connection(self):
+        rrc_connection_request = {
+            "ue_imsi": self.ue_imsi,
+            "establishment_cause": settings.RAN_RRC_CONNECTION_EST_CAUSE_MO_SIGNALLING,
+        }
+        rrc_connection_response = (
+            self.current_bs.handle_RRC_connection_request(
+                self, rrc_connection_request
+            )
+        )
+        return True
+
+    def complete_RRC_connection_and_register(self):
+        rrc_message = {
+            "rrc": "Connection Setup Complete",
+            "nas": {
+                "ue": self,
+                "registration_type": settings.RAN_RRC_REGISTERATION_TYPE_INITIAL,
+                "capabilities": {},
+            },
+        }
+        amf_authentication_request = (
+            self.current_bs.handle_RRC_connection_complete_and_register(
+                self, rrc_message
+            )
+        )
+
+        authentication_response = {}
+        security_mode_command_msg = self.current_bs.handle_authentication_response(
+            self, authentication_response
+        )
+        
+        security_mode_complete_msg = {}
+        registration_accept_msg = self.current_bs.handle_security_mode_complete_msg(
+            self, security_mode_complete_msg
+        )
+        self.slice_info = registration_accept_msg["slice_info"]
+        self.qos_profile = registration_accept_msg["qos_profile"]
+
+        registration_complete_msg = {}
+        self.current_bs.handle_registration_complete_msg(
+            self, registration_complete_msg
+        )
+
+        return True
+
+    def test_network_performance(self):
+        dl_bitrate, ul_bitrate, latency = self.current_cell.estimate_bitrate_and_latency(
+            self.current_cell.get_ue_prb_allocation(self), self.qos_profile
+        )
         self.bitrate["downlink"] = dl_bitrate
         self.bitrate["uplink"] = ul_bitrate
         self.latency = latency
-        self.connected = True
-        self.served_by_BS = base_station
-        self.update_BS_history(base_station)
-
-    def update_BS_history(self, base_station):
-        if len(self.history_of_serving_BS) > 0:
-            assert (
-                base_station.cell_id != self.history_of_serving_BS[-1]
-            ), f"UE {self.ue_imsi} is already served by BS {self.history_of_serving_BS[-1]}."
-        self.history_of_serving_BS.append(base_station.cell_id)
-        if len(self.history_of_serving_BS) > settings.UE_SERVING_BS_HISTORY_LENGTH:
-            self.history_of_serving_BS.pop(0)
-
-    def calculate_rsrq(self, base_station):
-        # **RSRQ** (Reference Signal Received Quality)
-        # not implemented yet
-        pass
-
-    def calculate_sinr(self, base_station):
-        # **SINR** (Signal-to-Interference-plus-Noise Ratio)
-        # not implemented yet
-        pass
-
-    def calculate_rsrp(
-        self, base_station, path_loss_exponent=settings.CHANNEL_PATH_LOSS_EXPONENT
-    ):
-        # **RSRP** (Reference Signal Received Power)
-        distance = dist_between(
-            self.position_x,
-            self.position_y,
-            base_station.position_x,
-            base_station.position_y,
+        print(
+            f"UE {self.ue_imsi}: Network performance - Downlink: {dl_bitrate} bps, Uplink: {ul_bitrate} bps, Latency: {latency} ms"
         )
-        if distance == 0:
-            path_loss_db = settings.CHANNEL_REFERENCE_PASS_LOSS
-        else:
-            path_loss_db = (
-                settings.CHANNEL_REFERENCE_PASS_LOSS
-                + 10
-                * path_loss_exponent
-                * math.log10(distance / settings.CHANNEL_PASS_LOSS_REF_DISTANCE)
-            )
-        rsrp = settings.RAN_BS_REF_SIGNAL_DEFAULT_TRASNMIT_POWER - path_loss_db  # in dBm
-        return rsrp
+        return True
 
-    def estimate_rsrp_from_all_bs(self):
-        for bs in self.simulation_engine.base_station_list.values():
-            rsrp = self.calculate_rsrp(bs)
-            self.bs_rsrp_list[bs.cell_id] = rsrp
-            # print("UE {}: RSRP from BS {}: {} dB".format(self.ue_imsi, bs.cell_id, rsrp))
+    def power_up(self):
+        print(f"Powering up UE {self.ue_imsi} ...")
+        SSBs_detected = self.cell_search_and_synchronization()
+        if len(SSBs_detected) == 0:
+            print(f"UE {self.ue_imsi}: No SSB detected. Powering down...")
+            return False
+        if not self.cell_selection_and_camping(SSBs_detected):
+            print(f"UE {self.ue_imsi}: Cell selection and camping failed.")
+            return False
 
-    def select_best_bs(self):
-        cell_id_selected = None
-        max_rsrp = -math.inf
-        for cell_id, rsrp in self.bs_rsrp_list.items():
-            if rsrp > max_rsrp:
-                max_rsrp = rsrp
-                cell_id_selected = cell_id
-        return cell_id_selected
+        if not self.random_access_procedure():
+            print(f"UE {self.ue_imsi}: Random access procedure failed.")
+            return False
 
+        if not self.request_RRC_connection():
+            print(f"UE {self.ue_imsi}: RRC connection request failed.")
+            return False
+
+        if not self.complete_RRC_connection_and_register():
+            print(f"UE {self.ue_imsi}: RRC connection complete and registration failed.")
+            return False
+        
+        if not self.test_network_performance():
+            print(f"UE {self.ue_imsi}: Network performance test failed.")
+            return False
+
+        self.connected = True
+        self.update_cell_history()
+
+        return True
+
+    def update_cell_history(self):
+        if self.current_cell is None:
+            print(f"UE {self.ue_imsi}: No current cell to update history.")
+            return
+        if len(self.serving_cell_history) > 0:
+            assert (
+                self.current_cell.cell_id != self.serving_cell_history[-1]
+            ), f"UE {self.ue_imsi} is already served by cell {self.serving_cell_history[-1]}."
+        self.serving_cell_history.append(self.current_cell.cell_id)
+        if len(self.serving_cell_history) > settings.UE_SERVING_CELL_HISTORY_LENGTH:
+            self.serving_cell_history.pop(0)
 
     def deregister(self, base_station):
         print(f"UE {self.ue_imsi}: Sending deregistration request.")
@@ -185,15 +254,15 @@ class UE:
     def step(self, delta_time):
         # move the UE towards the target position
         self.move_towards_target(delta_time)
-        
+
         # update the rsrp in every step
-        self.estimate_rsrp_from_all_bs()
+        # self.estimate_rsrp_from_all_bs()
 
         # update the time remaining for the UE
         self.time_ramaining -= delta_time
 
         if self.time_ramaining <= 0:
-            self.deregister(self.served_by_BS)
+            self.deregister(self.current_cell)
 
     def to_json(self):
         return {
@@ -203,13 +272,16 @@ class UE:
             "target_x": self.target_x,
             "target_y": self.target_y,
             "speed": self.speed,
-            "slice": self.slice,
+            "slice_info": self.slice_info,
             "qos_profile": self.qos_profile,
             "bitrate": self.bitrate,
             "latency": self.latency,
-            "served_by_BS": self.served_by_BS.cell_id if self.served_by_BS else None,
+            "current_cell": self.current_cell.cell_id if self.current_cell else None,
+            "current_bs": self.current_bs,
             "connected": self.connected,
             "need_handover": self.need_handover,
             "time_ramaining": self.time_ramaining,
-            "history_of_serving_BS": [cell_id for cell_id in self.history_of_serving_BS],
+            "serving_cell_history": [
+                cell_id for cell_id in self.serving_cell_history
+            ],
         }
