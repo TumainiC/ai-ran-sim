@@ -19,7 +19,6 @@ NETWORK_SLICES = {
 }
 
 
-
 # ---------------------------
 # RIC Configuration
 # ---------------------------
@@ -37,31 +36,120 @@ SIM_SPAWN_UE_AFTER_LOAD_HISTORY_STABLIZED = True
 
 
 # ---------------------------
-# RAN Configuration
-# ---------------------------
-RAN_BS_DEFAULT_MIN_ALLOCABLE_PRB = 20
-RAN_DEFAULT_RU_RADIUS = 180
-RAN_BS_LOAD_HISTORY_LENGTH = 3
-RAN_BS_REF_SIGNAL_DEFAULT_TRASNMIT_POWER = 40
-RAN_DEFAULT_BS_LIST = [
-    ("bs_11", 200, 200),
-    ("bs_12", 400, 200),
-    ("bs_13", 600, 200),
-    ("bs_14", 800, 200),
-    ("bs_21", 200, 400),
-    ("bs_22", 400, 400),
-    ("bs_23", 600, 400),
-    ("bs_24", 800, 400),
-    ("bs_31", 200, 600),
-    ("bs_32", 400, 600),
-    ("bs_33", 600, 600),
-    ("bs_34", 800, 600),
-]
-
-
-# ---------------------------
 # Channel Configuration
 # ---------------------------
 CHANNEL_PATH_LOSS_EXPONENT = 3.5
 CHANNEL_PASS_LOSS_REF_DISTANCE = 1
 CHANNEL_REFERENCE_PASS_LOSS = 0
+
+
+# ---------------------------
+# RAN Configuration
+# ---------------------------
+RAN_BS_LOAD_HISTORY_LENGTH = 3
+RAN_BS_REF_SIGNAL_DEFAULT_TRASNMIT_POWER = 40
+
+
+def RAN_BS_DEFAULT_CELLS(bs_id):
+    return [
+        {
+            "cell_id": f"{bs_id}_cell_low_freq",
+            "frequency_band": "n1",
+            "carrier_frequency": 2100,
+            "bandwidth": 20e6,
+            "max_prbs": 106,
+            "cell_radius": 300,
+        },
+        {
+            "cell_id": f"{bs_id}_cell_mid_freq",
+            "frequency_band": "n78",
+            "carrier_frequency": 3500,
+            "bandwidth": 100e6,
+            "max_prbs": 273,
+            "cell_radius": 150,
+        },
+        {
+            "cell_id": f"{bs_id}_cell_high_freq",
+            "frequency_band": "n258",
+            "carrier_frequency": 26000,
+            "bandwidth": 400e6,
+            "max_prbs": 264,
+            "cell_radius": 50,
+        },
+    ]
+
+
+RAN_DEFAULT_BS_LIST = [
+    {
+        "bs_id": "bs_11",
+        "position_x": 200,
+        "position_y": 200,
+        "cells": RAN_BS_DEFAULT_CELLS("bs_11"),
+    },
+    {
+        "bs_id": "bs_12",
+        "position_x": 400,
+        "position_y": 200,
+        "cells": RAN_BS_DEFAULT_CELLS("bs_12"),
+    },
+    {
+        "bs_id": "bs_13",
+        "position_x": 600,
+        "position_y": 200,
+        "cells": RAN_BS_DEFAULT_CELLS("bs_13"),
+    },
+    {
+        "bs_id": "bs_14",
+        "position_x": 800,
+        "position_y": 200,
+        "cells": RAN_BS_DEFAULT_CELLS("bs_14"),
+    },
+    {
+        "bs_id": "bs_21",
+        "position_x": 200,
+        "position_y": 400,
+        "cells": RAN_BS_DEFAULT_CELLS("bs_21"),
+    },
+    {
+        "bs_id": "bs_22",
+        "position_x": 400,
+        "position_y": 400,
+        "cells": RAN_BS_DEFAULT_CELLS("bs_22"),
+    },
+    {
+        "bs_id": "bs_23",
+        "position_x": 600,
+        "position_y": 400,
+        "cells": RAN_BS_DEFAULT_CELLS("bs_23"),
+    },
+    {
+        "bs_id": "bs_24",
+        "position_x": 800,
+        "position_y": 400,
+        "cells": RAN_BS_DEFAULT_CELLS("bs_24"),
+    },
+    {
+        "bs_id": "bs_31",
+        "position_x": 200,
+        "position_y": 600,
+        "cells": RAN_BS_DEFAULT_CELLS("bs_31"),
+    },
+    {
+        "bs_id": "bs_32",
+        "position_x": 400,
+        "position_y": 600,
+        "cells": RAN_BS_DEFAULT_CELLS("bs_32"),
+    },
+    {
+        "bs_id": "bs_33",
+        "position_x": 600,
+        "position_y": 600,
+        "cells": RAN_BS_DEFAULT_CELLS("bs_33"),
+    },
+    {
+        "bs_id": "bs_34",
+        "position_x": 800,
+        "position_y": 600,
+        "cells": RAN_BS_DEFAULT_CELLS("bs_34"),
+    },
+]

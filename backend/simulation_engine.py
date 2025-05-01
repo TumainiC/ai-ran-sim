@@ -6,7 +6,6 @@ from ran import BaseStation
 from ric import RanIntelligentController
 from ue import UE
 import settings
-import utils
 
 
 class SimulationEngine:
@@ -15,6 +14,7 @@ class SimulationEngine:
         self.core_network = None
         self.ric = None
         self.base_station_list = {}
+        self.cell_list = {}
         self.sim_started = False
         self.sim_step = 0
 
@@ -31,35 +31,25 @@ class SimulationEngine:
         assert bs.bs_id is not None
         assert bs.bs_id not in self.base_station_list
         self.base_station_list[bs.bs_id] = bs
+        for cell in bs.cells:
+            assert cell.cell_id not in self.cell_list
+            self.cell_list[cell.cell_id] = cell
 
     def network_setup(self):
         self.core_network = CoreNetwork(self)
         self.ric = RanIntelligentController(self)
 
         # init base station list
-        for bs_data in settings.RAN_DEFAULT_BS_LIST:
+        for bs_init_data in settings.RAN_DEFAULT_BS_LIST:
             assert (
-                bs_data[0] not in self.base_station_list
-            ), f"Base station ID {bs_data[0]} already exists"
-            bs = BaseStation(
-                simulation_engine=self,
-                bs_id=bs_data[0],
-                position_x=bs_data[1],
-                position_y=bs_data[2],
+                bs_init_data["bs_id"] not in self.base_station_list
+            ), f"Base station ID {bs_init_data[0]} already exists"
+            self.try_add_base_station(
+                BaseStation(
+                    simulation_engine=self,
+                    bs_init_data=bs_init_data,
+                )
             )
-            for other_bs in self.base_station_list.values():
-                if (
-                    utils.dist_between(
-                        bs.position_x,
-                        bs.position_y,
-                        other_bs.position_x,
-                        other_bs.position_y,
-                    )
-                    < 2 * bs.ru_radius
-                ):
-                    bs.neighbour_BS_list.add(other_bs)
-                    other_bs.neighbour_BS_list.add(bs)
-            self.try_add_base_station(bs)
 
     def is_handover_stablized(self):
         if len(self.handover_event_history) < settings.SIM_HANDOVER_HISTORY_LENGTH:
@@ -112,7 +102,7 @@ class SimulationEngine:
             print(f"UE {ue.ue_imsi} failed to register.")
             return None
 
-        print(f"UE {ue.ue_imsi} registered to BS {ue.served_by_BS.bs_id}.")
+        print(f"UE {ue.ue_imsi} registered to BS {ue.served_by_bs.bs_id}.")
         self.ue_list[ue.ue_imsi] = ue
         self.global_UE_counter += 1
         return ue
@@ -173,12 +163,10 @@ class SimulationEngine:
             self.sim_step += 1
             self.step(settings.SIM_STEP_TIME_DEFAULT)
             await self.websocket.send(
-                json.dumps(
-                    {"type": "simulation_state", "data": self.to_json()}
-                )
+                json.dumps({"type": "simulation_state", "data": self.to_json()})
             )
             await asyncio.sleep(settings.SIM_STEP_TIME_DEFAULT)
-        
+
         print("simulation ended")
 
     def stop(self):
@@ -190,6 +178,7 @@ class SimulationEngine:
         return {
             "time_step": self.sim_step,
             "base_stations": [bs.to_json() for bs in self.base_station_list.values()],
+            "cells": [cell.to_json() for cell in self.cell_list.values()],
             "UE_list": [ue.to_json() for ue in self.ue_list.values()],
             "logs": self.logs,
         }

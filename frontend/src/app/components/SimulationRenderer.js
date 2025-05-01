@@ -33,29 +33,66 @@ export default function SimulationRenderer({ simulationState }) {
     }
   };
 
-  const renderBSs = useCallback(() => {
+  const renderCells = useCallback(() => {
     if (!simulationState || !simulationState.base_stations) {
       return;
     }
-    console.log("rendering BSs...");
+    console.log("rendering BS cells ...");
     const canvas = bsCanvasRef.current;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     simulationState.base_stations.forEach((bsData) => {
-      ctx.beginPath();
-      ctx.arc(
-        bsData.position_x,
-        bsData.position_y,
-        bsData.ru_radius,
-        0,
-        2 * Math.PI,
-        false
-      );
-      ctx.fillStyle = "rgba(255, 192, 203, 0.5)";
-      ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = "pink";
-      ctx.stroke();
+
+        bsData.cells.forEach((cellData) => {
+            // cellData = {
+            //     "frequency_band": "n1",
+            //     "carrier_frequency": 2100,  // in MHz, e.g., from 700 to 28000)
+            //     "bandwidth": 20e6,
+            //     "max_prbs": 106,
+            //     "cell_radius": 300,
+            //     "position_x": 200,
+            //     "position_y": 200,
+            //     "cell_radius": 150,
+            // }
+            const { position_x, position_y, cell_radius, carrier_frequency } = cellData;
+            // Determine the fill color based on the frequency
+            let fillColor;
+            if (carrier_frequency < 3000) {
+                fillColor = "rgba(135, 206, 250, 0.5)"; // Light blue for low frequencies
+            } else if (carrier_frequency < 20000) {
+                fillColor = "rgba(144, 238, 144, 0.5)"; // Light green for mid frequencies
+            } else {
+                fillColor = "rgba(255, 182, 193, 0.5)"; // Light pink for high frequencies
+            }
+
+            // Create a radial gradient
+            const gradient = ctx.createRadialGradient(
+                position_x, position_y, 0, // Inner circle (center, radius 0)
+                position_x, position_y, cell_radius // Outer circle (center, radius)
+            );
+            gradient.addColorStop(0, fillColor); // Inner color
+            gradient.addColorStop(1, "rgba(255, 255, 255, 0)"); // Outer transparent color
+
+            // Draw the circle with the gradient
+            ctx.beginPath();
+            ctx.arc(position_x, position_y, cell_radius, 0, 2 * Math.PI, false);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Draw the circle's border
+            ctx.setLineDash([5, 5]); // Set the dash pattern: 5px dash, 5px gap
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = "lightgray";            
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset the dash pattern to solid for future drawings
+        })
+
+        // Draw the base station's label
+        const { bs_id, position_x, position_y } = bsData;
+        ctx.font = "14px Arial";
+        ctx.fillStyle = "black";
+        ctx.textAlign = "center";
+        ctx.fillText(`${bs_id}`, position_x, position_y - 10); // Label above the base station
     });
   }, [simulationState]);
 
@@ -121,9 +158,9 @@ export default function SimulationRenderer({ simulationState }) {
   useEffect(() => {
     console.log("simulation state changed.");
     console.log(simulationState);
-    renderBSs();
+    renderCells();
     renderUEs();
-  }, [simulationState, renderBSs, renderUEs]);
+  }, [simulationState, renderCells, renderUEs]);
 
   let statsRendered = <div>Simulation Status Not Available Yet.</div>;
   if (

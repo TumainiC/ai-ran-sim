@@ -1,30 +1,73 @@
-import json
 import random
 import settings
 
 
+class Cell:
+    def __init__(self, base_station, cell_init_data):
+        assert base_station is not None, "Base station cannot be None"
+        assert cell_init_data is not None, "Cell init data cannot be None"
+        self.base_station = base_station
+
+        self.cell_id = cell_init_data["cell_id"]
+        self.frequency_band = cell_init_data["frequency_band"]
+        self.carrier_frequency = cell_init_data["carrier_frequency"]
+        self.bandwidth = cell_init_data["bandwidth"]
+        self.max_prbs = cell_init_data["max_prbs"]
+        self.cell_radius = cell_init_data["cell_radius"]
+
+        self.prb_ue_allocation_dict = {}
+        self.allocated_prb = 0
+
+    @property
+    def current_load(self):
+        return self.allocated_prb / self.max_prbs
+
+    @property
+    def postion_x(self):
+        return self.base_station.position_x
+
+    @property
+    def postion_y(self):
+        return self.base_station.position_y
+
+    def to_json(self):
+        return {
+            "cell_id": self.cell_id,
+            "frequency_band": self.frequency_band,
+            "carrier_frequency": self.carrier_frequency,
+            "bandwidth": self.bandwidth,
+            "max_prbs": self.max_prbs,
+            "cell_radius": self.cell_radius,
+            "current_load": self.current_load,
+            "position_x": self.postion_x,
+            "position_y": self.postion_y,
+            "allocated_prb": self.allocated_prb,
+            "prb_ue_allocation_dict": self.prb_ue_allocation_dict,
+        }
+
+
 class BaseStation:
-    def __init__(self, simulation_engine=None, bs_id=None, position_x=0, position_y=0):
+    def __init__(self, simulation_engine, bs_init_data):
+        assert simulation_engine is not None, "Simulation engine cannot be None"
+        assert bs_init_data is not None, "Base station init data cannot be None"
+
         self.simulation_engine = simulation_engine
         self.core_network = simulation_engine.core_network
-        self.bs_id = bs_id
-        self.position_x = position_x
-        self.position_y = position_y
 
-        self.ru_radius = settings.RAN_DEFAULT_RU_RADIUS
-        self.ref_signal_transmit_power = (
-            settings.RAN_BS_REF_SIGNAL_DEFAULT_TRASNMIT_POWER
-        )
-
+        self.bs_id = bs_init_data["bs_id"]
+        self.position_x = bs_init_data["position_x"]
+        self.position_y = bs_init_data["position_y"]
+        self.cells = [
+            Cell(
+                base_station=self,
+                cell_init_data=cell_init_data,
+            )
+            for cell_init_data in bs_init_data["cells"]
+        ]
         self.ue_registry = {}
-        self.prb_ue_allocation_dict = {}
-        self.neighbour_BS_list = set()
-        self.max_prb = 100
-        self.allocated_prb = 0
-        self.current_load = 0
 
     def handle_registration(self, ue):
-        print(f"gNB {self.bs_id}: Handling registration for UE {ue.ue_imsi}")
+        print(f"gNB {self.cell_id}: Handling registration for UE {ue.ue_imsi}")
         self.ue_registry[ue.ue_imsi] = ue
         ue_slice_info, ue_qos_profile = self.core_network.authenticate_and_register(ue)
         ue_prb_allocation = self.allocate_prb(ue, ue_qos_profile)
@@ -39,7 +82,7 @@ class BaseStation:
         self.current_load = self.allocated_prb / self.max_prb
 
     def allocate_prb(self, ue, ue_qos_profile):
-        print(f"gNB {self.bs_id}: Configuring QoS for UE {ue.ue_imsi}")
+        print(f"gNB {self.cell_id}: Configuring QoS for UE {ue.ue_imsi}")
         # prb should be calculated based on multiple factors.
         # for now, we are just assigning a random number of PRBs
         prb_allocation = random.randint(5, 10)
@@ -60,7 +103,7 @@ class BaseStation:
 
         # ue.update_performance_metrics(dl_bitrate, ul_bitrate, latency)
         print(
-            f"gNB {self.bs_id}: Estimated DL bitrate: {dl_bitrate:.2f} bps, "
+            f"gNB {self.cell_id}: Estimated DL bitrate: {dl_bitrate:.2f} bps, "
             f"UL bitrate: {ul_bitrate:.2f} bps, Latency: {latency:.2f} ms"
         )
 
@@ -73,7 +116,9 @@ class BaseStation:
         if ue.ue_imsi in self.prb_ue_allocation_dict:
             del self.prb_ue_allocation_dict[ue.ue_imsi]
         self.update_allocated_prb_and_load()
-        print(f"gNB {self.bs_id}: UE {ue.ue_imsi} deregistered and resources released.")
+        print(
+            f"gNB {self.cell_id}: UE {ue.ue_imsi} deregistered and resources released."
+        )
 
     def save_load_history(self):
         self.load_history.append(self.current_load)
@@ -85,11 +130,6 @@ class BaseStation:
             "bs_id": self.bs_id,
             "position_x": self.position_x,
             "position_y": self.position_y,
-            "ru_radius": self.ru_radius,
-            "max_prb": self.max_prb,
-            "allocated_prb": self.allocated_prb,
-            "current_load": self.current_load,
             "ue_registry": list(self.ue_registry.keys()),
-            "prb_ue_allocation_dict": self.prb_ue_allocation_dict,
-            "neighbour_BS_list": [bs.bs_id for bs in self.neighbour_BS_list],
+            "cells": [cell.to_json() for cell in self.cells],
         }

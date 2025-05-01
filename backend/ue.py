@@ -59,11 +59,11 @@ class UE:
             return False
         if len(self.bs_rsrp_list) == 0:
             return False
-        if self.served_by_BS.bs_id not in self.bs_rsrp_list:
+        if self.served_by_BS.cell_id not in self.bs_rsrp_list:
             return False
-        current_rsrp = self.bs_rsrp_list[self.served_by_BS.bs_id]
-        for bs_id, rsrp in self.bs_rsrp_list.items():
-            if bs_id != self.served_by_BS.bs_id and rsrp > current_rsrp:
+        current_rsrp = self.bs_rsrp_list[self.served_by_BS.cell_id]
+        for cell_id, rsrp in self.bs_rsrp_list.items():
+            if cell_id != self.served_by_BS.cell_id and rsrp > current_rsrp:
                 return True
         return False
         
@@ -71,13 +71,13 @@ class UE:
     def register(self, base_station = None):
         if base_station is None:
             # select the best base station based on RSRP
-            bs_id = self.select_best_bs()
-            if bs_id is None:
+            cell_id = self.select_best_bs()
+            if cell_id is None:
                 print(f"UE {self.ue_imsi}: No base station available for registration.")
                 return None
-            base_station = self.simulation_engine.base_station_list[bs_id]
+            base_station = self.simulation_engine.base_station_list[cell_id]
             if base_station is None:
-                print(f"UE {self.ue_imsi}: Base station {bs_id} not found.")
+                print(f"UE {self.ue_imsi}: Base station {cell_id} not found.")
                 return None
 
         print(f"UE {self.ue_imsi}: Initiating registration...")
@@ -96,9 +96,9 @@ class UE:
     def update_BS_history(self, base_station):
         if len(self.history_of_serving_BS) > 0:
             assert (
-                base_station.bs_id != self.history_of_serving_BS[-1]
+                base_station.cell_id != self.history_of_serving_BS[-1]
             ), f"UE {self.ue_imsi} is already served by BS {self.history_of_serving_BS[-1]}."
-        self.history_of_serving_BS.append(base_station.bs_id)
+        self.history_of_serving_BS.append(base_station.cell_id)
         if len(self.history_of_serving_BS) > settings.UE_SERVING_BS_HISTORY_LENGTH:
             self.history_of_serving_BS.pop(0)
 
@@ -131,23 +131,23 @@ class UE:
                 * path_loss_exponent
                 * math.log10(distance / settings.CHANNEL_PASS_LOSS_REF_DISTANCE)
             )
-        rsrp = base_station.ref_signal_transmit_power - path_loss_db  # in dBm
+        rsrp = settings.RAN_BS_REF_SIGNAL_DEFAULT_TRASNMIT_POWER - path_loss_db  # in dBm
         return rsrp
 
     def estimate_rsrp_from_all_bs(self):
         for bs in self.simulation_engine.base_station_list.values():
             rsrp = self.calculate_rsrp(bs)
-            self.bs_rsrp_list[bs.bs_id] = rsrp
-            # print("UE {}: RSRP from BS {}: {} dB".format(self.ue_imsi, bs.bs_id, rsrp))
+            self.bs_rsrp_list[bs.cell_id] = rsrp
+            # print("UE {}: RSRP from BS {}: {} dB".format(self.ue_imsi, bs.cell_id, rsrp))
 
     def select_best_bs(self):
-        bs_id_selected = None
+        cell_id_selected = None
         max_rsrp = -math.inf
-        for bs_id, rsrp in self.bs_rsrp_list.items():
+        for cell_id, rsrp in self.bs_rsrp_list.items():
             if rsrp > max_rsrp:
                 max_rsrp = rsrp
-                bs_id_selected = bs_id
-        return bs_id_selected
+                cell_id_selected = cell_id
+        return cell_id_selected
 
 
     def deregister(self, base_station):
@@ -207,9 +207,9 @@ class UE:
             "qos_profile": self.qos_profile,
             "bitrate": self.bitrate,
             "latency": self.latency,
-            "served_by_BS": self.served_by_BS.bs_id if self.served_by_BS else None,
+            "served_by_BS": self.served_by_BS.cell_id if self.served_by_BS else None,
             "connected": self.connected,
             "need_handover": self.need_handover,
             "time_ramaining": self.time_ramaining,
-            "history_of_serving_BS": [bs_id for bs_id in self.history_of_serving_BS],
+            "history_of_serving_BS": [cell_id for cell_id in self.history_of_serving_BS],
         }
