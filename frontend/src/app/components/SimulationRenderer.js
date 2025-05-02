@@ -117,38 +117,29 @@ export default function SimulationRenderer({ simulationState }) {
       ctx.fillStyle = "black";
       ctx.fillText("b", ueData.position_x, ueData.position_y);
 
-      // Draw dotted blue lines to the connected BSs
-      if (ueData.connected && ueData.connected_BS_list) {
-        ctx.strokeStyle = "rgba(70, 65, 230, 0.7)";
-        ctx.setLineDash([5, 5]); // Dotted line
-        ctx.lineWidth = 1;
-
-        for (const bsId of ueData.connected_BS_list) {
-          const connectedBS = simulationState.base_stations.find(
-            (bs) => bs.bs_id === bsId
-          );
-          if (connectedBS) {
-            ctx.beginPath();
-            ctx.moveTo(ueData.position_x, ueData.position_y);
-            ctx.lineTo(connectedBS.position_x, connectedBS.position_y);
-            ctx.stroke();
-          }
-        }
-
-        ctx.setLineDash([]); // Reset line dash
-      }
-
       // Draw solid orange line to the BS that's serving the UE
-      if (ueData.served_by_BS) {
-        const servingBS = simulationState.base_stations.find(
-          (bs) => bs.bs_id === ueData.served_by_BS
+      if (ueData.current_cell) {
+        const servingCell = simulationState.cells.find(
+          (cell) => cell.cell_id === ueData.current_cell
         );
-        if (servingBS) {
-          ctx.strokeStyle = "orange";
+        if (servingCell) {
+          // Determine the stroke color based on the frequency
+          let strokeColor;
+          if (ueData.current_cell.includes("low_freq")) {
+            strokeColor = "rgba(135, 206, 250, 0.7)"; // Lighter blue for low frequency
+          } else if (ueData.current_cell.includes("mid_freq")) {
+            strokeColor = "rgba(144, 238, 144, 0.7)"; // Lighter green for mid frequency
+          } else if (ueData.current_cell.includes("high_freq")) {
+            strokeColor = "rgba(255, 99, 71, 0.7)"; // Lighter red for high frequency
+          } else {
+            strokeColor = "rgba(169, 169, 169, 0.7)"; // Lighter gray for default
+          }
+
+          ctx.strokeStyle = strokeColor;
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.moveTo(ueData.position_x, ueData.position_y);
-          ctx.lineTo(servingBS.position_x, servingBS.position_y);
+          ctx.lineTo(servingCell.position_x, servingCell.position_y);
           ctx.stroke();
         }
       }
@@ -188,15 +179,31 @@ export default function SimulationRenderer({ simulationState }) {
                 <div key={cell.cell_id + "_cell"}>
                   <div className="divider">Cell: {cell.cell_id}</div>
                   <div className="grid grid-cols-2 gap-2 items-center">
-                    <div>Carrier Freq. <br/> / BW. </div>
-                    <div>{cell.carrier_frequency} / {cell.bandwidth / 1e6} MHz</div>
-                    <div>Alloc. / Max PRB <br/> / Load</div>
                     <div>
-                      {cell.allocated_prb} / {cell.max_prb} / {(cell.current_load * 100).toFixed(1)} %
+                      Carrier Freq. <br /> / BW.{" "}
+                    </div>
+                    <div>
+                      {cell.carrier_frequency} / {cell.bandwidth / 1e6} MHz
+                    </div>
+                    <div>
+                      Alloc. / Max PRB <br />
+                    </div>
+                    <div>
+                      {cell.allocated_prb} / {cell.max_prb}
+                    </div>
+                    <div>
+                      Load
+                    </div>
+                    <div className="stats">
+                      <div className="stat">
+                      <div className="stat-value">
+                      {(cell.current_load * 100).toFixed(1)} %
+                      </div>
+                      </div>
                     </div>
                     <div>Cell Radius</div>
                     <div>{cell.cell_radius * 10} m</div>
-                    <div>Served UEs</div>
+                    <div>UE served</div>
                     <div>{Object.keys(cell.prb_ue_allocation_dict).length}</div>
                   </div>
                 </div>
