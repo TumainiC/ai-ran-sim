@@ -236,9 +236,10 @@ class UE:
         if len(self.serving_cell_history) > settings.UE_SERVING_CELL_HISTORY_LENGTH:
             self.serving_cell_history.pop(0)
 
-    def deregister(self, base_station):
+    def deregister(self):
         print(f"UE {self.ue_imsi}: Sending deregistration request.")
-        base_station.handle_deregistration(self)
+        self.current_bs.handle_deregistration_request(self)
+        self.current_cell = None
         self.connected = False
 
     def move_towards_target(self, delta_time):
@@ -279,7 +280,7 @@ class UE:
         self.time_ramaining -= delta_time
 
         if self.time_ramaining <= 0:
-            self.deregister(self.current_cell)
+            self.deregister()
 
     def to_json(self):
         return {

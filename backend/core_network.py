@@ -27,6 +27,15 @@ class CoreNetwork:
     def handle_registration_complete_msg(self, ue, nas_message):
         return {}
 
+    def handle_deregistration_request(self, ue):
+        if ue.ue_imsi in self.active_ues:
+            print(f"CoreNetwork: Deregistering UE {ue.ue_imsi}")
+            del self.active_ues[ue.ue_imsi]
+        else:
+            print(f"CoreNetwork: UE {ue.ue_imsi} not found in active UEs.")
+        deregistration_accept_msg = {}
+        return deregistration_accept_msg
+
     def select_network_slice(self, ue):
         # Simple logic: random or capability-based
         selected_slice = random.choice(list(settings.NETWORK_SLICES.keys()))

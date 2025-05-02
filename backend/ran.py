@@ -1,5 +1,4 @@
 import random
-from utils import get_pass_loss_model
 import settings
 
 
@@ -69,6 +68,12 @@ class Cell:
 
         return dl_bitrate, ul_bitrate, latency
 
+    def release_ue_resources(self, ue):
+        if ue.ue_imsi in self.prb_ue_allocation_dict:
+            del self.prb_ue_allocation_dict[ue.ue_imsi]
+            print(f"Cell {self.cell_id}: Released resources for UE {ue.ue_imsi}")
+        else:
+            print(f"Cell {self.cell_id}: No resources to release for UE {ue.ue_imsi}")
 
     def to_json(self):
         return {
@@ -148,16 +153,16 @@ class BaseStation:
         )
         return ue_slice_info, ue_qos_profile, dl_bitrate, ul_bitrate, latency
 
-    def handle_deregistration(self, ue):
-        self.core_network.deregister_ue(ue)
+    def handle_deregistration_request(self, ue):
+        deregistration_accept_msg = self.core_network.handle_deregistration_request(ue)
+        # for simplicity, gNB directly releases resources instead of having AMF to initiate the release
+        ue.current_cell.release_ue_resources(ue)
         if ue.ue_imsi in self.ue_registry:
             del self.ue_registry[ue.ue_imsi]
-        if ue.ue_imsi in self.prb_ue_allocation_dict:
-            del self.prb_ue_allocation_dict[ue.ue_imsi]
-        self.update_allocated_prb_and_load()
         print(
-            f"gNB {self.cell_id}: UE {ue.ue_imsi} deregistered and resources released."
+            f"gNB {self.bs_id}: UE {ue.ue_imsi} deregistered and resources released."
         )
+        return deregistration_accept_msg
 
     def save_load_history(self):
         self.load_history.append(self.current_load)
