@@ -11,7 +11,7 @@ class CoreNetwork:
         authentication_request = {}
         return authentication_request
 
-    def handle_authetication_response(self, ue, nas_message):
+    def handle_authentication_response(self, ue, nas_message):
         security_mode_command_msg = {}
         return security_mode_command_msg
 

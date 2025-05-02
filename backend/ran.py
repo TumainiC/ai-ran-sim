@@ -1,4 +1,5 @@
 import random
+from utils import get_pass_loss_model
 import settings
 
 
@@ -12,23 +13,29 @@ class Cell:
         self.frequency_band = cell_init_data["frequency_band"]
         self.carrier_frequency = cell_init_data["carrier_frequency"]
         self.bandwidth = cell_init_data["bandwidth"]
-        self.max_prbs = cell_init_data["max_prbs"]
+        self.max_prb = cell_init_data["max_prb"]
         self.cell_radius = cell_init_data["cell_radius"]
         self.transmit_power = cell_init_data["transmit_power"]
+        self.cell_individual_offset = cell_init_data["cell_individual_offset"]
+        self.frequency_priority = cell_init_data["frequency_priority"]
+        self.qrx_level_min = cell_init_data["qrx_level_min"]
 
         self.prb_ue_allocation_dict = {}
-        self.allocated_prb = 0
     
     @property
-    def current_load(self):
-        return self.allocated_prb / self.max_prbs
+    def allocated_prb(self):
+        return sum(self.prb_ue_allocation_dict.values())
 
     @property
-    def postion_x(self):
+    def current_load(self):
+        return self.allocated_prb / self.max_prb
+
+    @property
+    def position_x(self):
         return self.base_station.position_x
 
     @property
-    def postion_y(self):
+    def position_y(self):
         return self.base_station.position_y
 
     def get_ue_prb_allocation(self, ue):
@@ -37,19 +44,13 @@ class Cell:
         else:
             return 0
 
-    def update_allocated_prb_and_load(self):
-        # calculate total allocated prb from ue allocation dict
-        self.allocated_prb = sum(self.prb_ue_allocation_dict.values())
-        self.current_load = self.allocated_prb / self.max_prb
-
     def allocate_prb(self, ue, ue_qos_profile):
-        print(f"{self.cell_id}: Allocating PRB for UE {ue.ue_imsi}")
         # prb should be calculated based on multiple factors.
         # for now, we are just assigning a random number of PRBs
         prb_allocation = random.randint(5, 10)
         prb_allocation = min(prb_allocation, self.max_prb - self.allocated_prb)
         self.prb_ue_allocation_dict[ue.ue_imsi] = prb_allocation
-        self.update_allocated_prb_and_load()
+        print(f"Cell {self.cell_id}: Allocated {prb_allocation} PRBs for UE {ue.ue_imsi}")
         return prb_allocation
 
     def estimate_bitrate_and_latency(self, prbs, qos):
@@ -59,7 +60,6 @@ class Cell:
         bandwidth = prbs * subcarriers * mcs_efficiency
         dl_bitrate = bandwidth / symbol_duration  # simplistic estimation
         ul_bitrate = dl_bitrate * 0.8  # assume UL is a bit lower
-
         latency = qos.get("latency", 20) + random.uniform(1, 5)
 
         print(
@@ -76,13 +76,13 @@ class Cell:
             "frequency_band": self.frequency_band,
             "carrier_frequency": self.carrier_frequency,
             "bandwidth": self.bandwidth,
-            "max_prbs": self.max_prbs,
+            "max_prb": self.max_prb,
             "cell_radius": self.cell_radius,
-            "current_load": self.current_load,
-            "position_x": self.postion_x,
-            "position_y": self.postion_y,
-            "allocated_prb": self.allocated_prb,
+            "position_x": self.position_x,
+            "position_y": self.position_y,
             "prb_ue_allocation_dict": self.prb_ue_allocation_dict,
+            "allocated_prb": self.allocated_prb,
+            "current_load": self.current_load,
         }
 
 

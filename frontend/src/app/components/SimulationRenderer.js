@@ -47,7 +47,7 @@ export default function SimulationRenderer({ simulationState }) {
         //     "frequency_band": "n1",
         //     "carrier_frequency": 2100,  // in MHz, e.g., from 700 to 28000)
         //     "bandwidth": 20e6,
-        //     "max_prbs": 106,
+        //     "max_prb": 106,
         //     "cell_radius": 300,
         //     "position_x": 200,
         //     "position_y": 200,
@@ -188,11 +188,11 @@ export default function SimulationRenderer({ simulationState }) {
                 <div key={cell.cell_id + "_cell"}>
                   <div className="divider">Cell: {cell.cell_id}</div>
                   <div className="grid grid-cols-2 gap-2 items-center">
-                    <div>Carrier Frequency <br/> / Bandwidth </div>
+                    <div>Carrier Freq. <br/> / BW. </div>
                     <div>{cell.carrier_frequency} / {cell.bandwidth / 1e6} MHz</div>
-                    <div>Allocated / Max PRB <br/> / Load</div>
+                    <div>Alloc. / Max PRB <br/> / Load</div>
                     <div>
-                      {cell.allocated_prb} / {cell.max_prbs} / {cell.current_load * 100} %
+                      {cell.allocated_prb} / {cell.max_prb} / {(cell.current_load * 100).toFixed(1)} %
                     </div>
                     <div>Cell Radius</div>
                     <div>{cell.cell_radius * 10} m</div>

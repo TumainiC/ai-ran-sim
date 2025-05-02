@@ -1,6 +1,6 @@
-import math
-from backend.utils.channel_utils import get_pass_loss_model
-from utils import dist_between
+from utils import dist_between, get_pass_loss_model
+from tabulate import tabulate
+
 import settings
 
 
@@ -56,30 +56,12 @@ class UE:
     def target_reached(self):
         return self.dist_to_target == 0
 
-    @property
-    def need_handover(self):
-        # check if the rsrp by the current serving BS is less than the rsrp by the other BSs
-        # if the UE is not connected to any BS, return False
-        if self.current_cell is None:
-            return False
-        if len(self.bs_rsrp_list) == 0:
-            return False
-        if self.current_cell.cell_id not in self.bs_rsrp_list:
-            return False
-        current_rsrp = self.bs_rsrp_list[self.current_cell.cell_id]
-        for cell_id, rsrp in self.bs_rsrp_list.items():
-            if cell_id != self.current_cell.cell_id and rsrp > current_rsrp:
-                return True
-        return False
-
     def cell_search_and_synchronization(self):
         # cell search and synchronization
-        cell_list = self.simulation_engine.cell_list
-
         # Synchronization Signal Block (SSB) detection
         SSBs_detected = []
         pass_loss_model = get_pass_loss_model(settings.CHANNEL_PASS_LOSS_MODEL)
-        for cell in cell_list:
+        for cell in self.simulation_engine.cell_list.values():
             # Check if the cell is within the UE's range
             distance = dist_between(
                 self.position_x,
@@ -87,26 +69,59 @@ class UE:
                 cell.position_x,
                 cell.position_y,
             )
-            received_power = cell.transmit_power - pass_loss_model(
-                distance_m=distance, frequency_in_ghz=cell.carrier_frequency / 1000
+
+            distance *= settings.REAL_LIFE_DISTANCE_MULTIPLIER
+
+            received_power = (
+                cell.transmit_power
+                - pass_loss_model(
+                    distance_m=distance, frequency_in_ghz=cell.carrier_frequency / 1000
+                )
+                + cell.cell_individual_offset
             )
-            if received_power > settings.UE_SSB_DETECTION_THRESHOLD:
+            if (
+                received_power > settings.UE_SSB_DETECTION_THRESHOLD
+                and received_power >= cell.qrx_level_min
+            ):
                 SSBs_detected.append(
                     {
                         "cell": cell,
                         "received_power": received_power,
+                        "frequency_priority": cell.frequency_priority,
                     }
                 )
 
-        print(
-            f"UE {self.ue_imsi}: Detected SSBs: {[cell['cell'].cell_id for cell in SSBs_detected]}"
-        )
+        # print(
+        #     f"UE {self.ue_imsi}: Detected SSBs: {[cell['cell'].cell_id for cell in SSBs_detected]}"
+        # )
 
         return SSBs_detected
 
     def cell_selection_and_camping(self, SSBs_detected):
         # Sort SSBs by received power
-        SSBs_detected.sort(key=lambda x: x["received_power"], reverse=True)
+        # first sort by frequency priority, then by received power (both the higher the better)
+        # SSBs_detected.sort(key=lambda x: x["received_power"], reverse=True)
+        SSBs_detected.sort(
+            key=lambda x: (
+                x["frequency_priority"],
+                x["received_power"],
+            ),
+            reverse=True,
+        )
+        # Print all the detected SSBs in a pretty table
+        table_data = [
+            [ssb["cell"].cell_id, ssb["received_power"], ssb["frequency_priority"]]
+            for ssb in SSBs_detected
+        ]
+        print(f"UE {self.ue_imsi}: Detected SSBs:")
+        print(
+            tabulate(
+                table_data,
+                headers=["Cell ID", "Received Power (dBm)", "Frequency Priority"],
+                tablefmt="grid",
+            )
+        )
+
         # Select the best SSB
         self.current_cell = SSBs_detected[0]["cell"]
         return True
@@ -123,10 +138,8 @@ class UE:
             "ue_imsi": self.ue_imsi,
             "establishment_cause": settings.RAN_RRC_CONNECTION_EST_CAUSE_MO_SIGNALLING,
         }
-        rrc_connection_response = (
-            self.current_bs.handle_RRC_connection_request(
-                self, rrc_connection_request
-            )
+        rrc_connection_response = self.current_bs.handle_RRC_connection_request(
+            self, rrc_connection_request
         )
         return True
 
@@ -149,7 +162,7 @@ class UE:
         security_mode_command_msg = self.current_bs.handle_authentication_response(
             self, authentication_response
         )
-        
+
         security_mode_complete_msg = {}
         registration_accept_msg = self.current_bs.handle_security_mode_complete_msg(
             self, security_mode_complete_msg
@@ -165,8 +178,10 @@ class UE:
         return True
 
     def test_network_performance(self):
-        dl_bitrate, ul_bitrate, latency = self.current_cell.estimate_bitrate_and_latency(
-            self.current_cell.get_ue_prb_allocation(self), self.qos_profile
+        dl_bitrate, ul_bitrate, latency = (
+            self.current_cell.estimate_bitrate_and_latency(
+                self.current_cell.get_ue_prb_allocation(self), self.qos_profile
+            )
         )
         self.bitrate["downlink"] = dl_bitrate
         self.bitrate["uplink"] = ul_bitrate
@@ -177,7 +192,7 @@ class UE:
         return True
 
     def power_up(self):
-        print(f"Powering up UE {self.ue_imsi} ...")
+        print(f"UE {self.ue_imsi} Powering up")
         SSBs_detected = self.cell_search_and_synchronization()
         if len(SSBs_detected) == 0:
             print(f"UE {self.ue_imsi}: No SSB detected. Powering down...")
@@ -195,9 +210,11 @@ class UE:
             return False
 
         if not self.complete_RRC_connection_and_register():
-            print(f"UE {self.ue_imsi}: RRC connection complete and registration failed.")
+            print(
+                f"UE {self.ue_imsi}: RRC connection complete and registration failed."
+            )
             return False
-        
+
         if not self.test_network_performance():
             print(f"UE {self.ue_imsi}: Network performance test failed.")
             return False
@@ -277,11 +294,8 @@ class UE:
             "bitrate": self.bitrate,
             "latency": self.latency,
             "current_cell": self.current_cell.cell_id if self.current_cell else None,
-            "current_bs": self.current_bs,
+            "current_bs": self.current_bs.bs_id if self.current_bs else None,
             "connected": self.connected,
-            "need_handover": self.need_handover,
             "time_ramaining": self.time_ramaining,
-            "serving_cell_history": [
-                cell_id for cell_id in self.serving_cell_history
-            ],
+            "serving_cell_history": [cell_id for cell_id in self.serving_cell_history],
         }

@@ -3,6 +3,7 @@
 # ---------------------------
 NETWORK_COVERAGE_WIDTH = 1000
 NETWORK_COVERAGE_HEIGHT = 800
+REAL_LIFE_DISTANCE_MULTIPLIER = 10
 
 
 # ---------------------------
@@ -92,27 +93,36 @@ def RAN_BS_DEFAULT_CELLS(bs_id):
             "frequency_band": "n1",
             "carrier_frequency": 2100,
             "bandwidth": 20e6,
-            "max_prbs": 106,
+            "max_prb": 106,
             "cell_radius": 300,
             "transmit_power": 40,
+            "cell_individual_offset": 0,
+            "frequency_priority": 3,
+            "qrx_level_min": -71
         },
         {
             "cell_id": f"{bs_id}_cell_mid_freq",
             "frequency_band": "n78",
             "carrier_frequency": 3500,
             "bandwidth": 100e6,
-            "max_prbs": 273,
+            "max_prb": 273,
             "cell_radius": 150,
             "transmit_power": 40,
+            "cell_individual_offset": 5,
+            "frequency_priority": 5,
+            "qrx_level_min": -64
         },
         {
             "cell_id": f"{bs_id}_cell_high_freq",
             "frequency_band": "n258",
             "carrier_frequency": 26000,
             "bandwidth": 400e6,
-            "max_prbs": 264,
+            "max_prb": 264,
             "cell_radius": 50,
-            "transmit_power": 40,
+            "transmit_power": 40, # assuming this is achieved by beamforming
+            "cell_individual_offset": 10,
+            "frequency_priority": 7,
+            "qrx_level_min": -66
         },
     ]
 

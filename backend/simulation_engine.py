@@ -13,17 +13,16 @@ class SimulationEngine:
         self.websocket = websocket
         self.core_network = None
         self.ric = None
+        
         self.base_station_list = {}
         self.cell_list = {}
+        self.ue_list = {}
+
         self.sim_started = False
         self.sim_step = 0
 
-        self.ue_list = {}
         self.global_UE_counter = 0
         self.logs = []
-
-        self.handover_event_history = []
-        self.handover_action_list = []
 
     def try_add_base_station(self, bs):
         assert isinstance(bs, BaseStation)
@@ -97,12 +96,11 @@ class SimulationEngine:
             speed=speed,
             simulation_engine=self,
         )
-        ue.power_up()
-        if not ue.connected:
-            print(f"UE {ue.ue_imsi} failed to register.")
+        if not ue.power_up():
+            print(f"UE {ue.ue_imsi} power up procedures failed.")
             return None
 
-        print(f"UE {ue.ue_imsi} registered to BS {ue.served_by_bs.bs_id}.")
+        print(f"UE {ue.ue_imsi} registered to network. Served by cell: {ue.current_cell.cell_id}.")
         self.ue_list[ue.ue_imsi] = ue
         self.global_UE_counter += 1
         return ue
