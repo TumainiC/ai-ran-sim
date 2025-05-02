@@ -109,8 +109,14 @@ class BaseStation:
             )
             for cell_init_data in bs_init_data["cells"]
         ]
+        self.rrc_measurement_events = bs_init_data["rrc_measurement_events"]
+
         self.ue_registry = {}
-        self.ue_perf_monitor = {}
+        self.ue_rrc_measurement_events = []
+        self.ue_rrc_meas_event_handers = {}
+
+    def receive_ue_rrc_measurement_events(self, ue, event):
+        self.ue_rrc_measurement_events.append((ue, event))
 
     def handle_random_access(self, ue, random_access_preamble):
         random_access_response = {}
@@ -122,8 +128,14 @@ class BaseStation:
 
     def handle_RRC_connection_complete_and_register(self, ue, rrc_connection_complete_msg):
         ngap_message = rrc_connection_complete_msg["nas"]
+        rrc_config_msg = {
+            "type": "RRCReconfiguration",
+            "measurement_events": [*self.rrc_measurement_events],
+        }
         amf_authentication_request = self.core_network.handle_initial_ue_message(ue, ngap_message)
-        return amf_authentication_request
+
+        # the rrc config message gets sent to the UE first
+        return rrc_config_msg, amf_authentication_request
     
     def handle_authentication_response(self, ue, nas_message):
         return self.core_network.handle_authentication_response(ue, nas_message)
@@ -139,7 +151,6 @@ class BaseStation:
         ue.current_cell.allocate_prb(ue, registeration_accept_msg["qos_profile"])
         return registeration_accept_msg
 
-    
     def handle_registration_complete_msg(self, ue, nas_message):
         return self.core_network.handle_registration_complete_msg(ue, nas_message)
 
@@ -177,3 +188,23 @@ class BaseStation:
             "ue_registry": list(self.ue_registry.keys()),
             "cells": [cell.to_json() for cell in self.cells],
         }
+
+    def register_rrc_measurement_event_handler(self, event_id, handler):
+        assert event_id is not None, "Event ID cannot be None"
+        assert handler is not None, "Handler cannot be None"
+        assert event_id not in self.ue_rrc_meas_event_handers, (
+            f"Handler for event ID {event_id} already registered"
+        )
+        self.ue_rrc_meas_event_handers[event_id] = handler
+
+    def step(self, delta_time):
+        # process RRC measurement events
+        while len(self.ue_rrc_measurement_events) > 0:
+            ue, event = self.ue_rrc_measurement_events.pop(0)
+            event_id = event["event_id"]
+            if event_id not in self.ue_rrc_meas_event_handers:
+                print(f"gNB {self.bs_id}: No handler for event ID {event_id}. Skipping.")
+                continue
+            handler = self.ue_rrc_meas_event_handers[event_id]
+            handler(ue, event)
+            print(f"gNB {self.bs_id}: Processed RRC measurement event {event_id} for UE {ue.ue_imsi}")

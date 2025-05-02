@@ -1,4 +1,4 @@
-from utils import dist_between, get_pass_loss_model
+from utils import dist_between, get_pass_loss_model, get_rrc_measurement_event_trigger
 from tabulate import tabulate
 
 import settings
@@ -31,14 +31,12 @@ class UE:
         self.time_ramaining = connection_time
         self.simulation_engine = simulation_engine
 
-        # channel quality data
-        self.bs_rsrp_list = {}
-
         self.slice_info = None
         self.qos_profile = None
         self.connected = False
         self.bitrate = {"downlink": 0, "uplink": 0}
         self.latency = 0
+        self.rrc_measurement_event_triggers = []
 
         self.reachable_BS_list = set()
         self.current_cell = None
@@ -143,6 +141,19 @@ class UE:
         )
         return True
 
+    def setup_rrc_measurement_event_triggers(self, rrc_measurement_events=[]):
+        self.rrc_measurement_event_triggers = [
+            get_rrc_measurement_event_trigger(event["event_id"], event_params=event)
+            for event in rrc_measurement_events
+        ]
+
+    def handle_RRC_config_msg(self, rrc_config_msg):
+        if rrc_config_msg["type"] == "RRCReconfiguration":
+            if "measurement_events" in rrc_config_msg:
+                self.setup_rrc_measurement_event_triggers(
+                    rrc_config_msg["measurement_events"]
+                )
+
     def complete_RRC_connection_and_register(self):
         rrc_message = {
             "rrc": "Connection Setup Complete",
@@ -152,11 +163,12 @@ class UE:
                 "capabilities": {},
             },
         }
-        amf_authentication_request = (
+        rrc_config_msg, amf_authentication_request = (
             self.current_bs.handle_RRC_connection_complete_and_register(
                 self, rrc_message
             )
         )
+        self.handle_RRC_config_msg(rrc_config_msg)
 
         authentication_response = {}
         security_mode_command_msg = self.current_bs.handle_authentication_response(
@@ -269,16 +281,26 @@ class UE:
                 self.target_y,
             )
 
+    def check_rrc_measurement_events(self):
+        # check rrc measurement events
+        SSBs_detected = self.cell_search_and_synchronization()
+        cell_signal_measurements = {
+            ssb["cell"].cell_id: ssb["received_power"] for ssb in SSBs_detected
+        }
+        for rrc_meas_event_trigger in self.rrc_measurement_event_triggers:
+            rrc_meas_event_trigger.check(self, cell_signal_measurements.copy())
+            if rrc_meas_event_trigger.is_triggered:
+                print(
+                    f"UE {self.ue_imsi}: RRC measurement event {rrc_meas_event_trigger.event_id} triggered."
+                )
+                self.current_bs.receive_ue_rrc_measurement_events(
+                    self, rrc_meas_event_trigger.report_event()
+                )
+
     def step(self, delta_time):
-        # move the UE towards the target position
         self.move_towards_target(delta_time)
-
-        # update the rsrp in every step
-        # self.estimate_rsrp_from_all_bs()
-
-        # update the time remaining for the UE
+        self.check_rrc_measurement_events()
         self.time_ramaining -= delta_time
-
         if self.time_ramaining <= 0:
             self.deregister()
 

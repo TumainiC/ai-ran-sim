@@ -1,19 +1,25 @@
+import os
 import settings
-
-class RICApp:
-    def __init__(self, ric=None):
-        self.ric = ric
-
-class xApp(RICApp):
-    def __init__(self, ric=None):
-        super().__init__(ric)  # Call the parent class's constructor
+import inspect
+import xApps
 
 
-class rApp(RICApp):
-    def __init__(self, ric=None):
-        super().__init__(ric)
-
-class RanIntelligentController:
+class NearRTRIC:
+    # Near Real-Time Ran Intelligent Controller
     def __init__(self, simulation_engine=None):
         self.simulation_engine = simulation_engine
-        pass
+        self.xapp_list = {}
+
+    def load_xApps(self):
+        # dynamically load xApps from the xApp directory
+        self.xapp_list = {}
+
+        for xapp_cls in xApps.load_all_xapps():
+            xapp_instance = xapp_cls(ric=self)
+            assert xapp_instance.xapp_id not in self.xapp_list, f"xApp {xapp_instance.xapp_id} already exists"
+            self.xapp_list[xapp_instance.xapp_id] = xapp_instance
+            print(f"NearRT RIC: Loaded xApp: {xapp_instance.xapp_id}")
+
+        for xapp in self.xapp_list.values():
+            xapp.start()
+            

@@ -3,7 +3,7 @@ import json
 import random
 from core_network import CoreNetwork
 from ran import BaseStation
-from ric import RanIntelligentController
+from ric import NearRTRIC
 from ue import UE
 import settings
 
@@ -12,7 +12,7 @@ class SimulationEngine:
     def __init__(self, websocket=None):
         self.websocket = websocket
         self.core_network = None
-        self.ric = None
+        self.nearRT_ric = None
         
         self.base_station_list = {}
         self.cell_list = {}
@@ -36,7 +36,6 @@ class SimulationEngine:
 
     def network_setup(self):
         self.core_network = CoreNetwork(self)
-        self.ric = RanIntelligentController(self)
 
         # init base station list
         for bs_init_data in settings.RAN_DEFAULT_BS_LIST:
@@ -49,6 +48,11 @@ class SimulationEngine:
                     bs_init_data=bs_init_data,
                 )
             )
+        
+        # for the moment, the ric must be initialized after the core network and the base stations.
+        # so that the xApps can subscribe information from the base stations.
+        self.nearRT_ric = NearRTRIC(self)
+        self.nearRT_ric.load_xApps()
 
     def is_handover_stablized(self):
         if len(self.handover_event_history) < settings.SIM_HANDOVER_HISTORY_LENGTH:
@@ -137,13 +141,15 @@ class SimulationEngine:
             del self.ue_list[ue.ue_imsi]
             print(f"UE {ue.ue_imsi} deregistered and removed from simulation.")
 
-    def update_BSs(self, delta_time):
-        pass
+    def step_BSs(self, delta_time):
+        for bs in self.base_station_list.values():
+            bs.step(delta_time)
 
     def step(self, delta_time):
         self.logs = []
         self.spawn_UEs()
         self.step_UEs(delta_time)
+        self.step_BSs(delta_time)
 
     async def start_simulation(self):
         assert not self.sim_started

@@ -1,51 +1,4 @@
 # ---------------------------
-# Network Operation Configuration
-# ---------------------------
-NETWORK_COVERAGE_WIDTH = 1000
-NETWORK_COVERAGE_HEIGHT = 800
-REAL_LIFE_DISTANCE_MULTIPLIER = 10
-
-
-# ---------------------------
-# Network Slice Configuration
-# ---------------------------
-NETWORK_SLICE_EMBB_NAME = "eMBB"
-NETWORK_SLICE_URLLC_NAME = "URLLC"
-NETWORK_SLICE_MTC_NAME = "mMTC"
-
-NETWORK_SLICES = {
-    NETWORK_SLICE_EMBB_NAME: {"5QI": 9, "GBR": 100e6, "latency": 20},
-    NETWORK_SLICE_URLLC_NAME: {"5QI": 1, "GBR": 10e6, "latency": 1},
-    NETWORK_SLICE_MTC_NAME: {"5QI": 5, "GBR": 1e6, "latency": 50},
-}
-
-
-# ---------------------------
-# RIC Configuration
-# ---------------------------
-RIC_ENABLE_HANDOVER = True
-RIC_BRUTAL_HANDOVER = False
-
-
-# ---------------------------
-# Simulation Configuration
-# ---------------------------
-SIM_STEP_TIME_DEFAULT = 1
-SIM_HANDOVER_HISTORY_LENGTH = 3
-SIM_MAX_STEP = 200
-SIM_SPAWN_UE_AFTER_LOAD_HISTORY_STABLIZED = True
-
-
-# ---------------------------
-# Channel Configuration
-# ---------------------------
-CHANNEL_PATH_LOSS_EXPONENT = 3.5
-CHANNEL_PASS_LOSS_REF_DISTANCE = 1
-CHANNEL_REFERENCE_PASS_LOSS = 0
-CHANNEL_PASS_LOSS_MODEL = "urban_macro"
-
-
-# ---------------------------
 # RAN Configuration
 # ---------------------------
 RAN_BS_LOAD_HISTORY_LENGTH = 3
@@ -98,7 +51,7 @@ def RAN_BS_DEFAULT_CELLS(bs_id):
             "transmit_power": 40,
             "cell_individual_offset": 0,
             "frequency_priority": 3,
-            "qrx_level_min": -71
+            "qrx_level_min": -71,
         },
         {
             "cell_id": f"{bs_id}_cell_mid_freq",
@@ -110,7 +63,7 @@ def RAN_BS_DEFAULT_CELLS(bs_id):
             "transmit_power": 40,
             "cell_individual_offset": 5,
             "frequency_priority": 5,
-            "qrx_level_min": -64
+            "qrx_level_min": -64,
         },
         {
             "cell_id": f"{bs_id}_cell_high_freq",
@@ -119,11 +72,29 @@ def RAN_BS_DEFAULT_CELLS(bs_id):
             "bandwidth": 400e6,
             "max_prb": 264,
             "cell_radius": 50,
-            "transmit_power": 40, # assuming this is achieved by beamforming
+            "transmit_power": 40,  # assuming this is achieved by beamforming
             "cell_individual_offset": 10,
             "frequency_priority": 7,
-            "qrx_level_min": -66
+            "qrx_level_min": -66,
         },
+    ]
+
+
+# Event	Description	Condition
+# A1	Serving becomes better than threshold	Serving > threshold
+# A2	Serving becomes worse than threshold	Serving < threshold
+# A3	Neighbor becomes offset better than serving	Neighbor > Serving + offset
+# A4	Neighbor becomes better than threshold	Neighbor > threshold
+# A5	Serving becomes worse than threshold1 AND neighbor becomes better than threshold2	Serving < threshold1 AND Neighbor > threshold2
+# B1	Inter-RAT neighbor becomes better than threshold	Used for LTE/other RATs
+# B2	Serving becomes worse than threshold1 AND Inter-RAT neighbor becomes better than threshold2	Also for Inter-RAT
+def RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS():
+    return [
+        {
+            "event_id": "A3",
+            "power_threshold": 3,
+            "time_to_trigger_in_sim_steps": 3,  # normally time-t-trigger or TTT is in time, but since we are in simulation, we can use simulation steps
+        }
     ]
 
 
@@ -133,71 +104,83 @@ RAN_DEFAULT_BS_LIST = [
         "position_x": 200,
         "position_y": 200,
         "cells": RAN_BS_DEFAULT_CELLS("bs_11"),
+        "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
     },
     {
         "bs_id": "bs_12",
         "position_x": 400,
         "position_y": 200,
         "cells": RAN_BS_DEFAULT_CELLS("bs_12"),
+        "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
     },
     {
         "bs_id": "bs_13",
         "position_x": 600,
         "position_y": 200,
         "cells": RAN_BS_DEFAULT_CELLS("bs_13"),
+        "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
     },
     {
         "bs_id": "bs_14",
         "position_x": 800,
         "position_y": 200,
         "cells": RAN_BS_DEFAULT_CELLS("bs_14"),
+        "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
     },
     {
         "bs_id": "bs_21",
         "position_x": 200,
         "position_y": 400,
         "cells": RAN_BS_DEFAULT_CELLS("bs_21"),
+        "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
     },
     {
         "bs_id": "bs_22",
         "position_x": 400,
         "position_y": 400,
         "cells": RAN_BS_DEFAULT_CELLS("bs_22"),
+        "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
     },
     {
         "bs_id": "bs_23",
         "position_x": 600,
         "position_y": 400,
         "cells": RAN_BS_DEFAULT_CELLS("bs_23"),
+        "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
     },
     {
         "bs_id": "bs_24",
         "position_x": 800,
         "position_y": 400,
         "cells": RAN_BS_DEFAULT_CELLS("bs_24"),
+        "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
     },
     {
         "bs_id": "bs_31",
         "position_x": 200,
         "position_y": 600,
         "cells": RAN_BS_DEFAULT_CELLS("bs_31"),
+        "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
     },
     {
         "bs_id": "bs_32",
         "position_x": 400,
         "position_y": 600,
         "cells": RAN_BS_DEFAULT_CELLS("bs_32"),
+        "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
     },
     {
         "bs_id": "bs_33",
         "position_x": 600,
         "position_y": 600,
         "cells": RAN_BS_DEFAULT_CELLS("bs_33"),
+        "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
     },
     {
         "bs_id": "bs_34",
         "position_x": 800,
         "position_y": 600,
         "cells": RAN_BS_DEFAULT_CELLS("bs_34"),
+        "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
     },
 ]
