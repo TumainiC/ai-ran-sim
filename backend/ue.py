@@ -1,3 +1,4 @@
+import random
 from utils import dist_between, get_pass_loss_model, get_rrc_measurement_event_trigger
 from tabulate import tabulate
 
@@ -31,7 +32,7 @@ class UE:
         self.time_ramaining = connection_time
         self.simulation_engine = simulation_engine
 
-        self.slice_info = None
+        self.slice_type = None
         self.qos_profile = None
         self.connected = False
         self.bitrate = {"downlink": 0, "uplink": 0}
@@ -120,25 +121,7 @@ class UE:
             )
         )
 
-        # Select the best SSB
         self.current_cell = SSBs_detected[0]["cell"]
-        return True
-
-    def random_access_procedure(self):
-        random_access_preamble = {}
-        random_access_response = self.current_bs.handle_random_access(
-            self, random_access_preamble
-        )
-        return True
-
-    def request_RRC_connection(self):
-        rrc_connection_request = {
-            "ue_imsi": self.ue_imsi,
-            "establishment_cause": settings.RAN_RRC_CONNECTION_EST_CAUSE_MO_SIGNALLING,
-        }
-        rrc_connection_response = self.current_bs.handle_RRC_connection_request(
-            self, rrc_connection_request
-        )
         return True
 
     def setup_rrc_measurement_event_triggers(self, rrc_measurement_events=[]):
@@ -147,49 +130,7 @@ class UE:
             for event in rrc_measurement_events
         ]
 
-    def handle_RRC_config_msg(self, rrc_config_msg):
-        if rrc_config_msg["type"] == "RRCReconfiguration":
-            if "measurement_events" in rrc_config_msg:
-                self.setup_rrc_measurement_event_triggers(
-                    rrc_config_msg["measurement_events"]
-                )
-
-    def complete_RRC_connection_and_register(self):
-        rrc_message = {
-            "rrc": "Connection Setup Complete",
-            "nas": {
-                "ue": self,
-                "registration_type": settings.RAN_RRC_REGISTERATION_TYPE_INITIAL,
-                "capabilities": {},
-            },
-        }
-        rrc_config_msg, amf_authentication_request = (
-            self.current_bs.handle_RRC_connection_complete_and_register(
-                self, rrc_message
-            )
-        )
-        self.handle_RRC_config_msg(rrc_config_msg)
-
-        authentication_response = {}
-        security_mode_command_msg = self.current_bs.handle_authentication_response(
-            self, authentication_response
-        )
-
-        security_mode_complete_msg = {}
-        registration_accept_msg = self.current_bs.handle_security_mode_complete_msg(
-            self, security_mode_complete_msg
-        )
-        self.slice_info = registration_accept_msg["slice_info"]
-        self.qos_profile = registration_accept_msg["qos_profile"]
-
-        registration_complete_msg = {}
-        self.current_bs.handle_registration_complete_msg(
-            self, registration_complete_msg
-        )
-
-        return True
-
-    def test_network_performance(self):
+    def monitor_network_performance(self):
         dl_bitrate, ul_bitrate, latency = (
             self.current_cell.estimate_bitrate_and_latency(
                 self.current_cell.get_ue_prb_allocation(self), self.qos_profile
@@ -203,6 +144,26 @@ class UE:
         )
         return True
 
+    def authenticate_and_register(self):
+        # simplified one step authentication and registration implementation
+        random_slice_type = random.choice(
+            list(settings.NETWORK_SLICES.keys())
+        )
+        registration_msg = {
+            "ue": self,
+            "slice_type": random_slice_type,
+            "qos_profile": settings.NETWORK_SLICES[random_slice_type].copy(),
+        }
+        ue_reg_res = self.current_bs.handle_ue_authentication_and_registration(
+            self, registration_msg
+        )
+        self.slice_type = ue_reg_res["slice_type"]
+        self.qos_profile = ue_reg_res["qos_profile"]
+        self.setup_rrc_measurement_event_triggers(
+            ue_reg_res["rrc_meas_events"]
+        )
+        return True
+
     def power_up(self):
         print(f"UE {self.ue_imsi} Powering up")
         SSBs_detected = self.cell_search_and_synchronization()
@@ -213,21 +174,11 @@ class UE:
             print(f"UE {self.ue_imsi}: Cell selection and camping failed.")
             return False
 
-        if not self.random_access_procedure():
-            print(f"UE {self.ue_imsi}: Random access procedure failed.")
+        if not self.authenticate_and_register():
+            print(f"UE {self.ue_imsi}: Authentication and registration failed.")
             return False
 
-        if not self.request_RRC_connection():
-            print(f"UE {self.ue_imsi}: RRC connection request failed.")
-            return False
-
-        if not self.complete_RRC_connection_and_register():
-            print(
-                f"UE {self.ue_imsi}: RRC connection complete and registration failed."
-            )
-            return False
-
-        if not self.test_network_performance():
+        if not self.monitor_network_performance():
             print(f"UE {self.ue_imsi}: Network performance test failed.")
             return False
 
@@ -293,8 +244,8 @@ class UE:
                 print(
                     f"UE {self.ue_imsi}: RRC measurement event {rrc_meas_event_trigger.event_id} triggered."
                 )
-                self.current_bs.receive_ue_rrc_measurement_events(
-                    self, rrc_meas_event_trigger.report_event()
+                self.current_bs.receive_ue_rrc_meas_events(
+                    self, rrc_meas_event_trigger.gen_event_report()
                 )
 
     def step(self, delta_time):
@@ -312,7 +263,7 @@ class UE:
             "target_x": self.target_x,
             "target_y": self.target_y,
             "speed": self.speed,
-            "slice_info": self.slice_info,
+            "slice_type": self.slice_type,
             "qos_profile": self.qos_profile,
             "bitrate": self.bitrate,
             "latency": self.latency,

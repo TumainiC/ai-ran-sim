@@ -15,4 +15,4 @@ class xAppHandoverControl(xAppBase):
     def start(self):
         # subcribe events from all base stations
         for bs in self.base_station_list.values():
-            bs.register_rrc_measurement_event_handler("A3", self.handle_rrc_meas_event_A3)
+            bs.init_rrc_measurement_event_handler("A3", self.handle_rrc_meas_event_A3)

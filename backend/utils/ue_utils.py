@@ -21,7 +21,7 @@ class RRCMeasurementEventBase:
             check_result["triggered"] for check_result in self.trigger_history
         )
 
-    def report_event(self):
+    def gen_event_report(self):
         return {
             "event_id": self.event_id,
             **self.trigger_history[-1],

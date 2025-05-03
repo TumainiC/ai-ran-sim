@@ -112,60 +112,27 @@ class BaseStation:
         self.rrc_measurement_events = bs_init_data["rrc_measurement_events"]
 
         self.ue_registry = {}
-        self.ue_rrc_measurement_events = []
+        self.ue_rrc_meas_events = []
         self.ue_rrc_meas_event_handers = {}
 
-    def receive_ue_rrc_measurement_events(self, ue, event):
-        self.ue_rrc_measurement_events.append((ue, event))
+    def receive_ue_rrc_meas_events(self, ue, event):
+        self.ue_rrc_meas_events.append((ue, event))
 
-    def handle_random_access(self, ue, random_access_preamble):
-        random_access_response = {}
-        return random_access_response
-    
-    def handle_RRC_connection_request(self, ue, rrc_connection_request):
-        rrc_connection_response = {}
-        return rrc_connection_response
-
-    def handle_RRC_connection_complete_and_register(self, ue, rrc_connection_complete_msg):
-        ngap_message = rrc_connection_complete_msg["nas"]
-        rrc_config_msg = {
-            "type": "RRCReconfiguration",
-            "measurement_events": [*self.rrc_measurement_events],
-        }
-        amf_authentication_request = self.core_network.handle_initial_ue_message(ue, ngap_message)
-
-        # the rrc config message gets sent to the UE first
-        return rrc_config_msg, amf_authentication_request
-    
-    def handle_authentication_response(self, ue, nas_message):
-        return self.core_network.handle_authentication_response(ue, nas_message)
-    
-    def handle_security_mode_complete_msg(self, ue, nas_message):
-        registeration_accept_msg = self.core_network.handle_security_mode_complete_msg(ue, nas_message)
-        self.ue_registry[ue.ue_imsi] = {
+    def handle_ue_authentication_and_registration(self, ue, ue_auth_reg_msg):
+        core_response = self.core_network.handle_ue_authentication_and_registration(ue, ue_auth_reg_msg)
+        ue.current_cell.allocate_prb(ue, core_response["qos_profile"])
+        ue_reg_data = {
             "ue": ue,
-            "slice_info": registeration_accept_msg["slice_info"],
-            "qos_profile": registeration_accept_msg["qos_profile"],
-            "cell": ue.current_cell
+            "slice_type": core_response["slice_type"],
+            "qos_profile": core_response["qos_profile"],
+            "cell": ue.current_cell,
+            "rrc_meas_events": self.rrc_measurement_events.copy(),
         }
-        ue.current_cell.allocate_prb(ue, registeration_accept_msg["qos_profile"])
-        return registeration_accept_msg
-
-    def handle_registration_complete_msg(self, ue, nas_message):
-        return self.core_network.handle_registration_complete_msg(ue, nas_message)
-
-    def handle_registration(self, ue):
-        print(f"gNB {self.cell_id}: Handling registration for UE {ue.ue_imsi}")
-        self.ue_registry[ue.ue_imsi] = ue
-        ue_slice_info, ue_qos_profile = self.core_network.authenticate_and_register(ue)
-        ue_prb_allocation = self.allocate_prb(ue, ue_qos_profile)
-        dl_bitrate, ul_bitrate, latency = self.estimate_bitrate_and_latency(
-            ue_prb_allocation, ue_qos_profile
-        )
-        return ue_slice_info, ue_qos_profile, dl_bitrate, ul_bitrate, latency
-
+        self.ue_registry[ue.ue_imsi] = ue_reg_data
+        return ue_reg_data.copy()
+    
     def handle_deregistration_request(self, ue):
-        deregistration_accept_msg = self.core_network.handle_deregistration_request(ue)
+        self.core_network.handle_deregistration_request(ue)
         # for simplicity, gNB directly releases resources instead of having AMF to initiate the release
         ue.current_cell.release_ue_resources(ue)
         if ue.ue_imsi in self.ue_registry:
@@ -173,7 +140,7 @@ class BaseStation:
         print(
             f"gNB {self.bs_id}: UE {ue.ue_imsi} deregistered and resources released."
         )
-        return deregistration_accept_msg
+        return True
 
     def save_load_history(self):
         self.load_history.append(self.current_load)
@@ -189,7 +156,7 @@ class BaseStation:
             "cells": [cell.to_json() for cell in self.cells],
         }
 
-    def register_rrc_measurement_event_handler(self, event_id, handler):
+    def init_rrc_measurement_event_handler(self, event_id, handler):
         assert event_id is not None, "Event ID cannot be None"
         assert handler is not None, "Handler cannot be None"
         assert event_id not in self.ue_rrc_meas_event_handers, (
@@ -199,8 +166,8 @@ class BaseStation:
 
     def step(self, delta_time):
         # process RRC measurement events
-        while len(self.ue_rrc_measurement_events) > 0:
-            ue, event = self.ue_rrc_measurement_events.pop(0)
+        while len(self.ue_rrc_meas_events) > 0:
+            ue, event = self.ue_rrc_meas_events.pop(0)
             event_id = event["event_id"]
             if event_id not in self.ue_rrc_meas_event_handers:
                 print(f"gNB {self.bs_id}: No handler for event ID {event_id}. Skipping.")
