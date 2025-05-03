@@ -1,7 +1,6 @@
 import settings
 import numpy as np
 import matplotlib.pyplot as plt
-from utils import get_pass_loss_model
 
 ##################################
 #   Ues the plot below to tune the cell qrx_level_min against the cell radius.
@@ -10,7 +9,9 @@ from utils import get_pass_loss_model
 test_cells = settings.RAN_BS_DEFAULT_CELLS("bs_test")
 
 # Get the path loss model
-pass_loss_model = get_pass_loss_model(settings.CHANNEL_PASS_LOSS_MODEL)
+pass_loss_model = settings.CHANNEL_PASS_LOSS_MODEL_MAP[
+    settings.CHANNEL_PASS_LOSS_MODEL_URBAN_MACRO_NLOS
+]
 
 # Define distances (in meters)
 distances = np.linspace(1, 6000, 500)  # From 1m to 500m
@@ -22,14 +23,20 @@ for cell in test_cells:
     for distance in distances:
         # Calculate received power
         received_power = (
-            cell["transmit_power"]
-            - pass_loss_model(distance_m=distance, frequency_in_ghz=cell["carrier_frequency"] / 1000)
-            + cell["cell_individual_offset"]
+            cell["transmit_power_dBm"]
+            - pass_loss_model(
+                distance_m=distance, frequency_ghz=cell["carrier_frequency"] / 1000
+            )
+            + cell["cell_individual_offset_dBm"]
         )
         received_powers.append(received_power)
-    
+
     # Plot the results
-    plt.plot(distances, received_powers, label=f"{cell['cell_id']} ({cell['carrier_frequency']} MHz)")
+    plt.plot(
+        distances,
+        received_powers,
+        label=f"{cell['cell_id']} ({cell['carrier_frequency']} MHz)",
+    )
 
 # Add labels, legend, and title
 plt.xlabel("Distance (m)")

@@ -1,5 +1,5 @@
 import random
-from utils import dist_between, get_pass_loss_model, get_rrc_measurement_event_trigger
+from utils import dist_between, get_rrc_measurement_event_trigger
 from tabulate import tabulate
 
 import settings
@@ -38,6 +38,7 @@ class UE:
         self.bitrate = {"downlink": 0, "uplink": 0}
         self.latency = 0
         self.rrc_measurement_event_triggers = []
+        self.live_signal_strength_dict = {}
 
         self.reachable_BS_list = set()
         self.current_cell = None
@@ -55,52 +56,13 @@ class UE:
     def target_reached(self):
         return self.dist_to_target == 0
 
-    def cell_search_and_synchronization(self):
-        # cell search and synchronization
-        # Synchronization Signal Block (SSB) detection
-        SSBs_detected = []
-        pass_loss_model = get_pass_loss_model(settings.CHANNEL_PASS_LOSS_MODEL)
-        for cell in self.simulation_engine.cell_list.values():
-            # Check if the cell is within the UE's range
-            distance = dist_between(
-                self.position_x,
-                self.position_y,
-                cell.position_x,
-                cell.position_y,
-            )
-
-            distance *= settings.REAL_LIFE_DISTANCE_MULTIPLIER
-
-            received_power = (
-                cell.transmit_power
-                - pass_loss_model(
-                    distance_m=distance, frequency_in_ghz=cell.carrier_frequency / 1000
-                )
-                + cell.cell_individual_offset
-            )
-            if (
-                received_power > settings.UE_SSB_DETECTION_THRESHOLD
-                and received_power >= cell.qrx_level_min
-            ):
-                SSBs_detected.append(
-                    {
-                        "cell": cell,
-                        "received_power": received_power,
-                        "frequency_priority": cell.frequency_priority,
-                    }
-                )
-
-        # print(
-        #     f"UE {self.ue_imsi}: Detected SSBs: {[cell['cell'].cell_id for cell in SSBs_detected]}"
-        # )
-
-        return SSBs_detected
-
-    def cell_selection_and_camping(self, SSBs_detected):
+    def cell_selection_and_camping(self):
         # Sort SSBs by received power
         # first sort by frequency priority, then by received power (both the higher the better)
         # SSBs_detected.sort(key=lambda x: x["received_power"], reverse=True)
-        SSBs_detected.sort(
+        cells_detected = list(self.live_signal_strength_dict.values())
+
+        cells_detected.sort(
             key=lambda x: (
                 x["frequency_priority"],
                 x["received_power"],
@@ -109,8 +71,8 @@ class UE:
         )
         # Print all the detected SSBs in a pretty table
         table_data = [
-            [ssb["cell"].cell_id, ssb["received_power"], ssb["frequency_priority"]]
-            for ssb in SSBs_detected
+            [v["cell"].cell_id, v["received_power"], v["frequency_priority"]]
+            for v in cells_detected
         ]
         print(f"UE {self.ue_imsi}: Detected SSBs:")
         print(
@@ -121,7 +83,7 @@ class UE:
             )
         )
 
-        self.current_cell = SSBs_detected[0]["cell"]
+        self.current_cell = cells_detected[0]["cell"]
         return True
 
     def setup_rrc_measurement_event_triggers(self, rrc_measurement_events=[]):
@@ -146,9 +108,7 @@ class UE:
 
     def authenticate_and_register(self):
         # simplified one step authentication and registration implementation
-        random_slice_type = random.choice(
-            list(settings.NETWORK_SLICES.keys())
-        )
+        random_slice_type = random.choice(list(settings.NETWORK_SLICES.keys()))
         registration_msg = {
             "ue": self,
             "slice_type": random_slice_type,
@@ -159,27 +119,23 @@ class UE:
         )
         self.slice_type = ue_reg_res["slice_type"]
         self.qos_profile = ue_reg_res["qos_profile"]
-        self.setup_rrc_measurement_event_triggers(
-            ue_reg_res["rrc_meas_events"]
-        )
+        self.setup_rrc_measurement_event_triggers(ue_reg_res["rrc_meas_events"])
         return True
 
     def power_up(self):
         print(f"UE {self.ue_imsi} Powering up")
-        SSBs_detected = self.cell_search_and_synchronization()
-        if len(SSBs_detected) == 0:
-            print(f"UE {self.ue_imsi}: No SSB detected. Powering down...")
+        self.monitor_signal_strength()
+
+        if len(list(self.live_signal_strength_dict.values())) == 0:
+            print(f"UE {self.ue_imsi}: No cells detected. Powering down...")
             return False
-        if not self.cell_selection_and_camping(SSBs_detected):
+        
+        if not self.cell_selection_and_camping():
             print(f"UE {self.ue_imsi}: Cell selection and camping failed.")
             return False
 
         if not self.authenticate_and_register():
             print(f"UE {self.ue_imsi}: Authentication and registration failed.")
-            return False
-
-        if not self.monitor_network_performance():
-            print(f"UE {self.ue_imsi}: Network performance test failed.")
             return False
 
         self.connected = True
@@ -232,14 +188,48 @@ class UE:
                 self.target_y,
             )
 
+    def monitor_signal_strength(self):
+        self.live_signal_strength_dict = {}
+        pass_loss_model = settings.CHANNEL_PASS_LOSS_MODEL_MAP[
+            settings.CHANNEL_PASS_LOSS_MODEL_URBAN_MACRO_NLOS
+        ]
+        for cell in self.simulation_engine.cell_list.values():
+            # Check if the cell is within the UE's range
+            distance = dist_between(
+                self.position_x,
+                self.position_y,
+                cell.position_x,
+                cell.position_y,
+            )
+
+            distance *= settings.REAL_LIFE_DISTANCE_MULTIPLIER
+
+            received_power = (
+                cell.transmit_power_dBm
+                - pass_loss_model(
+                    distance_m=distance, frequency_ghz=cell.carrier_frequency / 1000
+                )
+                + cell.cell_individual_offset_dBm
+            )
+            if (
+                received_power > settings.UE_SSB_DETECTION_THRESHOLD
+                and received_power >= cell.qrx_level_min
+            ):
+                self.live_signal_strength_dict[cell.cell_id] = {
+                    "cell": cell,
+                    "received_power": received_power,
+                    "frequency_priority": cell.frequency_priority,
+                }
+
+        return True
+
     def check_rrc_measurement_events(self):
-        # check rrc measurement events
-        SSBs_detected = self.cell_search_and_synchronization()
-        cell_signal_measurements = {
-            ssb["cell"].cell_id: ssb["received_power"] for ssb in SSBs_detected
+        cell_signal_map = {
+            v["cell"].cell_id: v["received_power"]
+            for v in self.live_signal_strength_dict.values()
         }
         for rrc_meas_event_trigger in self.rrc_measurement_event_triggers:
-            rrc_meas_event_trigger.check(self, cell_signal_measurements.copy())
+            rrc_meas_event_trigger.check(self, cell_signal_map.copy())
             if rrc_meas_event_trigger.is_triggered:
                 print(
                     f"UE {self.ue_imsi}: RRC measurement event {rrc_meas_event_trigger.event_id} triggered."
@@ -250,6 +240,7 @@ class UE:
 
     def step(self, delta_time):
         self.move_towards_target(delta_time)
+        self.monitor_signal_strength()
         self.check_rrc_measurement_events()
         self.time_ramaining -= delta_time
         if self.time_ramaining <= 0:

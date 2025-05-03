@@ -13,7 +13,7 @@ class SimulationEngine:
         self.websocket = websocket
         self.core_network = None
         self.nearRT_ric = None
-        
+
         self.base_station_list = {}
         self.cell_list = {}
         self.ue_list = {}
@@ -30,7 +30,7 @@ class SimulationEngine:
         assert bs.bs_id is not None
         assert bs.bs_id not in self.base_station_list
         self.base_station_list[bs.bs_id] = bs
-        for cell in bs.cells:
+        for cell in bs.cell_list:
             assert cell.cell_id not in self.cell_list
             self.cell_list[cell.cell_id] = cell
 
@@ -48,7 +48,7 @@ class SimulationEngine:
                     bs_init_data=bs_init_data,
                 )
             )
-        
+
         # for the moment, the ric must be initialized after the core network and the base stations.
         # so that the xApps can subscribe information from the base stations.
         self.nearRT_ric = NearRTRIC(self)
@@ -104,7 +104,9 @@ class SimulationEngine:
             print(f"UE {ue.ue_imsi} power up procedures failed.")
             return None
 
-        print(f"UE {ue.ue_imsi} registered to network. Served by cell: {ue.current_cell.cell_id}.")
+        print(
+            f"UE {ue.ue_imsi} registered to network. Served by cell: {ue.current_cell.cell_id}."
+        )
         self.ue_list[ue.ue_imsi] = ue
         self.global_UE_counter += 1
         return ue
@@ -147,9 +149,18 @@ class SimulationEngine:
 
     def step(self, delta_time):
         self.logs = []
+
+        # spawn new UEs if needed
         self.spawn_UEs()
+
+        # move UEs towards their targets, monitor signal quality, report measurement events ...
         self.step_UEs(delta_time)
+        
+        # dynamically allocate resources for UEs
         self.step_BSs(delta_time)
+
+
+
 
     async def start_simulation(self):
         assert not self.sim_started

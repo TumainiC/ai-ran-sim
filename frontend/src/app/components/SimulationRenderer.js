@@ -42,7 +42,7 @@ export default function SimulationRenderer({ simulationState }) {
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     simulationState.base_stations.forEach((bsData) => {
-      bsData.cells.forEach((cellData) => {
+      bsData.cell_list.forEach((cellData) => {
         // cellData = {
         //     "frequency_band": "n1",
         //     "carrier_frequency": 2100,  // in MHz, e.g., from 700 to 28000)
@@ -175,7 +175,7 @@ export default function SimulationRenderer({ simulationState }) {
               className="border-1 border-gray-300 p-2 rounded-md"
             >
               <div className="text-center">Base Station: {bs.bs_id}</div>
-              {bs.cells.map((cell) => (
+              {bs.cell_list.map((cell) => (
                 <div key={cell.cell_id + "_cell"}>
                   <div className="divider">Cell: {cell.cell_id}</div>
                   <div className="grid grid-cols-2 gap-2 items-center">

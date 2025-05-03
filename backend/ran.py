@@ -1,5 +1,6 @@
 import random
 import settings
+from utils import normalize
 
 
 class Cell:
@@ -14,12 +15,13 @@ class Cell:
         self.bandwidth = cell_init_data["bandwidth"]
         self.max_prb = cell_init_data["max_prb"]
         self.cell_radius = cell_init_data["cell_radius"]
-        self.transmit_power = cell_init_data["transmit_power"]
-        self.cell_individual_offset = cell_init_data["cell_individual_offset"]
+        self.transmit_power_dBm = cell_init_data["transmit_power_dBm"]
+        self.cell_individual_offset_dBm = cell_init_data["cell_individual_offset_dBm"]
         self.frequency_priority = cell_init_data["frequency_priority"]
         self.qrx_level_min = cell_init_data["qrx_level_min"]
 
         self.prb_ue_allocation_dict = {}
+        self.connected_ue_list = {}
     
     @property
     def allocated_prb(self):
@@ -36,21 +38,43 @@ class Cell:
     @property
     def position_y(self):
         return self.base_station.position_y
+    
+    def register_ue(self, ue):
+        self.connected_ue_list[ue.ue_imsi] = ue
+        self.prb_ue_allocation_dict[ue.ue_imsi] = 0
 
     def get_ue_prb_allocation(self, ue):
         if ue.ue_imsi in self.prb_ue_allocation_dict:
             return self.prb_ue_allocation_dict[ue.ue_imsi]
         else:
             return 0
+    
+    def step(self, delta_time):
+        # allocate PRBs dynamically based on each UE's QoS profile and channel conditions
+        self.allocate_prb()
 
-    def allocate_prb(self, ue, ue_qos_profile):
-        # prb should be calculated based on multiple factors.
-        # for now, we are just assigning a random number of PRBs
-        prb_allocation = random.randint(5, 10)
-        prb_allocation = min(prb_allocation, self.max_prb - self.allocated_prb)
-        self.prb_ue_allocation_dict[ue.ue_imsi] = prb_allocation
-        print(f"Cell {self.cell_id}: Allocated {prb_allocation} PRBs for UE {ue.ue_imsi}")
-        return prb_allocation
+    def allocate_prb(self):
+        # sample QoS and channel condition-aware PRB allocation
+       
+        # Step 2: Calculate a score for each UE
+        ue_scores = {}
+        for ue in self.connected_ue_list.values():
+            # Better RSSI = lower dBm = higher score (invert it)
+            if self.cell_id in ue.live_signal_strength_dict:
+                rssi_score = 100 + ue.live_signal_strength_dict[self.cell_id]["received_power"]  # e.g., -70 -> 30
+            else:
+                rssi_score = 100 + self.qrx_level_min  # Default to min level if not detected
+            qos_weight = ue.qos_profile["GBR"] / 1e6  # Normalize for simplicity
+            ue_scores[ue.ue_imsi] = rssi_score * qos_weight + 0.1  # Add a small constant to avoid zero allocation
+
+        # print(f"Cell {self.cell_id}: UE scores: {ue_scores}")
+
+        # Step 3: Normalize scores to allocate PRBs proportionally
+        ue_ids = list(ue_scores.keys())
+        normalized_scores = normalize(list(ue_scores.values()))
+        self.prb_ue_allocation_dict = {
+            ue_id: int(score * self.max_prb) for ue_id, score in zip(ue_ids, normalized_scores)
+        }
 
     def estimate_bitrate_and_latency(self, prbs, qos):
         mcs_efficiency = 5  # bits/symbol as example
@@ -68,12 +92,18 @@ class Cell:
 
         return dl_bitrate, ul_bitrate, latency
 
-    def release_ue_resources(self, ue):
+    def deregister_ue(self, ue):
         if ue.ue_imsi in self.prb_ue_allocation_dict:
             del self.prb_ue_allocation_dict[ue.ue_imsi]
             print(f"Cell {self.cell_id}: Released resources for UE {ue.ue_imsi}")
         else:
             print(f"Cell {self.cell_id}: No resources to release for UE {ue.ue_imsi}")
+        
+        if ue.ue_imsi in self.connected_ue_list:
+            del self.connected_ue_list[ue.ue_imsi]
+            print(f"Cell {self.cell_id}: Deregistered UE {ue.ue_imsi}")
+        else:
+            print(f"Cell {self.cell_id}: No UE {ue.ue_imsi} to deregister")
 
     def to_json(self):
         return {
@@ -88,6 +118,7 @@ class Cell:
             "prb_ue_allocation_dict": self.prb_ue_allocation_dict,
             "allocated_prb": self.allocated_prb,
             "current_load": self.current_load,
+            "connected_ue_list": list(self.connected_ue_list.keys()),
         }
 
 
@@ -102,12 +133,12 @@ class BaseStation:
         self.bs_id = bs_init_data["bs_id"]
         self.position_x = bs_init_data["position_x"]
         self.position_y = bs_init_data["position_y"]
-        self.cells = [
+        self.cell_list = [
             Cell(
                 base_station=self,
                 cell_init_data=cell_init_data,
             )
-            for cell_init_data in bs_init_data["cells"]
+            for cell_init_data in bs_init_data["cell_list"]
         ]
         self.rrc_measurement_events = bs_init_data["rrc_measurement_events"]
 
@@ -120,7 +151,6 @@ class BaseStation:
 
     def handle_ue_authentication_and_registration(self, ue, ue_auth_reg_msg):
         core_response = self.core_network.handle_ue_authentication_and_registration(ue, ue_auth_reg_msg)
-        ue.current_cell.allocate_prb(ue, core_response["qos_profile"])
         ue_reg_data = {
             "ue": ue,
             "slice_type": core_response["slice_type"],
@@ -129,12 +159,13 @@ class BaseStation:
             "rrc_meas_events": self.rrc_measurement_events.copy(),
         }
         self.ue_registry[ue.ue_imsi] = ue_reg_data
+        ue.current_cell.register_ue(ue)
         return ue_reg_data.copy()
     
     def handle_deregistration_request(self, ue):
         self.core_network.handle_deregistration_request(ue)
         # for simplicity, gNB directly releases resources instead of having AMF to initiate the release
-        ue.current_cell.release_ue_resources(ue)
+        ue.current_cell.deregister_ue(ue)
         if ue.ue_imsi in self.ue_registry:
             del self.ue_registry[ue.ue_imsi]
         print(
@@ -153,7 +184,7 @@ class BaseStation:
             "position_x": self.position_x,
             "position_y": self.position_y,
             "ue_registry": list(self.ue_registry.keys()),
-            "cells": [cell.to_json() for cell in self.cells],
+            "cell_list": [cell.to_json() for cell in self.cell_list],
         }
 
     def init_rrc_measurement_event_handler(self, event_id, handler):
@@ -165,6 +196,10 @@ class BaseStation:
         self.ue_rrc_meas_event_handers[event_id] = handler
 
     def step(self, delta_time):
+        # first update cell first
+        for cell in self.cell_list:
+            cell.step(delta_time)
+
         # process RRC measurement events
         while len(self.ue_rrc_meas_events) > 0:
             ue, event = self.ue_rrc_meas_events.pop(0)
