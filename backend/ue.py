@@ -50,11 +50,11 @@ class UE:
         self.uplink_latency = 0
         self.uplink_transmit_power_dBm = settings.UE_TRANSMIT_POWER
 
-        self.reachable_BS_list = set()
         self.current_cell = None
-
-        self.dist_to_reachable_BS_dict = {}
         self.serving_cell_history = []
+
+    def __repr__(self):
+        return f"UE(ue_imsi={self.ue_imsi}, position=({self.position_x}, {self.position_y}), target=({self.target_x}, {self.target_y}), speed={self.speed})"
 
     @property
     def dist_to_target(self):
@@ -100,7 +100,7 @@ class UE:
             )
         )
 
-        self.current_cell = cells_detected[0]["cell"]
+        self.set_current_cell(cells_detected[0]["cell"]) 
         return True
 
     def setup_rrc_measurement_event_triggers(self, rrc_measurement_events=[]):
@@ -142,14 +142,27 @@ class UE:
             return False
 
         self.connected = True
-        self.update_cell_history()
 
         return True
 
-    def update_cell_history(self):
-        if self.current_cell is None:
-            print(f"UE {self.ue_imsi}: No current cell to update history.")
-            return
+    def execute_handover(self, target_cell):
+        # reset current cell data
+        self.downlink_received_power_dBm_dict = {}
+        self.downlink_sinr = 0
+        self.downlink_cqi = 0
+        self.downlink_mcs_index = -1
+        self.downlink_mcs_data = None
+        self.downlink_bitrate = 0
+        self.downlink_latency = 0
+        self.uplink_bitrate = 0
+        self.uplink_latency = 0
+        self.uplink_transmit_power_dBm = settings.UE_TRANSMIT_POWER
+        self.set_current_cell(target_cell)
+
+    def set_current_cell(self, cell):
+        self.current_cell = cell
+        
+        # update UE cell history
         if len(self.serving_cell_history) > 0:
             assert (
                 self.current_cell.cell_id != self.serving_cell_history[-1]
@@ -161,7 +174,7 @@ class UE:
     def deregister(self):
         print(f"UE {self.ue_imsi}: Sending deregistration request.")
         self.current_bs.handle_deregistration_request(self)
-        self.current_cell = None
+        self.set_current_cell(None)
         self.connected = False
 
     def move_towards_target(self, delta_time):
@@ -236,6 +249,10 @@ class UE:
                 "received_power_dBm"
             ]
 
+        assert type(current_cell_received_power) == float, (
+            f"current_cell_received_power is not a float: {current_cell_received_power}"
+        )
+
         # calculate the SINR
         received_powers_w = np.array(
             [
@@ -280,7 +297,7 @@ class UE:
                     f"UE {self.ue_imsi}: RRC measurement event {rrc_meas_event_trigger.event_id} triggered."
                 )
                 self.current_bs.receive_ue_rrc_meas_events(
-                    self, rrc_meas_event_trigger.gen_event_report()
+                    rrc_meas_event_trigger.gen_event_report()
                 )
 
     def step(self, delta_time):

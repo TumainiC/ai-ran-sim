@@ -66,7 +66,7 @@ class RRCMeasurementEventA3(RRCMeasurementEventBase):
 
         # check if any of the other cells have a signal power greater than the current cell signal power by the power threshold
         check_result = {
-            "ue": ue,
+            "triggering_ue": ue,
             "current_cell_id": current_cell.cell_id,
             "current_cell_signal_power": current_cell_signal_power,
             "best_neighbour_cell_id": best_neighbour_cell_id,

@@ -156,6 +156,11 @@ class Cell:
         for ue in self.connected_ue_list.values():
             dl_gbr = ue.qos_profile["GBR_DL"]
             dl_mcs = ue.downlink_mcs_data  # Assume this attribute exists
+            if dl_mcs is None:
+                print(
+                    f"Cell {self.cell_id}: UE {ue.ue_imsi} has no downlink MCS data. Skipping."
+                )
+                continue
             dl_throughput_per_prb = estimate_throughput(
                 dl_mcs["modulation_order"], dl_mcs["target_code_rate"], 1
             )
@@ -166,12 +171,16 @@ class Cell:
             }
 
         # Step 2: Allocate PRBs to meet GBR
-        dl_total_prb_demand = sum(req["dl_required_prbs"] for req in ue_prb_requirements.values())
-        
+        dl_total_prb_demand = sum(
+            req["dl_required_prbs"] for req in ue_prb_requirements.values()
+        )
+
         if dl_total_prb_demand <= self.max_dl_prb:
             # allocate PRBs based on the required PRBs
             for ue_imsi, req in ue_prb_requirements.items():
-                self.prb_ue_allocation_dict[ue_imsi]["downlink"] = req["dl_required_prbs"]
+                self.prb_ue_allocation_dict[ue_imsi]["downlink"] = req[
+                    "dl_required_prbs"
+                ]
         else:
             # allocate PRBs based on the proportion
             # first allocate at least one PRB to each UE to ensure minimum service
@@ -180,14 +189,13 @@ class Cell:
                 prb = min(1, dl_remaining_prbs)
                 self.prb_ue_allocation_dict[ue.ue_imsi]["downlink"] = prb
                 dl_remaining_prbs -= prb
-            
+
             # then allocate the remaining PRBs based on the proportion
             if dl_remaining_prbs > 0:
-                for ue in self.connected_ue_list.values():
-                    req = ue_prb_requirements[ue.ue_imsi]
+                for ue_imsi, req in ue_prb_requirements.items():
                     share = req["dl_required_prbs"] / dl_total_prb_demand
                     additional_prbs = int(share * dl_remaining_prbs)
-                    self.prb_ue_allocation_dict[ue.ue_imsi]["downlink"] += additional_prbs
+                    self.prb_ue_allocation_dict[ue_imsi]["downlink"] += additional_prbs
 
         # Logging
         for ue_imsi, allocation in self.prb_ue_allocation_dict.items():
@@ -224,7 +232,6 @@ class Cell:
             print(f"Cell {self.cell_id}: Deregistered UE {ue.ue_imsi}")
         else:
             print(f"Cell {self.cell_id}: No UE {ue.ue_imsi} to deregister")
-
 
     def to_json(self):
         return {
@@ -275,8 +282,10 @@ class BaseStation:
         self.ue_rrc_meas_events = []
         self.ue_rrc_meas_event_handers = {}
 
-    def receive_ue_rrc_meas_events(self, ue, event):
-        self.ue_rrc_meas_events.append((ue, event))
+        self.ric_control_actions = []
+
+    def receive_ue_rrc_meas_events(self, event):
+        self.ue_rrc_meas_events.append(event)
 
     def handle_ue_authentication_and_registration(self, ue, ue_auth_reg_msg):
         core_response = self.core_network.handle_ue_authentication_and_registration(
@@ -326,14 +335,85 @@ class BaseStation:
         ), f"Handler for event ID {event_id} already registered"
         self.ue_rrc_meas_event_handers[event_id] = handler
 
+    def process_ric_control_actions(self):
+        # only handover actions are supported for now
+
+        # check if there are multiple handover actions for the same UE,
+        # reject or merge wherever necessary
+        ue_handover_actions = {}
+        for action in self.ric_control_actions:
+            if action.action_type != action.ACTION_TYPE_HANDOVER:
+                print(
+                    f"gNB {self.bs_id}: Ignoring non-handover action: {action.action_type}"
+                )
+                continue
+
+            ue = action.action_data["ue"]
+            if ue.ue_imsi not in ue_handover_actions:
+                ue_handover_actions[ue.ue_imsi] = []
+            ue_handover_actions[ue.ue_imsi].append(action)
+
+        # process each UE's handover actions
+        for ue_imsi, actions in ue_handover_actions.items():
+            # for now perform the first handover action only.
+            action = actions[0]
+            ue = action.action_data["ue"]
+            source_cell_id = action.action_data["source_cell_id"]
+            target_cell_id = action.action_data["target_cell_id"]
+            source_cell = self.simulation_engine.cell_list[source_cell_id]
+            target_cell = self.simulation_engine.cell_list[target_cell_id]
+            self.execute_handover(ue, source_cell, target_cell)
+            break
+
+    def execute_handover(self, ue, source_cell, target_cell):
+        assert ue is not None, "UE cannot be None"
+        assert (
+            source_cell is not None and target_cell is not None
+        ), "Source or target cell cannot be None"
+        assert source_cell != target_cell, "Source and target cell cannot be the same"
+        assert ue.current_cell == source_cell, "UE is not in the source cell"
+        assert (
+            ue.ue_imsi in source_cell.connected_ue_list
+        ), "UE is not connected to the source cell"
+        assert (
+            ue.ue_imsi not in target_cell.connected_ue_list
+        ), "UE is already connected to the target cell"
+
+        source_bs = source_cell.base_station
+        target_bs = target_cell.base_station
+
+        if source_bs.bs_id == target_bs.bs_id:
+            # same base station, just change the cell
+            target_cell.register_ue(ue)
+            ue.execute_handover(target_cell)
+            source_cell.deregister_ue(ue)
+            print(
+                f"gNB {self.bs_id}: Handover UE {ue.ue_imsi} from cell {source_cell.cell_id} to cell {target_cell.cell_id}"
+            )
+        else:
+            ue_reg_data = source_bs.ue_registry[ue.ue_imsi].copy()
+            ue_reg_data["cell"] = target_cell
+            ue_reg_data["rrc_meas_events"] = target_bs.rrc_measurement_events.copy()
+            target_bs.ue_registry[ue.ue_imsi] = ue_reg_data
+            target_cell.register_ue(ue)
+            ue.execute_handover(target_cell)
+            source_cell.deregister_ue(ue)
+            del source_bs.ue_registry[ue.ue_imsi]
+            print(
+                f"gNB {self.bs_id} Handover UE {ue.ue_imsi} from cell {source_cell.cell_id} to BS: {target_bs.bs_id} cell {target_cell.cell_id} (different BS)"
+            )
+
     def step(self, delta_time):
         # first update cell first
         for cell in self.cell_list:
             cell.step(delta_time)
 
+        # reset RIC control actions
+        self.ric_control_actions = []
+
         # process RRC measurement events
         while len(self.ue_rrc_meas_events) > 0:
-            ue, event = self.ue_rrc_meas_events.pop(0)
+            event = self.ue_rrc_meas_events.pop(0)
             event_id = event["event_id"]
             if event_id not in self.ue_rrc_meas_event_handers:
                 print(
@@ -341,7 +421,15 @@ class BaseStation:
                 )
                 continue
             handler = self.ue_rrc_meas_event_handers[event_id]
-            handler(ue, event)
+            action = handler(event)
+
+            if action is not None:
+                # add the action to the RIC control actions list
+                self.ric_control_actions.append(action)
+
             print(
-                f"gNB {self.bs_id}: Processed RRC measurement event {event_id} for UE {ue.ue_imsi}"
+                f"gNB {self.bs_id}: Processed RRC measurement event {event_id} for UE {event["triggering_ue"].ue_imsi}"
             )
+
+        # process (reject, merge or execute) all the RIC control actions
+        self.process_ric_control_actions()
