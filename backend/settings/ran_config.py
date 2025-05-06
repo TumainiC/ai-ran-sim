@@ -4,78 +4,131 @@
 RAN_BS_LOAD_HISTORY_LENGTH = 3
 RAN_BS_REF_SIGNAL_DEFAULT_TRASNMIT_POWER = 40
 
-# Indicates that the UE is initiating signaling procedures such as Attach, Detach, or Tracking Area Update (TAU).
-RAN_RRC_CONNECTION_EST_CAUSE_MO_SIGNALLING = "mo-Signalling"
-# Used when the UE wants to transmit user data, such as initiating a data session.
-RAN_RRC_CONNECTION_EST_CAUSE_MO_DATA = "mo-Data"
-# Signifies that the UE is responding to a paging message, typically for mobile-terminated services like incoming calls or messages.
-RAN_RRC_CONNECTION_EST_CAUSE_MT_ACCESS = "mt-Access"
-# Used when the UE is attempting to establish a connection for an emergency call.
-RAN_RRC_CONNECTION_EST_CAUSE_EMERGENCY = "emergency"
+# Usually n1 bands are often frequency-division duplex (FDD) bands, while n78 and n258 are typically time-division duplex (TDD) bands.
+# so while n78 and n258 bands needs to be split into downlink and uplink separately, n1 bands are usually not split
+# as they have a fixed downlink/uplink ratio linked to separate carrier frequencies
+# but for simplicity, we use the same split mechanism for all bands.
+RAN_CELL_DL_UL_PRB_SPLIT = {
+    "n1": (0.7, 0.3),
+    "n78": (0.8, 0.2),
+    "n258": (0.9, 0.1),
+}
 
+RAN_SYMBOL_DURATION = 71.4e-6  # 71.4 µs per OFDM symbol
+RAN_SYMBOLS_PER_SLOT = 14
+RAN_SLOT_DURATION = RAN_SYMBOL_DURATION * RAN_SYMBOLS_PER_SLOT  # ~1 ms
+RAN_SUBCARRIERS_PER_PRB = 12
+RAN_SUBCARRIER_SPACING_Hz = 15e3  # 15 kHz
+RAN_PRB_BANDWIDTH_Hz = RAN_SUBCARRIERS_PER_PRB * RAN_SUBCARRIER_SPACING_Hz  # 180 kHz
+RAN_RESOURCE_ELEMENTS_PER_PRB_PER_SLOT = (
+    RAN_SUBCARRIERS_PER_PRB * RAN_SYMBOLS_PER_SLOT
+)  # 12 subcarriers * 14 symbols = 168 resource elements per PRB per slot
 
-# Initial Registration
-# Purpose: Occurs when the UE connects to the 5G network for the first time or after being deregistered.
-# Triggers: UE power-on, SIM card change, or network re-entry after being out of coverage.
-# Outcome: The network assigns a 5G-GUTI (Globally Unique Temporary UE Identity) and establishes necessary contexts for the UE.​
-RAN_RRC_REGISTERATION_TYPE_INITIAL = "initial_registration"
-
-# Mobility Registration Update
-# Purpose: Updates the UE's registration when it moves to a new Tracking Area (TA) not covered by its current registration.
-# Triggers: UE movement across different TAs.
-# Outcome: The network updates the UE's location information to ensure continued service delivery.​
-RAN_RRC_REGISTERATION_TYPE_MOBILITY = "mobility_registration_update"
-
-# Periodic Registration Update
-# Purpose: Confirms the UE's presence in the network at regular intervals.
-# Triggers: Expiration of a network-defined timer (e.g., T3512).
-# Outcome: Maintains the UE's active status and updates any necessary information.​
-RAN_RRC_REGISTERATION_TYPE_PERIODIC = "periodic_registration_update"
-
-# Emergency Registration
-# Purpose: Allows the UE to register for emergency services without prior registration.
-# Triggers: Initiation of an emergency call or service.
-# Outcome: The network permits access to emergency services even if the UE lacks valid credentials.​
-RAN_RRC_REGISTERATION_TYPE_EMERGENCY = "emergency_registration"
+# ETSI TS 138 214 V15.3.0. Release 15 Table 5.1.3.1-2 MCS index table 2 for PDSCH
+# MCS Index (I_MCS) | Modulation Order Qm | Target code Rate R x [1024] | Spectral efficiency
+RAN_MCS_SPECTRAL_EFFICIENCY_TABLE = {
+    0: {"modulation_order": 2, "target_code_rate": 120, "spectral_efficiency": 0.2344},
+    1: {"modulation_order": 2, "target_code_rate": 193, "spectral_efficiency": 0.3770},
+    2: {"modulation_order": 2, "target_code_rate": 308, "spectral_efficiency": 0.6016},
+    3: {"modulation_order": 2, "target_code_rate": 449, "spectral_efficiency": 0.8770},
+    4: {"modulation_order": 2, "target_code_rate": 602, "spectral_efficiency": 1.1758},
+    5: {"modulation_order": 4, "target_code_rate": 378, "spectral_efficiency": 1.4766},
+    6: {"modulation_order": 4, "target_code_rate": 434, "spectral_efficiency": 1.6953},
+    7: {"modulation_order": 4, "target_code_rate": 490, "spectral_efficiency": 1.9141},
+    8: {"modulation_order": 4, "target_code_rate": 553, "spectral_efficiency": 2.1602},
+    9: {"modulation_order": 4, "target_code_rate": 616, "spectral_efficiency": 2.4063},
+    10: {"modulation_order": 4, "target_code_rate": 658, "spectral_efficiency": 2.5703},
+    11: {"modulation_order": 6, "target_code_rate": 466, "spectral_efficiency": 2.7305},
+    12: {"modulation_order": 6, "target_code_rate": 517, "spectral_efficiency": 3.0293},
+    13: {"modulation_order": 6, "target_code_rate": 567, "spectral_efficiency": 3.3223},
+    14: {"modulation_order": 6, "target_code_rate": 616, "spectral_efficiency": 3.6094},
+    15: {"modulation_order": 6, "target_code_rate": 666, "spectral_efficiency": 3.9023},
+    16: {"modulation_order": 6, "target_code_rate": 719, "spectral_efficiency": 4.2129},
+    17: {"modulation_order": 6, "target_code_rate": 772, "spectral_efficiency": 4.5234},
+    18: {"modulation_order": 6, "target_code_rate": 822, "spectral_efficiency": 4.8164},
+    19: {"modulation_order": 6, "target_code_rate": 873, "spectral_efficiency": 5.1152},
+    20: {
+        "modulation_order": 8,
+        "target_code_rate": 682.5,
+        "spectral_efficiency": 5.3320,
+    },
+    21: {"modulation_order": 8, "target_code_rate": 711, "spectral_efficiency": 5.5547},
+    22: {"modulation_order": 8, "target_code_rate": 754, "spectral_efficiency": 5.8906},
+    23: {"modulation_order": 8, "target_code_rate": 797, "spectral_efficiency": 6.2266},
+    24: {"modulation_order": 8, "target_code_rate": 841, "spectral_efficiency": 6.5703},
+    25: {"modulation_order": 8, "target_code_rate": 885, "spectral_efficiency": 6.9141},
+    26: {
+        "modulation_order": 8,
+        "target_code_rate": 916.5,
+        "spectral_efficiency": 7.1602,
+    },
+    27: {"modulation_order": 8, "target_code_rate": 948, "spectral_efficiency": 7.4063},
+    # 28: {  # reserved
+    #     "modulation_order": 0,
+    #     "target_code_rate": 0,
+    #     "spectral_efficiency": 0,
+    # },
+    # 29: {  # reserved
+    #     "modulation_order": 0,
+    #     "target_code_rate": 0,
+    #     "spectral_efficiency": 0,
+    # },
+    # 30: {  # reserved
+    #     "modulation_order": 0,
+    #     "target_code_rate": 0,
+    #     "spectral_efficiency": 0,
+    # },
+    # 31: {  # reserved
+    #     "modulation_order": 0,
+    #     "target_code_rate": 0,
+    #     "spectral_efficiency": 0,
+    # },
+}
 
 
 def RAN_BS_DEFAULT_CELLS(bs_id):
     return [
-        {
-            "cell_id": f"{bs_id}_cell_low_freq",
-            "frequency_band": "n1",
-            "carrier_frequency": 2100,
-            "bandwidth": 20e6,
-            "max_prb": 106,
-            "cell_radius": 300,
-            "transmit_power_dBm": 40,
-            "cell_individual_offset_dBm": 0,
-            "frequency_priority": 3,
-            "qrx_level_min": -100,
-        },
+        # {
+        #     "cell_id": f"{bs_id}_cell_low_freq",
+        #     "frequency_band": "n1",
+        #     "carrier_frequency_MHz": 2100,
+        #     "bandwidth_Hz": 20e6,
+        #     "max_prb": 106,
+        #     "max_dl_prb": int(RAN_CELL_DL_UL_PRB_SPLIT["n1"][0] * 106),
+        #     "max_ul_prb": 106 - int(RAN_CELL_DL_UL_PRB_SPLIT["n1"][0] * 106),
+        #     "cell_radius": 1500,
+        #     "transmit_power_dBm": 40,
+        #     "cell_individual_offset_dBm": 0,
+        #     "frequency_priority": 3,
+        #     "qrx_level_min": -110,
+        # },
         {
             "cell_id": f"{bs_id}_cell_mid_freq",
             "frequency_band": "n78",
-            "carrier_frequency": 3500,
-            "bandwidth": 100e6,
+            "carrier_frequency_MHz": 3500,
+            "bandwidth_Hz": 100e6,
             "max_prb": 273,
-            "cell_radius": 150,
+            "max_dl_prb": int(RAN_CELL_DL_UL_PRB_SPLIT["n78"][0] * 273),
+            "max_ul_prb": 273 - int(RAN_CELL_DL_UL_PRB_SPLIT["n78"][0] * 273),
+            "cell_radius": 800,
             "transmit_power_dBm": 40,
             "cell_individual_offset_dBm": 5,
             "frequency_priority": 5,
-            "qrx_level_min": -100,
+            "qrx_level_min": -81.5,
         },
         {
             "cell_id": f"{bs_id}_cell_high_freq",
             "frequency_band": "n258",
-            "carrier_frequency": 26000,
-            "bandwidth": 400e6,
+            "carrier_frequency_MHz": 26000,
+            "bandwidth_Hz": 400e6,
             "max_prb": 264,
-            "cell_radius": 50,
-            "transmit_power_dBm": 40,  # assuming this is achieved by beamforming
+            "max_dl_prb": int(RAN_CELL_DL_UL_PRB_SPLIT["n258"][0] * 264),
+            "max_ul_prb": 264 - int(RAN_CELL_DL_UL_PRB_SPLIT["n258"][0] * 264),
+            "cell_radius": 300,
+            "transmit_power_dBm": 40,
             "cell_individual_offset_dBm": 10,
             "frequency_priority": 7,
-            "qrx_level_min": -100,
+            "qrx_level_min": -80,
         },
     ]
 
@@ -101,86 +154,65 @@ def RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS():
 RAN_DEFAULT_BS_LIST = [
     {
         "bs_id": "bs_11",
-        "position_x": 200,
-        "position_y": 200,
+        "position_x": 1000,
+        "position_y": 500,
         "cell_list": RAN_BS_DEFAULT_CELLS("bs_11"),
         "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
     },
     {
         "bs_id": "bs_12",
-        "position_x": 400,
-        "position_y": 200,
+        "position_x": 2000,
+        "position_y": 500,
         "cell_list": RAN_BS_DEFAULT_CELLS("bs_12"),
         "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
     },
     {
         "bs_id": "bs_13",
-        "position_x": 600,
-        "position_y": 200,
+        "position_x": 3000,
+        "position_y": 500,
         "cell_list": RAN_BS_DEFAULT_CELLS("bs_13"),
         "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
     },
     {
-        "bs_id": "bs_14",
-        "position_x": 800,
-        "position_y": 200,
-        "cell_list": RAN_BS_DEFAULT_CELLS("bs_14"),
-        "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
-    },
-    {
         "bs_id": "bs_21",
-        "position_x": 200,
-        "position_y": 400,
+        "position_x": 1000,
+        "position_y": 1500,
         "cell_list": RAN_BS_DEFAULT_CELLS("bs_21"),
         "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
     },
     {
         "bs_id": "bs_22",
-        "position_x": 400,
-        "position_y": 400,
+        "position_x": 2000,
+        "position_y": 1500,
         "cell_list": RAN_BS_DEFAULT_CELLS("bs_22"),
         "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
     },
     {
         "bs_id": "bs_23",
-        "position_x": 600,
-        "position_y": 400,
+        "position_x": 3000,
+        "position_y": 1500,
         "cell_list": RAN_BS_DEFAULT_CELLS("bs_23"),
         "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
     },
-    {
-        "bs_id": "bs_24",
-        "position_x": 800,
-        "position_y": 400,
-        "cell_list": RAN_BS_DEFAULT_CELLS("bs_24"),
-        "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
-    },
-    {
-        "bs_id": "bs_31",
-        "position_x": 200,
-        "position_y": 600,
-        "cell_list": RAN_BS_DEFAULT_CELLS("bs_31"),
-        "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
-    },
-    {
-        "bs_id": "bs_32",
-        "position_x": 400,
-        "position_y": 600,
-        "cell_list": RAN_BS_DEFAULT_CELLS("bs_32"),
-        "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
-    },
-    {
-        "bs_id": "bs_33",
-        "position_x": 600,
-        "position_y": 600,
-        "cell_list": RAN_BS_DEFAULT_CELLS("bs_33"),
-        "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
-    },
-    {
-        "bs_id": "bs_34",
-        "position_x": 800,
-        "position_y": 600,
-        "cell_list": RAN_BS_DEFAULT_CELLS("bs_34"),
-        "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
-    },
+    # {
+    #     "bs_id": "bs_31",
+    #     "position_x": 50,
+    #     "position_y": 2050,
+    #     "cell_list": RAN_BS_DEFAULT_CELLS("bs_31"),
+    #     "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
+    # },
+    # {
+    #     "bs_id": "bs_32",
+    #     "position_x": 1050,
+    #     "position_y": 2050,
+    #     "cell_list": RAN_BS_DEFAULT_CELLS("bs_32"),
+    #     "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
+    # },
+    # {
+    #     "bs_id": "bs_33",
+    #     "position_x": 2050,
+    #     "position_y": 2050,
+    #     "cell_list": RAN_BS_DEFAULT_CELLS("bs_33"),
+    #     "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
+    # },
 ]

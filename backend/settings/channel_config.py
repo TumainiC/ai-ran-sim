@@ -34,3 +34,4 @@ CHANNEL_PASS_LOSS_MODEL_MAP = {
     CHANNEL_PASS_LOSS_MODEL_URBAN_MACRO_LOS: pass_loss_urban_macro_los,
     CHANNEL_PASS_LOSS_MODEL_URBAN_MACRO_NLOS: path_loss_urban_macro_nlos,
 }
+

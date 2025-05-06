@@ -1,5 +1,12 @@
 import random
-from utils import dist_between, get_rrc_measurement_event_trigger
+
+import numpy as np
+from utils import (
+    dist_between,
+    get_rrc_measurement_event_trigger,
+    dbm_to_watts,
+    sinr_to_cqi,
+)
 from tabulate import tabulate
 
 import settings
@@ -22,12 +29,6 @@ class UE:
         self.position_y = position_y
         self.target_x = target_x
         self.target_y = target_y
-        self.dist_to_target = dist_between(
-            self.position_x,
-            self.position_y,
-            self.target_x,
-            self.target_y,
-        )
         self.speed = speed
         self.time_ramaining = connection_time
         self.simulation_engine = simulation_engine
@@ -35,16 +36,34 @@ class UE:
         self.slice_type = None
         self.qos_profile = None
         self.connected = False
-        self.bitrate = {"downlink": 0, "uplink": 0}
-        self.latency = 0
+
+        self.downlink_bitrate = 0
+        self.downlink_latency = 0
         self.rrc_measurement_event_triggers = []
-        self.live_signal_strength_dict = {}
+        self.downlink_received_power_dBm_dict = {}
+        self.downlink_sinr = 0
+        self.downlink_cqi = 0
+        self.downlink_mcs_index = -1
+        self.downlink_mcs_data = None
+
+        self.uplink_bitrate = 0
+        self.uplink_latency = 0
+        self.uplink_transmit_power_dBm = settings.UE_TRANSMIT_POWER
 
         self.reachable_BS_list = set()
         self.current_cell = None
 
         self.dist_to_reachable_BS_dict = {}
         self.serving_cell_history = []
+
+    @property
+    def dist_to_target(self):
+        return dist_between(
+            self.position_x,
+            self.position_y,
+            self.target_x,
+            self.target_y,
+        )
 
     @property
     def current_bs(self):
@@ -59,19 +78,17 @@ class UE:
     def cell_selection_and_camping(self):
         # Sort SSBs by received power
         # first sort by frequency priority, then by received power (both the higher the better)
-        # SSBs_detected.sort(key=lambda x: x["received_power"], reverse=True)
-        cells_detected = list(self.live_signal_strength_dict.values())
-
+        cells_detected = list(self.downlink_received_power_dBm_dict.values())
         cells_detected.sort(
             key=lambda x: (
                 x["frequency_priority"],
-                x["received_power"],
+                x["received_power_dBm"],
             ),
             reverse=True,
         )
         # Print all the detected SSBs in a pretty table
         table_data = [
-            [v["cell"].cell_id, v["received_power"], v["frequency_priority"]]
+            [v["cell"].cell_id, v["received_power_dBm"], v["frequency_priority"]]
             for v in cells_detected
         ]
         print(f"UE {self.ue_imsi}: Detected SSBs:")
@@ -91,20 +108,6 @@ class UE:
             get_rrc_measurement_event_trigger(event["event_id"], event_params=event)
             for event in rrc_measurement_events
         ]
-
-    def monitor_network_performance(self):
-        dl_bitrate, ul_bitrate, latency = (
-            self.current_cell.estimate_bitrate_and_latency(
-                self.current_cell.get_ue_prb_allocation(self), self.qos_profile
-            )
-        )
-        self.bitrate["downlink"] = dl_bitrate
-        self.bitrate["uplink"] = ul_bitrate
-        self.latency = latency
-        print(
-            f"UE {self.ue_imsi}: Network performance - Downlink: {dl_bitrate} bps, Uplink: {ul_bitrate} bps, Latency: {latency} ms"
-        )
-        return True
 
     def authenticate_and_register(self):
         # simplified one step authentication and registration implementation
@@ -126,10 +129,10 @@ class UE:
         print(f"UE {self.ue_imsi} Powering up")
         self.monitor_signal_strength()
 
-        if len(list(self.live_signal_strength_dict.values())) == 0:
+        if len(list(self.downlink_received_power_dBm_dict.values())) == 0:
             print(f"UE {self.ue_imsi}: No cells detected. Powering down...")
             return False
-        
+
         if not self.cell_selection_and_camping():
             print(f"UE {self.ue_imsi}: Cell selection and camping failed.")
             return False
@@ -163,33 +166,26 @@ class UE:
 
     def move_towards_target(self, delta_time):
         if self.target_x is not None and self.target_y is not None:
-            self.dist_to_target = dist_between(
-                self.position_x,
-                self.position_y,
-                self.target_x,
-                self.target_y,
-            )
+            dist_to_target = self.dist_to_target
             max_move_dist = self.speed * delta_time
-            if self.dist_to_target <= max_move_dist:
+            if dist_to_target <= max_move_dist:
                 self.position_x = self.target_x
                 self.position_y = self.target_y
             else:
                 # move towards the target for the distance of max_move_dist, but round to nearest integer
-                ratio = max_move_dist / self.dist_to_target
+                ratio = max_move_dist / dist_to_target
                 self.position_x += (self.target_x - self.position_x) * ratio
                 self.position_y += (self.target_y - self.position_y) * ratio
                 self.position_x = round(self.position_x)
                 self.position_y = round(self.position_y)
 
-            self.dist_to_target = dist_between(
-                self.position_x,
-                self.position_y,
-                self.target_x,
-                self.target_y,
-            )
-
     def monitor_signal_strength(self):
-        self.live_signal_strength_dict = {}
+        # monitors the downlink signal strength from the cells
+
+        self.downlink_received_power_dBm_dict = {}
+        self.downlink_sinr = 0
+        self.downlink_cqi = 0
+
         pass_loss_model = settings.CHANNEL_PASS_LOSS_MODEL_MAP[
             settings.CHANNEL_PASS_LOSS_MODEL_URBAN_MACRO_NLOS
         ]
@@ -207,7 +203,7 @@ class UE:
             received_power = (
                 cell.transmit_power_dBm
                 - pass_loss_model(
-                    distance_m=distance, frequency_ghz=cell.carrier_frequency / 1000
+                    distance_m=distance, frequency_ghz=cell.carrier_frequency_MHz / 1000
                 )
                 + cell.cell_individual_offset_dBm
             )
@@ -215,18 +211,67 @@ class UE:
                 received_power > settings.UE_SSB_DETECTION_THRESHOLD
                 and received_power >= cell.qrx_level_min
             ):
-                self.live_signal_strength_dict[cell.cell_id] = {
+                self.downlink_received_power_dBm_dict[cell.cell_id] = {
                     "cell": cell,
-                    "received_power": received_power,
+                    "received_power_dBm": received_power,
                     "frequency_priority": cell.frequency_priority,
                 }
 
+        self.calculate_SINR_and_CQI()
+
         return True
+
+    def calculate_SINR_and_CQI(self):
+        if self.current_cell is None:
+            return False
+
+        # make sure the current cell is in the list of detected cells
+        current_cell_received_power = self.downlink_received_power_dBm_dict.get(
+            self.current_cell.cell_id, None
+        )
+        if current_cell_received_power is None:
+            current_cell_received_power = self.current_cell.qrx_level_min
+        else:
+            current_cell_received_power = current_cell_received_power[
+                "received_power_dBm"
+            ]
+
+        # calculate the SINR
+        received_powers_w = np.array(
+            [
+                dbm_to_watts(cell_power_data["received_power_dBm"])
+                for cell_power_data in self.downlink_received_power_dBm_dict.values()
+                if cell_power_data["cell"].carrier_frequency_MHz
+                == self.current_cell.carrier_frequency_MHz
+            ]
+        )
+
+        # Serving cell is the one with max received power
+        current_cell_power_w = dbm_to_watts(current_cell_received_power)
+        interference_power_w = np.sum(received_powers_w) - current_cell_power_w
+
+        # Thermal noise
+        k = 1.38e-23  # Boltzmann constant
+        noise_power_w = k * settings.UE_TEMPERATURE_K * self.current_cell.bandwidth_Hz
+
+        print(f"UE {self.ue_imsi}: Interference power (W):", interference_power_w)
+        print(f"UE {self.ue_imsi}: Noise power (W):", noise_power_w)
+        print(
+            f"UE {self.ue_imsi}: Current cell received power: {current_cell_received_power} (dBm) = {current_cell_power_w} (W):"
+        )
+
+        self.downlink_sinr = 10 * np.log10(
+            current_cell_power_w / (interference_power_w + noise_power_w)
+        )
+        self.downlink_cqi = sinr_to_cqi(self.downlink_sinr)
+        print(
+            f"UE {self.ue_imsi}: Downlink SINR: {self.downlink_sinr:.2f} dB, CQI: {self.downlink_cqi}"
+        )
 
     def check_rrc_measurement_events(self):
         cell_signal_map = {
-            v["cell"].cell_id: v["received_power"]
-            for v in self.live_signal_strength_dict.values()
+            v["cell"].cell_id: v["received_power_dBm"]
+            for v in self.downlink_received_power_dBm_dict.values()
         }
         for rrc_meas_event_trigger in self.rrc_measurement_event_triggers:
             rrc_meas_event_trigger.check(self, cell_signal_map.copy())
@@ -251,16 +296,33 @@ class UE:
             "ue_imsi": self.ue_imsi,
             "position_x": self.position_x,
             "position_y": self.position_y,
+            "vis_position_x": self.position_x * settings.REAL_LIFE_DISTANCE_MULTIPLIER,
+            "vis_position_y": self.position_y * settings.REAL_LIFE_DISTANCE_MULTIPLIER,
             "target_x": self.target_x,
             "target_y": self.target_y,
+            "vis_target_x": self.target_x * settings.REAL_LIFE_DISTANCE_MULTIPLIER,
+            "vis_target_y": self.target_y * settings.REAL_LIFE_DISTANCE_MULTIPLIER,
             "speed": self.speed,
             "slice_type": self.slice_type,
             "qos_profile": self.qos_profile,
-            "bitrate": self.bitrate,
-            "latency": self.latency,
             "current_cell": self.current_cell.cell_id if self.current_cell else None,
             "current_bs": self.current_bs.bs_id if self.current_bs else None,
             "connected": self.connected,
             "time_ramaining": self.time_ramaining,
             "serving_cell_history": [cell_id for cell_id in self.serving_cell_history],
+            "downlink_bitrate": self.downlink_bitrate,
+            "downlink_latency": self.downlink_latency,
+            "uplink_bitrate": self.uplink_bitrate,
+            "uplink_latency": self.uplink_latency,
+            "downlink_received_power_dBm_dict": {
+                cell_id: {
+                    "received_power_dBm": cell_data["received_power_dBm"],
+                    "frequency_priority": cell_data["frequency_priority"],
+                }
+                for cell_id, cell_data in self.downlink_received_power_dBm_dict.items()
+            },
+            "downlink_sinr": self.downlink_sinr,
+            "downlink_cqi": self.downlink_cqi,
+            "downlink_mcs_index": self.downlink_mcs_index,
+            "downlink_mcs_data": self.downlink_mcs_data,
         }

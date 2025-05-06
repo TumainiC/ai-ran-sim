@@ -24,7 +24,7 @@ class SimulationEngine:
         self.global_UE_counter = 0
         self.logs = []
 
-    def try_add_base_station(self, bs):
+    def add_base_station(self, bs):
         assert isinstance(bs, BaseStation)
         assert bs.simulation_engine == self
         assert bs.bs_id is not None
@@ -42,7 +42,7 @@ class SimulationEngine:
             assert (
                 bs_init_data["bs_id"] not in self.base_station_list
             ), f"Base station ID {bs_init_data[0]} already exists"
-            self.try_add_base_station(
+            self.add_base_station(
                 BaseStation(
                     simulation_engine=self,
                     bs_init_data=bs_init_data,
@@ -53,28 +53,6 @@ class SimulationEngine:
         # so that the xApps can subscribe information from the base stations.
         self.nearRT_ric = NearRTRIC(self)
         self.nearRT_ric.load_xApps()
-
-    def is_handover_stablized(self):
-        if len(self.handover_event_history) < settings.SIM_HANDOVER_HISTORY_LENGTH:
-            return False
-        return all([count == 0 for count in self.handover_event_history])
-
-    def save_handover_count_history(self, handover_count):
-        self.handover_event_history.append(handover_count)
-        if len(self.handover_event_history) > settings.SIM_HANDOVER_HISTORY_LENGTH:
-            self.handover_event_history.pop(0)
-
-    def is_RU_load_history_all_stablized(self):
-        for ru in self.base_station.RU_list:
-            if len(ru.load_history) < settings.RAN_BS_LOAD_HISTORY_LENGTH:
-                print("RU load history not stabilized")
-                return False
-            for i in range(1, settings.RAN_BS_LOAD_HISTORY_LENGTH):
-                if ru.load_history[i] != ru.load_history[i - 1]:
-                    print("RU load history not stabilized")
-                    return False
-        print("RU load history stabilized")
-        return True
 
     def spawn_random_ue(self):
         position_x = random.randint(
@@ -155,12 +133,9 @@ class SimulationEngine:
 
         # move UEs towards their targets, monitor signal quality, report measurement events ...
         self.step_UEs(delta_time)
-        
+
         # dynamically allocate resources for UEs
         self.step_BSs(delta_time)
-
-
-
 
     async def start_simulation(self):
         assert not self.sim_started

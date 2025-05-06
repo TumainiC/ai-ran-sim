@@ -94,3 +94,29 @@ def get_rrc_measurement_event_trigger(event_id, event_params):
         )
     else:
         raise ValueError(f"Unsupported rrc_measurement_event: {event_id}")
+
+
+# Map SINR (in dB) to CQI
+def sinr_to_cqi(sinr_db):
+    thresholds = [
+        -6.7,
+        -4.7,
+        -2.3,
+        0.2,
+        2.4,
+        4.3,
+        6.3,
+        8.4,
+        10.3,
+        11.7,
+        14.1,
+        16.3,
+        18.7,
+        21,
+        22.7,
+    ]
+
+    for i, t in enumerate(thresholds):
+        if sinr_db < t:
+            return i
+    return 15
