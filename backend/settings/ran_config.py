@@ -128,7 +128,7 @@ def RAN_BS_DEFAULT_CELLS(bs_id):
             "transmit_power_dBm": 40,
             "cell_individual_offset_dBm": 10,
             "frequency_priority": 7,
-            "qrx_level_min": -80,
+            "qrx_level_min": -76,
         },
     ]
 

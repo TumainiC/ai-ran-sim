@@ -1,5 +1,6 @@
+import math
 import settings
-from utils import dist_between
+from utils import dist_between, estimate_throughput
 
 
 class Cell:
@@ -141,102 +142,75 @@ class Cell:
         self.estimate_ue_throughput_and_latency()
 
     def allocate_prb(self):
-        # sample QoS and channel condition-aware PRB allocation
-        self.prb_ue_allocation_dict = {}
+        # QoS-aware Proportional Fair Scheduling (PFS)
 
-        # Calculate a score for each UE
-        dl_ue_scores = {}
-        ul_ue_scores = {}
-        dl_score_sum = 0
-        ul_score_sum = 0
+        # reset PRB allocation for all UEs
         for ue in self.connected_ue_list.values():
-            # Better RSSI = lower dBm = higher score (invert it)
-            if self.cell_id in ue.downlink_received_power_dBm_dict:
-                dl_rssi_score = (
-                    100
-                    + ue.downlink_received_power_dBm_dict[self.cell_id][
-                        "received_power_dBm"
-                    ]
-                )  # e.g., -70 -> 30
-            else:
-                dl_rssi_score = (
-                    100 + self.qrx_level_min
-                )  # Default to min level if not detected
+            self.prb_ue_allocation_dict[ue.ue_imsi]["downlink"] = 0
+            self.prb_ue_allocation_dict[ue.ue_imsi]["uplink"] = 0
 
-            if ue.ue_imsi in self.ue_uplink_signal_strength_dict:
-                ul_rssi_score = 100 + self.ue_uplink_signal_strength_dict[ue.ue_imsi]
-            else:
-                ul_rssi_score = 100 + self.qrx_level_min
+        # sample QoS and channel condition-aware PRB allocation
+        ue_prb_requirements = {}
 
-            dl_qos_weight = ue.qos_profile["GBR_DL"] / 1e6  # Normalize for simplicity
-            ul_qos_weight = ue.qos_profile["GBR_UL"] / 1e6
-
-            # Add a small constant to avoid zero allocation
-            dl_ue_scores[ue.ue_imsi] = dl_rssi_score * dl_qos_weight + 0.1
-            ul_ue_scores[ue.ue_imsi] = ul_rssi_score * ul_qos_weight + 0.1
-
-            dl_score_sum += dl_ue_scores[ue.ue_imsi]
-            ul_score_sum += ul_ue_scores[ue.ue_imsi]
-
-        # Normalize scores to allocate PRBs proportionally
-        for ue_imsi in self.connected_ue_list.keys():
-            self.prb_ue_allocation_dict[ue_imsi] = {
-                "downlink": int(dl_ue_scores[ue_imsi] / dl_score_sum * self.max_dl_prb),
-                "uplink": int(ul_ue_scores[ue_imsi] / ul_score_sum * self.max_ul_prb),
+        # Step 1: Calculate required PRBs for GBR
+        for ue in self.connected_ue_list.values():
+            dl_gbr = ue.qos_profile["GBR_DL"]
+            dl_mcs = ue.downlink_mcs_data  # Assume this attribute exists
+            dl_throughput_per_prb = estimate_throughput(
+                dl_mcs["modulation_order"], dl_mcs["target_code_rate"], 1
+            )
+            dl_required_prbs = math.ceil(dl_gbr / dl_throughput_per_prb)
+            ue_prb_requirements[ue.ue_imsi] = {
+                "dl_required_prbs": dl_required_prbs,
+                "dl_throughput_per_prb": dl_throughput_per_prb,
             }
+
+        # Step 2: Allocate PRBs to meet GBR
+        dl_total_prb_demand = sum(req["dl_required_prbs"] for req in ue_prb_requirements.values())
+        
+        if dl_total_prb_demand <= self.max_dl_prb:
+            # allocate PRBs based on the required PRBs
+            for ue_imsi, req in ue_prb_requirements.items():
+                self.prb_ue_allocation_dict[ue_imsi]["downlink"] = req["dl_required_prbs"]
+        else:
+            # allocate PRBs based on the proportion
+            # first allocate at least one PRB to each UE to ensure minimum service
+            dl_remaining_prbs = self.max_dl_prb
+            for ue in self.connected_ue_list.values():
+                prb = min(1, dl_remaining_prbs)
+                self.prb_ue_allocation_dict[ue.ue_imsi]["downlink"] = prb
+                dl_remaining_prbs -= prb
+            
+            # then allocate the remaining PRBs based on the proportion
+            if dl_remaining_prbs > 0:
+                for ue in self.connected_ue_list.values():
+                    req = ue_prb_requirements[ue.ue_imsi]
+                    share = req["dl_required_prbs"] / dl_total_prb_demand
+                    additional_prbs = int(share * dl_remaining_prbs)
+                    self.prb_ue_allocation_dict[ue.ue_imsi]["downlink"] += additional_prbs
+
+        # Logging
+        for ue_imsi, allocation in self.prb_ue_allocation_dict.items():
             print(
-                f"Cell {self.cell_id}: Allocated {self.prb_ue_allocation_dict[ue_imsi]['downlink']} DL PRBs and {self.prb_ue_allocation_dict[ue_imsi]['uplink']} UL PRBs to UE {ue_imsi}"
+                f"Cell: {self.cell_id} allocated {allocation['downlink']} DL PRBs for UE {ue_imsi}"
             )
 
     def estimate_ue_throughput_and_latency(self):
-        # only downlink bitrate is supported for now.
         for ue in self.connected_ue_list.values():
             if ue.downlink_mcs_data is None:
                 print(
                     f"Cell {self.cell_id}: UE {ue.ue_imsi} has no downlink MCS data. Skipping."
                 )
                 continue
-
-            # Bits per RE (Resource Element)
-            bits_per_symbol = (
-                ue.downlink_mcs_data["modulation_order"]
-                * ue.downlink_mcs_data["target_code_rate"]
-                / 1024
+            ue_modulation_order = ue.downlink_mcs_data["modulation_order"]
+            ue_code_rate = ue.downlink_mcs_data["target_code_rate"]
+            ue_dl_prb = self.prb_ue_allocation_dict[ue.ue_imsi]["downlink"]
+            # TODO: uplink bitrate
+            dl_bitrate = estimate_throughput(
+                ue_modulation_order, ue_code_rate, ue_dl_prb
             )
-
-            # Bits per PRB per slot
-            bits_per_prb_per_slot = (
-                bits_per_symbol * settings.RAN_RESOURCE_ELEMENTS_PER_PRB_PER_SLOT
-            )
-
-            # DL & UL TBS estimates (bits per slot)
-            estimated_tbs_dl = (
-                self.prb_ue_allocation_dict[ue.ue_imsi]["downlink"]
-                * bits_per_prb_per_slot
-            )
-            # estimated_tbs_ul = self.prb_ue_allocation_dict[ue.ue_ismi]["uplink"] * bits_per_prb_per_slot
-
-            # If real TBS provided, use it
-            tbs_dl = (
-                ue.tbs_dl if hasattr(ue, "tbs_dl") and ue.tbs_dl else estimated_tbs_dl
-            )
-            # tbs_ul = (
-            #     ue.tbs_ul if hasattr(ue, "tbs_ul") and ue.tbs_ul else estimated_tbs_ul
-            # )
-
-            # Throughput = bits per second
-            ue.downlink_bitrate = tbs_dl / settings.RAN_SLOT_DURATION
-            # ul_throughput = tbs_ul / settings.RAN_SLOT_DURATION
-
-            # Latency = transmission time of one transport block (simplified)
-            # dl_latency = settings.RAN_SLOT_DURATION * (
-            #     1
-            #     if self.prb_ue_allocation_dict[ue.ue_imsi]["downlink"] > 0
-            #     else float("inf")
-            # )
-            # ul_latency = slot_duration * (1 if ue.ul_prb > 0 else float("inf"))
-
-            print(f"Cell {self.cell_id}: UE {ue.ue_imsi} estimated downlink bitrate: {ue.downlink_bitrate:.2f} bps")
+            ue.downlink_bitrate = dl_bitrate
+            # TODO: downlink and uplink latency
 
     def deregister_ue(self, ue):
         if ue.ue_imsi in self.prb_ue_allocation_dict:
@@ -251,6 +225,7 @@ class Cell:
         else:
             print(f"Cell {self.cell_id}: No UE {ue.ue_imsi} to deregister")
 
+
     def to_json(self):
         return {
             "cell_id": self.cell_id,
@@ -259,14 +234,19 @@ class Cell:
             "bandwidth_Hz": self.bandwidth_Hz,
             "max_prb": self.max_prb,
             "cell_radius": self.cell_radius,
-            "vis_cell_radius": self.cell_radius * settings.REAL_LIFE_DISTANCE_MULTIPLIER,
+            "vis_cell_radius": self.cell_radius
+            * settings.REAL_LIFE_DISTANCE_MULTIPLIER,
             "position_x": self.position_x,
             "position_y": self.position_y,
             "vis_position_x": self.position_x * settings.REAL_LIFE_DISTANCE_MULTIPLIER,
             "vis_position_y": self.position_y * settings.REAL_LIFE_DISTANCE_MULTIPLIER,
             "prb_ue_allocation_dict": self.prb_ue_allocation_dict,
-            "allocated_prb": self.allocated_prb,
-            "current_load": self.current_load,
+            "max_dl_prb": self.max_dl_prb,
+            "max_ul_prb": self.max_ul_prb,
+            "allocated_dl_prb": self.allocated_dl_prb,
+            "allocated_ul_prb": self.allocated_ul_prb,
+            "current_dl_load": self.allocated_dl_prb / self.max_dl_prb,
+            "current_ul_load": self.allocated_ul_prb / self.max_ul_prb,
             "connected_ue_list": list(self.connected_ue_list.keys()),
         }
 

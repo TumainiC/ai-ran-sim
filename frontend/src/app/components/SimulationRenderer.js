@@ -245,16 +245,6 @@ export default function SimulationRenderer({ simulationState }) {
                   </td>
                 </tr>
               ))}
-              <tr>
-                <th>1</th>
-                <td>Cy Ganderton</td>
-                <td>Quality Control Specialist</td>
-                <td>Littel, Schaden and Vandervort</td>
-                <td>Canada</td>
-                <td>12/16/2020</td>
-                <td>Blue</td>
-                <th>1</th>
-              </tr>
             </tbody>
           </table>
         </div>
@@ -281,16 +271,23 @@ export default function SimulationRenderer({ simulationState }) {
                       MHz
                     </div>
                     <div>
-                      Alloc. / Max PRB <br />
+                      Alloc. / Max Downlink PRB <br />
                     </div>
                     <div>
-                      {cell.allocated_prb} / {cell.max_prb}
+                      {cell.allocated_dl_prb} / {cell.max_dl_prb}
                     </div>
-                    <div>Load</div>
+                    <div>
+                      Alloc. / Max Uplink PRB <br />
+                    </div>
+                    <div>
+                      {cell.allocated_ul_prb} / {cell.max_ul_prb}
+                    </div>
+                    <div>Downlink / Up Load</div>
                     <div className="stats">
                       <div className="stat">
                         <div className="stat-value">
-                          {(cell.current_load * 100).toFixed(1)} %
+                          {(cell.current_dl_load * 100).toFixed(1)} % / 
+                          {(cell.current_ul_load * 100).toFixed(1)} %
                         </div>
                       </div>
                     </div>
