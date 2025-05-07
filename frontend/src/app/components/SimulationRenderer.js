@@ -232,7 +232,7 @@ export default function SimulationRenderer({ simulationState }) {
                         const received_power_dBm = ue.downlink_received_power_dBm_dict[
                           cell_id
                         ].received_power_dBm;
-                        return <div key={cell_id}>{cell_id}: frequency priority: {frequency_priority} signal power: {received_power_dBm} dBm</div>;
+                        return <div key={cell_id}>{cell_id}: freq priority: {frequency_priority} signal power: {received_power_dBm} dBm</div>;
                       }
                     )}
                   </td>

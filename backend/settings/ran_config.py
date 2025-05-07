@@ -112,9 +112,9 @@ def RAN_BS_DEFAULT_CELLS(bs_id):
             "max_ul_prb": 273 - int(RAN_CELL_DL_UL_PRB_SPLIT["n78"][0] * 273),
             "cell_radius": 800,
             "transmit_power_dBm": 40,
-            "cell_individual_offset_dBm": 5,
+            "cell_individual_offset_dBm": 0,
             "frequency_priority": 5,
-            "qrx_level_min": -81.5,
+            "qrx_level_min": -98,
         },
         {
             "cell_id": f"{bs_id}_cell_high_freq",
@@ -125,10 +125,10 @@ def RAN_BS_DEFAULT_CELLS(bs_id):
             "max_dl_prb": int(RAN_CELL_DL_UL_PRB_SPLIT["n258"][0] * 264),
             "max_ul_prb": 264 - int(RAN_CELL_DL_UL_PRB_SPLIT["n258"][0] * 264),
             "cell_radius": 300,
-            "transmit_power_dBm": 40,
-            "cell_individual_offset_dBm": 10,
+            "transmit_power_dBm": 50,  # assume achieved by beamforming
+            "cell_individual_offset_dBm": 13,
             "frequency_priority": 7,
-            "qrx_level_min": -76,
+            "qrx_level_min": -89,
         },
     ]
 

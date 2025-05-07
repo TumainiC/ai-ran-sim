@@ -28,7 +28,7 @@ for cell in test_cells:
             - pass_loss_model(
                 distance_m=distance, frequency_ghz=cell["carrier_frequency_MHz"] / 1000
             )
-            + cell["cell_individual_offset_dBm"]
+            # + cell["cell_individual_offset_dBm"]
         )
         received_powers.append(received_power)
 
@@ -63,7 +63,7 @@ for cell in test_cells:
             - pass_loss_model(
                 distance_m=distance, frequency_ghz=cell["carrier_frequency_MHz"] / 1000
             )
-            + cell["cell_individual_offset_dBm"]
+            # + cell["cell_individual_offset_dBm"]
         )
         received_power_w = utils.dbm_to_watts(received_power_dBm)  # Convert dBm to Watts
 

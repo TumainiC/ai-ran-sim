@@ -82,20 +82,20 @@ class UE:
         cells_detected.sort(
             key=lambda x: (
                 x["frequency_priority"],
-                x["received_power_dBm"],
+                x["received_power_with_cio_dBm"],
             ),
             reverse=True,
         )
         # Print all the detected SSBs in a pretty table
         table_data = [
-            [v["cell"].cell_id, v["received_power_dBm"], v["frequency_priority"]]
+            [v["cell"].cell_id, v["received_power_with_cio_dBm"], v["frequency_priority"]]
             for v in cells_detected
         ]
         print(f"UE {self.ue_imsi}: Detected SSBs:")
         print(
             tabulate(
                 table_data,
-                headers=["Cell ID", "Received Power (dBm)", "Frequency Priority"],
+                headers=["Cell ID", "Received Power With CIO (dBm)", "Frequency Priority"],
                 tablefmt="grid",
             )
         )
@@ -164,10 +164,12 @@ class UE:
 
     def set_current_cell(self, cell):
         self.current_cell = cell
-        
+
         if cell is None:
             if len(self.serving_cell_history) > 0:
-                assert self.serving_cell_history[-1] is not None, f"UE {self.ue_imsi} is not served by any cell."
+                assert (
+                    self.serving_cell_history[-1] is not None
+                ), f"UE {self.ue_imsi} is not served by any cell."
             self.serving_cell_history.append(None)
         else:
             if len(self.serving_cell_history) > 0:
@@ -175,10 +177,10 @@ class UE:
                     self.serving_cell_history[-1] != cell.cell_id
                 ), f"UE {self.ue_imsi} is already served by cell {cell.cell_id}."
             self.serving_cell_history.append(cell.cell_id)
-        
+
         if len(self.serving_cell_history) > settings.UE_SERVING_CELL_HISTORY_LENGTH:
             self.serving_cell_history.pop(0)
-                
+
     def deregister(self):
         print(f"UE {self.ue_imsi}: Sending deregistration request.")
         self.current_bs.handle_deregistration_request(self)
@@ -219,30 +221,30 @@ class UE:
                 cell.position_y,
             )
 
-            distance *= settings.REAL_LIFE_DISTANCE_MULTIPLIER
-
-            received_power = (
-                cell.transmit_power_dBm
-                - pass_loss_model(
-                    distance_m=distance, frequency_ghz=cell.carrier_frequency_MHz / 1000
-                )
-                + cell.cell_individual_offset_dBm
+            received_power_dBm = cell.transmit_power_dBm - pass_loss_model(
+                distance_m=distance, frequency_ghz=cell.carrier_frequency_MHz / 1000
+            )
+            received_power_with_cio_dBm = (
+                received_power_dBm + cell.cell_individual_offset_dBm
             )
             if (
-                received_power > settings.UE_SSB_DETECTION_THRESHOLD
-                and received_power >= cell.qrx_level_min
+                received_power_dBm > settings.UE_SSB_DETECTION_THRESHOLD
+                and received_power_dBm >= cell.qrx_level_min
             ):
                 self.downlink_received_power_dBm_dict[cell.cell_id] = {
                     "cell": cell,
-                    "received_power_dBm": received_power,
+                    "received_power_dBm": received_power_dBm,
                     "frequency_priority": cell.frequency_priority,
+                    "received_power_with_cio_dBm": received_power_with_cio_dBm,
                 }
             elif self.current_cell and cell.cell_id == self.current_cell.cell_id:
                 # make sure the current cell is in the list of detecte cells
                 self.downlink_received_power_dBm_dict[cell.cell_id] = {
                     "cell": cell,
-                    "received_power_dBm": cell.qrx_level_min,
+                    "received_power_dBm": settings.UE_SSB_DETECTION_THRESHOLD,
                     "frequency_priority": cell.frequency_priority,
+                    "received_power_with_cio_dBm": settings.UE_SSB_DETECTION_THRESHOLD
+                    + cell.cell_individual_offset_dBm,
                 }
 
         self.calculate_SINR_and_CQI()
@@ -254,13 +256,13 @@ class UE:
             return False
 
         # make sure the current cell is in the list of detected cells
-        current_cell_received_power = self.downlink_received_power_dBm_dict.get(
+        power_data = self.downlink_received_power_dBm_dict.get(
             self.current_cell.cell_id, None
         )
-        if current_cell_received_power is None:
-            current_cell_received_power = self.current_cell.qrx_level_min
+        if power_data is None:
+            current_cell_power_dBm = self.current_cell.qrx_level_min
         else:
-            current_cell_received_power = current_cell_received_power[
+            current_cell_power_dBm = power_data[
                 "received_power_dBm"
             ]
 
@@ -275,7 +277,7 @@ class UE:
         )
 
         # Serving cell is the one with max received power
-        current_cell_power_w = dbm_to_watts(current_cell_received_power)
+        current_cell_power_w = dbm_to_watts(current_cell_power_dBm)
         interference_power_w = np.sum(received_powers_w) - current_cell_power_w
 
         # Thermal noise
@@ -298,7 +300,7 @@ class UE:
 
     def check_rrc_meas_events_to_monitor(self):
         cell_signal_map = {
-            v["cell"].cell_id: v["received_power_dBm"]
+            v["cell"].cell_id: v["received_power_with_cio_dBm"]
             for v in self.downlink_received_power_dBm_dict.values()
         }
         for rrc_meas_event_trigger in self.rrc_measurement_event_monitors:
@@ -345,6 +347,7 @@ class UE:
             "downlink_received_power_dBm_dict": {
                 cell_id: {
                     "received_power_dBm": cell_data["received_power_dBm"],
+                    "received_power_with_cio_dBm": cell_data["received_power_with_cio_dBm"],
                     "frequency_priority": cell_data["frequency_priority"],
                 }
                 for cell_id, cell_data in self.downlink_received_power_dBm_dict.items()
