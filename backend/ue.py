@@ -3,7 +3,7 @@ import random
 import numpy as np
 from utils import (
     dist_between,
-    get_rrc_measurement_event_trigger,
+    get_rrc_measurement_event_monitor,
     dbm_to_watts,
     sinr_to_cqi,
 )
@@ -39,7 +39,7 @@ class UE:
 
         self.downlink_bitrate = 0
         self.downlink_latency = 0
-        self.rrc_measurement_event_triggers = []
+        self.rrc_measurement_event_monitors = []
         self.downlink_received_power_dBm_dict = {}
         self.downlink_sinr = 0
         self.downlink_cqi = 0
@@ -54,7 +54,7 @@ class UE:
         self.serving_cell_history = []
 
     def __repr__(self):
-        return f"UE(ue_imsi={self.ue_imsi}, position=({self.position_x}, {self.position_y}), target=({self.target_x}, {self.target_y}), speed={self.speed})"
+        return f"UE(ue_imsi={self.ue_imsi}, position=({self.position_x}, {self.position_y}), target=({self.target_x}, {self.target_y}), speed={self.speed}, current_cell={self.current_cell.cell_id if self.current_cell else None})"
 
     @property
     def dist_to_target(self):
@@ -100,13 +100,13 @@ class UE:
             )
         )
 
-        self.set_current_cell(cells_detected[0]["cell"]) 
+        self.set_current_cell(cells_detected[0]["cell"])
         return True
 
-    def setup_rrc_measurement_event_triggers(self, rrc_measurement_events=[]):
-        self.rrc_measurement_event_triggers = [
-            get_rrc_measurement_event_trigger(event["event_id"], event_params=event)
-            for event in rrc_measurement_events
+    def setup_rrc_measurement_event_monitors(self, rrc_meas_events_to_monitor=[]):
+        self.rrc_measurement_event_monitors = [
+            get_rrc_measurement_event_monitor(event["event_id"], event_params=event)
+            for event in rrc_meas_events_to_monitor
         ]
 
     def authenticate_and_register(self):
@@ -122,7 +122,7 @@ class UE:
         )
         self.slice_type = ue_reg_res["slice_type"]
         self.qos_profile = ue_reg_res["qos_profile"]
-        self.setup_rrc_measurement_event_triggers(ue_reg_res["rrc_meas_events"])
+        self.setup_rrc_measurement_event_monitors(ue_reg_res["rrc_meas_events"])
         return True
 
     def power_up(self):
@@ -159,18 +159,26 @@ class UE:
         self.uplink_transmit_power_dBm = settings.UE_TRANSMIT_POWER
         self.set_current_cell(target_cell)
 
+        for event_monitor in self.rrc_measurement_event_monitors:
+            event_monitor.reset_trigger_history()
+
     def set_current_cell(self, cell):
         self.current_cell = cell
         
-        # update UE cell history
-        if len(self.serving_cell_history) > 0:
-            assert (
-                self.current_cell.cell_id != self.serving_cell_history[-1]
-            ), f"UE {self.ue_imsi} is already served by cell {self.serving_cell_history[-1]}."
-        self.serving_cell_history.append(self.current_cell.cell_id)
+        if cell is None:
+            if len(self.serving_cell_history) > 0:
+                assert self.serving_cell_history[-1] is not None, f"UE {self.ue_imsi} is not served by any cell."
+            self.serving_cell_history.append(None)
+        else:
+            if len(self.serving_cell_history) > 0:
+                assert (
+                    self.serving_cell_history[-1] != cell.cell_id
+                ), f"UE {self.ue_imsi} is already served by cell {cell.cell_id}."
+            self.serving_cell_history.append(cell.cell_id)
+        
         if len(self.serving_cell_history) > settings.UE_SERVING_CELL_HISTORY_LENGTH:
             self.serving_cell_history.pop(0)
-
+                
     def deregister(self):
         print(f"UE {self.ue_imsi}: Sending deregistration request.")
         self.current_bs.handle_deregistration_request(self)
@@ -229,6 +237,13 @@ class UE:
                     "received_power_dBm": received_power,
                     "frequency_priority": cell.frequency_priority,
                 }
+            elif self.current_cell and cell.cell_id == self.current_cell.cell_id:
+                # make sure the current cell is in the list of detecte cells
+                self.downlink_received_power_dBm_dict[cell.cell_id] = {
+                    "cell": cell,
+                    "received_power_dBm": cell.qrx_level_min,
+                    "frequency_priority": cell.frequency_priority,
+                }
 
         self.calculate_SINR_and_CQI()
 
@@ -249,10 +264,6 @@ class UE:
                 "received_power_dBm"
             ]
 
-        assert type(current_cell_received_power) == float, (
-            f"current_cell_received_power is not a float: {current_cell_received_power}"
-        )
-
         # calculate the SINR
         received_powers_w = np.array(
             [
@@ -271,39 +282,39 @@ class UE:
         k = 1.38e-23  # Boltzmann constant
         noise_power_w = k * settings.UE_TEMPERATURE_K * self.current_cell.bandwidth_Hz
 
-        print(f"UE {self.ue_imsi}: Interference power (W):", interference_power_w)
-        print(f"UE {self.ue_imsi}: Noise power (W):", noise_power_w)
-        print(
-            f"UE {self.ue_imsi}: Current cell received power: {current_cell_received_power} (dBm) = {current_cell_power_w} (W):"
-        )
+        # print(f"UE {self.ue_imsi}: Interference power (W):", interference_power_w)
+        # print(f"UE {self.ue_imsi}: Noise power (W):", noise_power_w)
+        # print(
+        #     f"UE {self.ue_imsi}: Current cell received power: {current_cell_received_power} (dBm) = {current_cell_power_w} (W):"
+        # )
 
         self.downlink_sinr = 10 * np.log10(
             current_cell_power_w / (interference_power_w + noise_power_w)
         )
         self.downlink_cqi = sinr_to_cqi(self.downlink_sinr)
-        print(
-            f"UE {self.ue_imsi}: Downlink SINR: {self.downlink_sinr:.2f} dB, CQI: {self.downlink_cqi}"
-        )
+        # print(
+        #     f"UE {self.ue_imsi}: Downlink SINR: {self.downlink_sinr:.2f} dB, CQI: {self.downlink_cqi}"
+        # )
 
-    def check_rrc_measurement_events(self):
+    def check_rrc_meas_events_to_monitor(self):
         cell_signal_map = {
             v["cell"].cell_id: v["received_power_dBm"]
             for v in self.downlink_received_power_dBm_dict.values()
         }
-        for rrc_meas_event_trigger in self.rrc_measurement_event_triggers:
+        for rrc_meas_event_trigger in self.rrc_measurement_event_monitors:
             rrc_meas_event_trigger.check(self, cell_signal_map.copy())
             if rrc_meas_event_trigger.is_triggered:
                 print(
                     f"UE {self.ue_imsi}: RRC measurement event {rrc_meas_event_trigger.event_id} triggered."
                 )
-                self.current_bs.receive_ue_rrc_meas_events(
-                    rrc_meas_event_trigger.gen_event_report()
-                )
+                event_report = rrc_meas_event_trigger.gen_event_report()
+                print(f"{self} Reporting event: {event_report}")
+                self.current_bs.receive_ue_rrc_meas_events(event_report)
 
     def step(self, delta_time):
         self.move_towards_target(delta_time)
         self.monitor_signal_strength()
-        self.check_rrc_measurement_events()
+        self.check_rrc_meas_events_to_monitor()
         self.time_ramaining -= delta_time
         if self.time_ramaining <= 0:
             self.deregister()

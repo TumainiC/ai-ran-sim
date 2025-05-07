@@ -30,7 +30,7 @@ class SimulationEngine:
         assert bs.bs_id is not None
         assert bs.bs_id not in self.base_station_list
         self.base_station_list[bs.bs_id] = bs
-        for cell in bs.cell_list:
+        for cell in bs.cell_list.values():
             assert cell.cell_id not in self.cell_list
             self.cell_list[cell.cell_id] = cell
 
@@ -126,15 +126,22 @@ class SimulationEngine:
             bs.step(delta_time)
 
     def step(self, delta_time):
+        print("===================================")
+        print("        Simulation Step  ")
+        print("===================================")
+
         self.logs = []
 
         # spawn new UEs if needed
+        print("\n ---------- Spawning UEs -----------\n")
         self.spawn_UEs()
 
         # move UEs towards their targets, monitor signal quality, report measurement events ...
+        print("\n ---------- Step UEs ----------- \n")
         self.step_UEs(delta_time)
 
         # dynamically allocate resources for UEs
+        print("\n ---------- Step BSs ----------- \n")
         self.step_BSs(delta_time)
 
     async def start_simulation(self):

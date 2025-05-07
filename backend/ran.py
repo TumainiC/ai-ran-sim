@@ -26,6 +26,9 @@ class Cell:
         self.connected_ue_list = {}
         self.ue_uplink_signal_strength_dict = {}
 
+    def __repr__(self):
+        return f"CELL {self.cell_id}"
+
     @property
     def allocated_dl_prb(self):
         return sum(
@@ -121,9 +124,9 @@ class Cell:
                     max_mcs_index = mcs_index
                 else:
                     break
-            print(
-                f"Cell {self.cell_id}: UE {ue.ue_imsi} selected MCS index {max_mcs_index} based on CQI {ue.downlink_cqi}"
-            )
+            # print(
+            #     f"Cell {self.cell_id}: UE {ue.ue_imsi} selected MCS index {max_mcs_index} based on CQI {ue.downlink_cqi}"
+            # )
             ue.downlink_mcs_index = max_mcs_index
             ue.downlink_mcs_data = settings.RAN_MCS_SPECTRAL_EFFICIENCY_TABLE.get(
                 max_mcs_index, None
@@ -197,11 +200,11 @@ class Cell:
                     additional_prbs = int(share * dl_remaining_prbs)
                     self.prb_ue_allocation_dict[ue_imsi]["downlink"] += additional_prbs
 
-        # Logging
-        for ue_imsi, allocation in self.prb_ue_allocation_dict.items():
-            print(
-                f"Cell: {self.cell_id} allocated {allocation['downlink']} DL PRBs for UE {ue_imsi}"
-            )
+        # # Logging
+        # for ue_imsi, allocation in self.prb_ue_allocation_dict.items():
+        #     print(
+        #         f"Cell: {self.cell_id} allocated {allocation['downlink']} DL PRBs for UE {ue_imsi}"
+        #     )
 
     def estimate_ue_throughput_and_latency(self):
         for ue in self.connected_ue_list.values():
@@ -269,13 +272,13 @@ class BaseStation:
         self.bs_id = bs_init_data["bs_id"]
         self.position_x = bs_init_data["position_x"]
         self.position_y = bs_init_data["position_y"]
-        self.cell_list = [
-            Cell(
+        self.cell_list = {}
+        for cell_init_data in bs_init_data["cell_list"]:
+            new_cell = Cell(
                 base_station=self,
                 cell_init_data=cell_init_data,
             )
-            for cell_init_data in bs_init_data["cell_list"]
-        ]
+            self.cell_list[cell_init_data["cell_id"]] = new_cell
         self.rrc_measurement_events = bs_init_data["rrc_measurement_events"]
 
         self.ue_registry = {}
@@ -284,7 +287,20 @@ class BaseStation:
 
         self.ric_control_actions = []
 
+    def __repr__(self):
+        return f"BS {self.bs_id}"
+
     def receive_ue_rrc_meas_events(self, event):
+        # sanity check
+        ue = event["triggering_ue"]
+        current_cell = self.cell_list.get(event["current_cell_id"], None)
+        assert ue is not None, "UE cannot be None"
+        assert current_cell is not None, "Current cell cannot be None"
+        assert ue.current_cell.cell_id == current_cell.cell_id, (
+            f"UE {ue.ue_imsi} (current cell: {ue.current_cell.cell_id}) is not in the current cell ({current_cell.cell_id})"
+        )
+        print(f"{self} received UE reported RRC measurement event:")
+        print(event)
         self.ue_rrc_meas_events.append(event)
 
     def handle_ue_authentication_and_registration(self, ue, ue_auth_reg_msg):
@@ -308,6 +324,15 @@ class BaseStation:
         ue.current_cell.deregister_ue(ue)
         if ue.ue_imsi in self.ue_registry:
             del self.ue_registry[ue.ue_imsi]
+        
+        # remove rrc measurement events for the UE
+        events_to_remove = []
+        for event in self.ue_rrc_meas_events:
+            if event["triggering_ue"] == ue:
+                events_to_remove.append(event)
+        for event in events_to_remove:
+            self.ue_rrc_meas_events.remove(event)
+
         print(f"gNB {self.bs_id}: UE {ue.ue_imsi} deregistered and resources released.")
         return True
 
@@ -324,7 +349,7 @@ class BaseStation:
             "vis_position_x": self.position_x * settings.REAL_LIFE_DISTANCE_MULTIPLIER,
             "vis_position_y": self.position_y * settings.REAL_LIFE_DISTANCE_MULTIPLIER,
             "ue_registry": list(self.ue_registry.keys()),
-            "cell_list": [cell.to_json() for cell in self.cell_list],
+            "cell_list": [cell.to_json() for cell in self.cell_list.values()],
         }
 
     def init_rrc_measurement_event_handler(self, event_id, handler):
@@ -371,7 +396,7 @@ class BaseStation:
             source_cell is not None and target_cell is not None
         ), "Source or target cell cannot be None"
         assert source_cell != target_cell, "Source and target cell cannot be the same"
-        assert ue.current_cell == source_cell, "UE is not in the source cell"
+        assert ue.current_cell.cell_id == source_cell.cell_id, f"UE {ue.ue_imsi} (current cell: {ue.current_cell.cell_id})is not in the source cell ({source_cell.cell_id})"
         assert (
             ue.ue_imsi in source_cell.connected_ue_list
         ), "UE is not connected to the source cell"
@@ -386,6 +411,7 @@ class BaseStation:
             # same base station, just change the cell
             target_cell.register_ue(ue)
             ue.execute_handover(target_cell)
+            self.ue_registry[ue.ue_imsi]["cell"] = target_cell
             source_cell.deregister_ue(ue)
             print(
                 f"gNB {self.bs_id}: Handover UE {ue.ue_imsi} from cell {source_cell.cell_id} to cell {target_cell.cell_id}"
@@ -405,7 +431,7 @@ class BaseStation:
 
     def step(self, delta_time):
         # first update cell first
-        for cell in self.cell_list:
+        for cell in self.cell_list.values():
             cell.step(delta_time)
 
         # reset RIC control actions

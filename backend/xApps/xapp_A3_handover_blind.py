@@ -1,16 +1,15 @@
 from .xapp_base import xAppBase
 from utils import xAppControlAction
 
-class xAppHandoverControl(xAppBase):
+class xAppA3HandoverBlind(xAppBase):
     """
-    xApp for Handover Control
+    xApp that blindly performs handover actions upon receiving RRC measurement event A3.
     """
     def __init__(self, ric=None):
         super().__init__(ric=ric)
+        self.enabled = False
     
     def handle_rrc_meas_event_A3(self, event):
-        # Handle the RRC measurement event A3
-        # This is where you would implement the logic for handover control
         if "triggering_ue" not in event:
             print(f"{self.xapp_id}: RRC measurement event A3 does not contain triggering_ue")
             return None
@@ -36,6 +35,9 @@ class xAppHandoverControl(xAppBase):
         )
 
     def start(self):
+        if not self.enabled:
+            print(f"{self.xapp_id}: xApp is not enabled")
+            return
         # subcribe events from all base stations
         for bs in self.base_station_list.values():
             bs.init_rrc_measurement_event_handler("A3", self.handle_rrc_meas_event_A3)

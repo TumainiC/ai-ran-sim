@@ -1,4 +1,4 @@
-class RRCMeasurementEventBase:
+class RRCMeasurementEventMonitorBase:
     def __init__(self, event_id, time_to_trigger_in_sim_steps):
         self.event_id = event_id
         self.time_to_trigger_in_sim_steps = time_to_trigger_in_sim_steps
@@ -15,6 +15,9 @@ class RRCMeasurementEventBase:
         if len(self.trigger_history) > self.time_to_trigger_in_sim_steps:
             self.trigger_history.pop(0)
 
+    def reset_trigger_history(self):
+        self.trigger_history = []
+
     @property
     def is_triggered(self):
         return len(self.trigger_history) == self.time_to_trigger_in_sim_steps and all(
@@ -28,7 +31,7 @@ class RRCMeasurementEventBase:
         }
 
 
-class RRCMeasurementEventA3(RRCMeasurementEventBase):
+class RRCMeasurementEventA3Monitor(RRCMeasurementEventMonitorBase):
     def __init__(self, event_id, time_to_trigger_in_sim_steps, power_threshold):
         super().__init__(event_id, time_to_trigger_in_sim_steps)
         self.power_threshold = power_threshold
@@ -84,10 +87,10 @@ class RRCMeasurementEventA3(RRCMeasurementEventBase):
         self.update_trigger_history(check_result)
 
 
-def get_rrc_measurement_event_trigger(event_id, event_params):
+def get_rrc_measurement_event_monitor(event_id, event_params):
     # only A3 event is supported for now
     if event_id == "A3":
-        return RRCMeasurementEventA3(
+        return RRCMeasurementEventA3Monitor(
             event_id=event_id,
             time_to_trigger_in_sim_steps=event_params["time_to_trigger_in_sim_steps"],
             power_threshold=event_params["power_threshold"],

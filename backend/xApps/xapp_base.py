@@ -1,6 +1,7 @@
 class xAppBase:
     def __init__(self, ric=None):
         self.ric = ric
+        self.enabled = True
     
     @property
     def xapp_id(self):
