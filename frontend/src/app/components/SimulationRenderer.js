@@ -194,7 +194,7 @@ export default function SimulationRenderer({ simulationState }) {
     statsRendered = (
       <div className="gap-1">
         <div className="divider">UE Dashboard</div>
-        <div className="overflow-x-auto overflow-y-auto max-h-100">
+        <div className="overflow-x-auto overflow-y-auto max-h-[50vh]">
           <table className="table table-xs table-pin-rows table-pin-cols">
             <thead>
               <tr>

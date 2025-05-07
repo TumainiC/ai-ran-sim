@@ -7,20 +7,10 @@ class xAppA3HandoverBlind(xAppBase):
     """
     def __init__(self, ric=None):
         super().__init__(ric=ric)
-        self.enabled = False
+        self.enabled = True
     
     def handle_rrc_meas_event_A3(self, event):
-        if "triggering_ue" not in event:
-            print(f"{self.xapp_id}: RRC measurement event A3 does not contain triggering_ue")
-            return None
         ue = event["triggering_ue"]
-        if ue is None:
-            print(f"{self.xapp_id}: RRC measurement event A3 does not contain triggering_ue")
-            return None
-        if not event["triggered"]:
-            print(f"{self.xapp_id}: RRC measurement event A3 not triggered for UE {ue.ue_imsi}")
-            return None
-        
         print(f"{self.xapp_id}: Received RRC measurement event A3 for UE {ue.ue_imsi}")
         print(event)
         
