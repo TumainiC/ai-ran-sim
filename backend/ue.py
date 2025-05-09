@@ -88,14 +88,22 @@ class UE:
         )
         # Print all the detected SSBs in a pretty table
         table_data = [
-            [v["cell"].cell_id, v["received_power_with_cio_dBm"], v["frequency_priority"]]
+            [
+                v["cell"].cell_id,
+                v["received_power_with_cio_dBm"],
+                v["frequency_priority"],
+            ]
             for v in cells_detected
         ]
         print(f"UE {self.ue_imsi}: Detected SSBs:")
         print(
             tabulate(
                 table_data,
-                headers=["Cell ID", "Received Power With CIO (dBm)", "Frequency Priority"],
+                headers=[
+                    "Cell ID",
+                    "Received Power With CIO (dBm)",
+                    "Frequency Priority",
+                ],
                 tablefmt="grid",
             )
         )
@@ -262,9 +270,7 @@ class UE:
         if power_data is None:
             current_cell_power_dBm = self.current_cell.qrx_level_min
         else:
-            current_cell_power_dBm = power_data[
-                "received_power_dBm"
-            ]
+            current_cell_power_dBm = power_data["received_power_dBm"]
 
         # calculate the SINR
         received_powers_w = np.array(
@@ -347,7 +353,9 @@ class UE:
             "downlink_received_power_dBm_dict": {
                 cell_id: {
                     "received_power_dBm": cell_data["received_power_dBm"],
-                    "received_power_with_cio_dBm": cell_data["received_power_with_cio_dBm"],
+                    "received_power_with_cio_dBm": cell_data[
+                        "received_power_with_cio_dBm"
+                    ],
                     "frequency_priority": cell_data["frequency_priority"],
                 }
                 for cell_id, cell_data in self.downlink_received_power_dBm_dict.items()

@@ -13,10 +13,11 @@ class NearRTRIC:
 
         for xapp_cls in xApps.load_all_xapps():
             xapp_instance = xapp_cls(ric=self)
-            assert xapp_instance.xapp_id not in self.xapp_list, f"xApp {xapp_instance.xapp_id} already exists"
+            assert (
+                xapp_instance.xapp_id not in self.xapp_list
+            ), f"xApp {xapp_instance.xapp_id} already exists"
             self.xapp_list[xapp_instance.xapp_id] = xapp_instance
             print(f"NearRT RIC: Loaded xApp: {xapp_instance.xapp_id}")
 
         for xapp in self.xapp_list.values():
             xapp.start()
-            
