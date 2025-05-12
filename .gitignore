@@ -110,7 +110,6 @@ dmypy.json
 
 # Pyre
 .pyre/
-dummycommit
 
 # VS Code
 .vscode/
