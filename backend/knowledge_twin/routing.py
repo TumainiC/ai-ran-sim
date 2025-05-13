@@ -2,14 +2,15 @@ import re
 from typing import Callable, Dict, List, Tuple, Optional
 from .relationships import KnowledgeRelationship
 
+
 class KnowledgeRoute:
     def __init__(
         self,
         pattern: str,
-        getter: Callable[[Dict[str, str]], any],
-        explainer: Optional[Callable[[any, Dict[str, str]], str]] = None,
+        getter: Optional[Callable] = None,
+        explainer: Optional[Callable] = None,
         tags: Optional[List[str]] = None,
-        related: Optional[List[Tuple[KnowledgeRelationship, str]]] = None
+        related: Optional[List[Tuple[KnowledgeRelationship, str]]] = None,
     ):
         self.pattern = pattern
         self.regex, self.param_names = self._compile_pattern(pattern)
@@ -20,7 +21,9 @@ class KnowledgeRoute:
 
     def _compile_pattern(self, pattern: str):
         param_names = []
-        regex_pattern = re.sub(r"\{(\w+)\}", lambda m: self._param_replacer(m, param_names), pattern)
+        regex_pattern = re.sub(
+            r"\{(\w+)\}", lambda m: self._param_replacer(m, param_names), pattern
+        )
         return re.compile(f"^{regex_pattern}$"), param_names
 
     def _param_replacer(self, match, param_names):
@@ -32,36 +35,46 @@ class KnowledgeRoute:
         match = self.regex.match(key)
         return match.groupdict() if match else None
 
+
 class KnowledgeRouter:
     def __init__(self):
-        self.routes: List[KnowledgeRoute] = []
+        self.getter_routes: List[KnowledgeRoute] = []
+        self.explainer_routes: List[KnowledgeRoute] = []
 
-    def register_route(self, pattern: str, getter: Callable, explainer: Optional[Callable] = None,
-                       tags: Optional[List[str]] = None,
-                       related: Optional[List[Tuple[KnowledgeRelationship, str]]] = None):
+    def register_route(
+        self,
+        pattern: str,
+        getter: Optional[Callable] = None,
+        explainer: Optional[Callable] = None,
+        tags: Optional[List[str]] = None,
+        related: Optional[List[Tuple[KnowledgeRelationship, str]]] = None,
+    ):
         route = KnowledgeRoute(pattern, getter, explainer, tags, related)
-        self.routes.append(route)
+        if getter:
+            self.getter_routes.append(route)
+        if explainer:
+            self.explainer_routes.append(route)
 
-    def _find_route(self, key: str) -> Tuple[KnowledgeRoute, Dict[str, str]]:
-        for route in self.routes:
+    def _find_getter_route(self, key: str) -> Tuple[KnowledgeRoute, Dict[str, str]]:
+        for route in self.getter_routes:
+            params = route.match(key)
+            if params:
+                return route, params
+        raise KeyError(f"No route found for key: {key}")
+
+    def _find_explainer_route(self, key: str) -> Tuple[KnowledgeRoute, Dict[str, str]]:
+        for route in self.explainer_routes:
             params = route.match(key)
             if params:
                 return route, params
         raise KeyError(f"No route found for key: {key}")
 
     def get_value(self, query_key: str):
-        route, params = self._find_route(query_key)
+        route, params = self._find_getter_route(query_key)
         return route.getter(query_key, params)
 
     def explain_value(self, key: str):
-        route, params = self._find_route(key)
+        route, params = self._find_explainer_route(key)
         if route.explainer:
             return route.explainer(key, params)
         return f"No explanation available for key: {key}"
-
-    def get_related_knowledge(self, key: str):
-        route, _ = self._find_route(key)
-        return route.related
-
-    def get_routes_by_tag(self, tag: str) -> List[str]:
-        return [r.pattern for r in self.routes if tag in r.tags]

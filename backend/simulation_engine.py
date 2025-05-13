@@ -127,9 +127,9 @@ class SimulationEngine:
         ue_to_remove = []
         for ue in self.ue_list.values():
             ue.step(delta_time)
-            # print(self.knowledge_twin.explain_value(
-            #     f"/sim/ue/{ue.ue_imsi}/speed_m"
-            # ))
+            print(self.knowledge_twin.explain_value(
+                f"/sim/ue/{ue.ue_imsi}/method/authenticate_and_register"
+            ))
             if not ue.connected:
                 ue_to_remove.append(ue)
 
