@@ -2,10 +2,11 @@ import asyncio
 import json
 import random
 from core_network import CoreNetwork
-from ran import BaseStation
+from ran import BaseStation, Cell
 from ric import NearRTRIC
 from ue import UE
 import settings
+import knowledge_twin
 
 
 class SimulationEngine:
@@ -24,6 +25,8 @@ class SimulationEngine:
         self.global_UE_counter = 0
         self.logs = []
 
+        self.knowledge_twin = knowledge_twin.initialize_knowledge(self)
+
     def add_base_station(self, bs):
         assert isinstance(bs, BaseStation)
         assert bs.simulation_engine == self
@@ -31,8 +34,13 @@ class SimulationEngine:
         assert bs.bs_id not in self.base_station_list
         self.base_station_list[bs.bs_id] = bs
         for cell in bs.cell_list.values():
-            assert cell.cell_id not in self.cell_list
-            self.cell_list[cell.cell_id] = cell
+            self.add_cell(cell)
+
+    def add_cell(self, cell):
+        assert isinstance(cell, Cell)
+        assert cell.cell_id is not None
+        assert cell.cell_id not in self.cell_list
+        self.cell_list[cell.cell_id] = cell
 
     def network_setup(self):
         self.core_network = CoreNetwork(self)
@@ -81,13 +89,18 @@ class SimulationEngine:
         if not ue.power_up():
             print(f"UE {ue.ue_imsi} power up procedures failed.")
             return None
-
+        self.add_ue(ue)
         print(
             f"UE {ue.ue_imsi} registered to network. Served by cell: {ue.current_cell.cell_id}."
         )
+        return ue
+
+    def add_ue(self, ue):
+        assert isinstance(ue, UE)
+        assert ue.ue_imsi is not None
+        assert ue.ue_imsi not in self.ue_list
         self.ue_list[ue.ue_imsi] = ue
         self.global_UE_counter += 1
-        return ue
 
     def spawn_UEs(self):
         print(f"Current UE count: {len(self.ue_list.keys())}")
@@ -114,12 +127,21 @@ class SimulationEngine:
         ue_to_remove = []
         for ue in self.ue_list.values():
             ue.step(delta_time)
+            # print(self.knowledge_twin.explain_value(
+            #     f"/sim/ue/{ue.ue_imsi}/speed"
+            # ))
             if not ue.connected:
                 ue_to_remove.append(ue)
 
         for ue in ue_to_remove:
             del self.ue_list[ue.ue_imsi]
             print(f"UE {ue.ue_imsi} deregistered and removed from simulation.")
+
+    def remove_UE(self, ue):
+        assert isinstance(ue, UE)
+        assert ue.ue_imsi in self.ue_list
+        del self.ue_list[ue.ue_imsi]
+        print(f"UE {ue.ue_imsi} deregistered and removed from simulation.")
 
     def step_BSs(self, delta_time):
         for bs in self.base_station_list.values():

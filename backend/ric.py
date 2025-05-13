@@ -4,6 +4,7 @@ import xApps
 class NearRTRIC:
     # Near Real-Time Ran Intelligent Controller
     def __init__(self, simulation_engine=None):
+        self.ric_id = "NearRT-RIC"
         self.simulation_engine = simulation_engine
         self.xapp_list = {}
 

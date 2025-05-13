@@ -1,0 +1,1 @@
+from knowledge_twin.registry import initialize_knowledge
