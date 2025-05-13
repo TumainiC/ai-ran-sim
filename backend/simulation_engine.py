@@ -75,7 +75,7 @@ class SimulationEngine:
         target_y = random.randint(
             settings.UE_BOUNDARY_Y_MIN, settings.UE_BOUNDARY_Y_MAX
         )
-        speed = random.randint(settings.UE_SPEED_MIN, settings.UE_SPEED_MAX)
+        speed_m = random.randint(settings.UE_speed_m_MIN, settings.UE_speed_m_MAX)
 
         ue = UE(
             ue_imsi=f"IMSI_{self.global_UE_counter}",
@@ -83,7 +83,7 @@ class SimulationEngine:
             position_y=position_y,
             target_x=target_x,
             target_y=target_y,
-            speed=speed,
+            speed_m=speed_m,
             simulation_engine=self,
         )
         if not ue.power_up():
@@ -128,7 +128,7 @@ class SimulationEngine:
         for ue in self.ue_list.values():
             ue.step(delta_time)
             # print(self.knowledge_twin.explain_value(
-            #     f"/sim/ue/{ue.ue_imsi}/speed"
+            #     f"/sim/ue/{ue.ue_imsi}/speed_m"
             # ))
             if not ue.connected:
                 ue_to_remove.append(ue)

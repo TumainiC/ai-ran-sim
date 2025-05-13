@@ -1,7 +1,6 @@
-
 import re
 from typing import Callable, Dict, List, Tuple, Optional
-from .relationships import Relationship
+from .relationships import KnowledgeRelationship
 
 class KnowledgeRoute:
     def __init__(
@@ -10,7 +9,7 @@ class KnowledgeRoute:
         getter: Callable[[Dict[str, str]], any],
         explainer: Optional[Callable[[any, Dict[str, str]], str]] = None,
         tags: Optional[List[str]] = None,
-        related: Optional[List[Tuple[str, Relationship]]] = None
+        related: Optional[List[Tuple[KnowledgeRelationship, str]]] = None
     ):
         self.pattern = pattern
         self.regex, self.param_names = self._compile_pattern(pattern)
@@ -39,7 +38,7 @@ class KnowledgeRouter:
 
     def register_route(self, pattern: str, getter: Callable, explainer: Optional[Callable] = None,
                        tags: Optional[List[str]] = None,
-                       related: Optional[List[Tuple[str, Relationship]]] = None):
+                       related: Optional[List[Tuple[KnowledgeRelationship, str]]] = None):
         route = KnowledgeRoute(pattern, getter, explainer, tags, related)
         self.routes.append(route)
 
@@ -50,16 +49,15 @@ class KnowledgeRouter:
                 return route, params
         raise KeyError(f"No route found for key: {key}")
 
-    def get_value(self, key: str):
-        route, params = self._find_route(key)
-        return route.getter(params)
+    def get_value(self, query_key: str):
+        route, params = self._find_route(query_key)
+        return route.getter(query_key, params)
 
     def explain_value(self, key: str):
         route, params = self._find_route(key)
-        value = route.getter(params)
         if route.explainer:
-            return route.explainer(value, params)
-        return f"No explanation available for value: {value}"
+            return route.explainer(key, params)
+        return f"No explanation available for key: {key}"
 
     def get_related_knowledge(self, key: str):
         route, _ = self._find_route(key)

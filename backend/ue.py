@@ -20,7 +20,7 @@ class UE:
         position_y=0,
         target_x=0,
         target_y=0,
-        speed=0,
+        speed_m=0,
         simulation_engine=None,
         connection_time=settings.UE_DEFAULT_TIMEOUT,
     ):
@@ -29,7 +29,7 @@ class UE:
         self.position_y = position_y
         self.target_x = target_x
         self.target_y = target_y
-        self.speed = speed
+        self.speed_m = speed_m
         self.time_ramaining = connection_time
         self.simulation_engine = simulation_engine
 
@@ -54,7 +54,7 @@ class UE:
         self.serving_cell_history = []
 
     def __repr__(self):
-        return f"UE(ue_imsi={self.ue_imsi}, position=({self.position_x}, {self.position_y}), target=({self.target_x}, {self.target_y}), speed={self.speed}, current_cell={self.current_cell.cell_id if self.current_cell else None})"
+        return f"UE(ue_imsi={self.ue_imsi}, position=({self.position_x}, {self.position_y}), target=({self.target_x}, {self.target_y}), speed_m={self.speed_m}, current_cell={self.current_cell.cell_id if self.current_cell else None})"
 
     @property
     def dist_to_target(self):
@@ -198,7 +198,7 @@ class UE:
     def move_towards_target(self, delta_time):
         if self.target_x is not None and self.target_y is not None:
             dist_to_target = self.dist_to_target
-            max_move_dist = self.speed * delta_time
+            max_move_dist = self.speed_m * delta_time
             if dist_to_target <= max_move_dist:
                 self.position_x = self.target_x
                 self.position_y = self.target_y
@@ -338,7 +338,7 @@ class UE:
             "target_y": self.target_y,
             "vis_target_x": self.target_x * settings.REAL_LIFE_DISTANCE_MULTIPLIER,
             "vis_target_y": self.target_y * settings.REAL_LIFE_DISTANCE_MULTIPLIER,
-            "speed": self.speed,
+            "speed_m": self.speed_m,
             "slice_type": self.slice_type,
             "qos_profile": self.qos_profile,
             "current_cell": self.current_cell.cell_id if self.current_cell else None,
