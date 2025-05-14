@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function KnowledgeTwinDashboard({
+export default function KnowledgeLayerDashboard({
   websocket,
   knowledgeQueryResponse,
 }) {
@@ -10,7 +10,7 @@ export default function KnowledgeTwinDashboard({
       console.error("WebSocket is not connected");
       return;
     }
-    websocket.send("knowledge_twin/get_routes");
+    websocket.send("knowledge_layer/get_routes");
   };
 
   const getKnowledgeValue = () => {
@@ -22,7 +22,7 @@ export default function KnowledgeTwinDashboard({
       console.error("Knowledge query input is empty");
       return;
     }
-    websocket.send(`knowledge_twin/get_value/${knowledgeQueryInput.trim()}`);
+    websocket.send(`knowledge_layer/get_value/${knowledgeQueryInput.trim()}`);
   };
 
   const explainKnowledgeValue = () => {
@@ -35,14 +35,14 @@ export default function KnowledgeTwinDashboard({
       return;
     }
     websocket.send(
-      `knowledge_twin/explain_value/${knowledgeQueryInput.trim()}`
+      `knowledge_layer/explain_value/${knowledgeQueryInput.trim()}`
     );
   };
 
   return (
     <div>
       <div className="gap-1">
-        <div className="divider">Knowledge Twin Dashboard</div>
+        <div className="divider">Knowledge Layer Dashboard</div>
         <div className="flex flex-row gap-3 items-center">
           <button className="btn btn-outline" onClick={getKnowledgeRoutes}>
             Get Knowledge Routes
@@ -52,7 +52,7 @@ export default function KnowledgeTwinDashboard({
             type="text"
             value={knowledgeQueryInput}
             onChange={(e) => setKnowledgeQueryInput(e.target.value)}
-            placeholder="Enter your knowledge query key here, e.g., /sim/ue/ue_1/attribute/downlink_cqi"
+            placeholder="Enter your knowledge query key here, e.g., /net/ue/ue_1/attribute/downlink_cqi"
           />
           <button className="btn btn-outline" onClick={getKnowledgeValue}>
             Get Knowledge Value

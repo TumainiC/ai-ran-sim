@@ -1,4 +1,4 @@
-# 📚 knowledge_twin
+# 📚 knowledge_layer
 
 A **dynamic, metadata-aware knowledge registry** for 5G network simulators.
 
@@ -10,7 +10,7 @@ This module enables scalable, explainable, and introspectable access to live sim
 
 - **Live knowledge access**: Data is resolved from the current simulator state, not stored snapshots.
 - **Explainable values**: Each value can be paired with a human-readable explainer function.
-- **Routing-style API**: Routes like `/sim/ue/{ue_imsi}/speed_mps` match requests and dispatch to handlers.
+- **Routing-style API**: Routes like `/net/ue/{ue_imsi}/speed_mps` match requests and dispatch to handlers.
 - **Tags and relationships**: Knowledge keys are annotated for semantic grouping and dependency tracking.
 - **Modular registration**: Just add decorated functions in `knowledge_sources/`, and they’re wired in.
 
@@ -18,9 +18,9 @@ This module enables scalable, explainable, and introspectable access to live sim
 
 ## 🗂️ Folder Structure
 
-knowledge_twin/
+knowledge_layer/
 │
-├── init.py # exports top layer knowledge twin classes
+├── init.py # exports top layer knowledge router classes
 ├── router.py # Main decorators and router instance
 ├── routing.py # KnowledgeRouter & KnowledgeRoute classes
 ├── relationships.py # Enum of standard knowledge relationships
@@ -47,10 +47,10 @@ No manual registration needed — decorators handle it automatically
 Leverage standard semantic links for knowledge graph traversal:
 
 ```python
-from knowledge_twin.relationships import Relationship
+from knowledge_layer.relationships import Relationship
 
 related = [
     ("specs/3gpp/38.300/4.1.2", Relationship.RELATED_STANDARD),
-    ("/sim/cell/{cell_id}/load", Relationship.DEPENDS_ON)
+    ("/net/cell/{cell_id}/load", Relationship.DEPENDS_ON)
 ]
 ```

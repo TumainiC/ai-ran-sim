@@ -29,41 +29,41 @@ async def websocket_handler(websocket):
                     {"type": "simulation_state", "data": simulation_engine.to_json()}
                 )
             )
-        elif message == "knowledge_twin/get_routes":
+        elif message == "knowledge_layer/get_routes":
             await websocket.send(
                 json.dumps(
                     {
-                        "type": "knowledge_twin/routes",
-                        "data": simulation_engine.knowledge_twin.get_routes(),
+                        "type": "knowledge_layer/routes",
+                        "data": simulation_engine.knowledge_router.get_routes(),
                     }
                 )
             )
-        elif message.startswith("knowledge_twin/get_value/"):
-            query_key = message.replace("knowledge_twin/get_value/", "")
+        elif message.startswith("knowledge_layer/get_value/"):
+            query_key = message.replace("knowledge_layer/get_value/", "")
             print(f"Querying value for key: {query_key}")
             await websocket.send(
                 json.dumps(
                     {
-                        "type": "knowledge_twin/value_response",
-                        "data": simulation_engine.knowledge_twin.get_value(query_key),
+                        "type": "knowledge_layer/value_response",
+                        "data": simulation_engine.knowledge_router.get_value(query_key),
                     }
                 )
             )
-        elif message.startswith("knowledge_twin/explain_value/"):
-            query_key = message.replace("knowledge_twin/explain_value/", "")
+        elif message.startswith("knowledge_layer/explain_value/"):
+            query_key = message.replace("knowledge_layer/explain_value/", "")
             print(f"Explaining value for key: {query_key}")
             await websocket.send(
                 json.dumps(
                     {
-                        "type": "knowledge_twin/explanation_response",
-                        "data": simulation_engine.knowledge_twin.explain_value(
+                        "type": "knowledge_layer/explanation_response",
+                        "data": simulation_engine.knowledge_router.explain_value(
                             query_key
                         ),
                     }
                 )
             )
         else:
-            print("Unknown command")
+            print(f"Unknown command: {message}")
 
 
 async def main():

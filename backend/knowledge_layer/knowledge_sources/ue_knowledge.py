@@ -12,7 +12,7 @@ import inspect
 
 
 @knowledge_getter(
-    key="/sim/ue/{ue_imsi}/attribute/{attribute_name}",
+    key="/net/ue/{ue_imsi}/attribute/{attribute_name}",
 )
 def ue_attribute_getter(sim, knowledge_router, query_key, params):
     ue = sim.ue_list.get(params["ue_imsi"], None)
@@ -23,7 +23,7 @@ def ue_attribute_getter(sim, knowledge_router, query_key, params):
         attribute = getattr(ue, attribute_name)
         # check the attribute is not a function
         if callable(attribute):
-            return f"{attribute_name} is a function, query it via /sim/ue/{params["ue_imsi"]}/method/{attribute_name} instead."
+            return f"{attribute_name} is a function, query it via /net/ue/{params["ue_imsi"]}/method/{attribute_name} instead."
         if isinstance(attribute, dict):
             return json.dumps(attribute)
         elif isinstance(attribute, list):
@@ -34,7 +34,7 @@ def ue_attribute_getter(sim, knowledge_router, query_key, params):
 
 
 @knowledge_getter(
-    key="/sim/ue/{ue_imsi}/method/{method_name}",
+    key="/net/ue/{ue_imsi}/method/{method_name}",
 )
 def ue_method_getter(sim, knowledge_router, query_key, params):
     ue = sim.ue_list.get(params["ue_imsi"], None)
@@ -49,7 +49,7 @@ def ue_method_getter(sim, knowledge_router, query_key, params):
 
 
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/attribute/ue_imsi",
+    "/net/ue/{ue_imsi}/attribute/ue_imsi",
     tags=[KnowledgeTag.UE, KnowledgeTag.ID],
     related=[],
 )
@@ -61,7 +61,7 @@ def ue_imsi_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/attribute/position_x",
+    "/net/ue/{ue_imsi}/attribute/position_x",
     tags=[KnowledgeTag.UE, KnowledgeTag.LOCATION],
     related=[],
 )
@@ -73,7 +73,7 @@ def ue_position_x_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/attribute/position_y",
+    "/net/ue/{ue_imsi}/attribute/position_y",
     tags=[KnowledgeTag.UE, KnowledgeTag.LOCATION],
     related=[],
 )
@@ -85,7 +85,7 @@ def ue_position_y_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/attribute/target_x",
+    "/net/ue/{ue_imsi}/attribute/target_x",
     tags=[KnowledgeTag.UE, KnowledgeTag.MOBILITY],
     related=[],
 )
@@ -97,7 +97,7 @@ def ue_target_x_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/attribute/target_y",
+    "/net/ue/{ue_imsi}/attribute/target_y",
     tags=[KnowledgeTag.UE, KnowledgeTag.MOBILITY],
     related=[],
 )
@@ -109,7 +109,7 @@ def ue_target_y_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/attribute/speed_mps",
+    "/net/ue/{ue_imsi}/attribute/speed_mps",
     tags=[KnowledgeTag.UE, KnowledgeTag.MOBILITY],
     related=[],
 )
@@ -121,7 +121,7 @@ def ue_speed_mps_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/attribute/time_remaining",
+    "/net/ue/{ue_imsi}/attribute/time_remaining",
     tags=[KnowledgeTag.UE, KnowledgeTag.SIMULATION],
     related=[],
 )
@@ -133,10 +133,10 @@ def ue_time_remaining_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/attribute/slice_type",
+    "/net/ue/{ue_imsi}/attribute/slice_type",
     tags=[KnowledgeTag.UE, KnowledgeTag.SIMULATION],
     related=[
-        (KnowledgeRelationship.AFFECTS, "/sim/ue/{ue_ismi}/attribute/qos_profile")
+        (KnowledgeRelationship.AFFECTS, "/net/ue/{ue_ismi}/attribute/qos_profile")
     ],
 )
 def ue_slice_type_explainer(sim, knowledge_router, query_key, params):
@@ -158,10 +158,10 @@ def ue_slice_type_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/attribute/qos_profile",
+    "/net/ue/{ue_imsi}/attribute/qos_profile",
     tags=[KnowledgeTag.UE, KnowledgeTag.SIMULATION],
     related=[
-        (KnowledgeRelationship.DEPENDS_ON, "/sim/ue/{ue_ismi}/attribute/slice_type")
+        (KnowledgeRelationship.DEPENDS_ON, "/net/ue/{ue_ismi}/attribute/slice_type")
     ],
 )
 def ue_qos_profile_explainer(sim, knowledge_router, query_key, params):
@@ -184,14 +184,14 @@ def ue_qos_profile_explainer(sim, knowledge_router, query_key, params):
     * latency_ul (Uplink Latency) is the maximum time it takes for a packet to travel from the UE to the network. 
     * latency_dl (Downlink Latency) is the maximum time it takes for a packet to travel from the network to the UE. 
 
-    Note that the actual bitrate (queried via /sim/ue/{ue_imsi}/attribute/downlink_bitrate, /sim/ue/{ue_imsi}/attribute/uplink_bitrate) and latency (queried via /sim/ue/{ue_imsi}/attribute/uplink_latency, /sim/ue/{ue_imsi}/attribute/downlink_latency) may vary based on network conditions and other factors.
+    Note that the actual bitrate (queried via /net/ue/{ue_imsi}/attribute/downlink_bitrate, /net/ue/{ue_imsi}/attribute/uplink_bitrate) and latency (queried via /net/ue/{ue_imsi}/attribute/uplink_latency, /net/ue/{ue_imsi}/attribute/downlink_latency) may vary based on network conditions and other factors.
     The values provided in the QoS profile are guarantees that the network aims to meet, but they are not absolute limits.
 """
     return f"The UE's QoS profile: {v_5qi}, {v_gbr_dl}, {v_gbr_ul}, {v_latency_dl}, {v_latency_ul}. {attr_expanations}"
 
 
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/attribute/connected",
+    "/net/ue/{ue_imsi}/attribute/connected",
     tags=[KnowledgeTag.UE, KnowledgeTag.SIMULATION],
     related=[],
 )
@@ -203,16 +203,16 @@ def ue_connected_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/attribute/downlink_bitrate",
+    "/net/ue/{ue_imsi}/attribute/downlink_bitrate",
     tags=[KnowledgeTag.UE, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.CONSTRAINED_BY,
-            "/sim/ue/{ue_imsi}/attribute/qos_profile",
+            "/net/ue/{ue_imsi}/attribute/qos_profile",
         ),
         (
             KnowledgeRelationship.DEPENDS_ON,
-            "/sim/ue/{ue_imsi}/attribute/downlink_mcs_index",
+            "/net/ue/{ue_imsi}/attribute/downlink_mcs_index",
         ),
     ],
 )
@@ -233,12 +233,12 @@ def ue_downlink_bitrate_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/attribute/downlink_latency",
+    "/net/ue/{ue_imsi}/attribute/downlink_latency",
     tags=[KnowledgeTag.UE, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.CONSTRAINED_BY,
-            "/sim/ue/{ue_imsi}/attribute/qos_profile",
+            "/net/ue/{ue_imsi}/attribute/qos_profile",
         ),
     ],
 )
@@ -262,26 +262,26 @@ def ue_downlink_latency_explainer(sim, knowledge_router, query_key, params):
 # skip ue/attribute/downlink_received_power_dBm_dict
 
 
-# "/sim/ue/{ue_imsi}/attribute/downlink_sinr",
+# "/net/ue/{ue_imsi}/attribute/downlink_sinr",
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/attribute/downlink_sinr",
+    "/net/ue/{ue_imsi}/attribute/downlink_sinr",
     tags=[KnowledgeTag.UE, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.DEPENDS_ON,
-            "/sim/ue/{ue_imsi}/attribute/downlink_received_power_dBm_dict",
+            "/net/ue/{ue_imsi}/attribute/downlink_received_power_dBm_dict",
         ),
         (
             KnowledgeRelationship.DEPENDS_ON,
-            "/sim/cell/{cell_id}/attribute/transmit_power_dBm",
+            "/net/cell/{cell_id}/attribute/transmit_power_dBm",
         ),
         (
             KnowledgeRelationship.AFFECTS,
-            "/sim/ue/{ue_imsi}/attribute/downlink_cqi",
+            "/net/ue/{ue_imsi}/attribute/downlink_cqi",
         ),
         (
             KnowledgeRelationship.DETERMINED_IN_METHOD,
-            "/sim/ue/{ue_imsi}/method/calculate_SINR_and_CQI",
+            "/net/ue/{ue_imsi}/method/calculate_SINR_and_CQI",
         ),
     ],
 )
@@ -299,7 +299,7 @@ def ue_downlink_sinr_explainer(sim, knowledge_router, query_key, params):
     explanation_text += (
         "SINR is calculated as the ratio of the received power from the serving cell "
         "to the sum of interference power from other cells operating on the same frequency "
-        "and thermal noise power. (query /sim/ue/{ue_imsi}/method/calculate_SINR_and_CQI for more details)"
+        "and thermal noise power. (query /net/ue/{ue_imsi}/method/calculate_SINR_and_CQI for more details)"
     )
 
     # Add details about interference and noise
@@ -340,20 +340,20 @@ def ue_downlink_sinr_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/attribute/downlink_cqi",
+    "/net/ue/{ue_imsi}/attribute/downlink_cqi",
     tags=[KnowledgeTag.UE, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.DERIVED_FROM,
-            "/sim/ue/{ue_imsi}/attribute/downlink_sinr",
+            "/net/ue/{ue_imsi}/attribute/downlink_sinr",
         ),
         (
             KnowledgeRelationship.AFFECTS,
-            "/sim/ue/{ue_imsi}/attribute/mcs_index",
+            "/net/ue/{ue_imsi}/attribute/mcs_index",
         ),
         (
             KnowledgeRelationship.DETERMINED_IN_METHOD,
-            "/sim/ue/{ue_imsi}/method/calculate_SINR_and_CQI",
+            "/net/ue/{ue_imsi}/method/calculate_SINR_and_CQI",
         ),
     ],
 )
@@ -369,7 +369,7 @@ def ue_downlink_cqi_explainer(sim, knowledge_router, query_key, params):
     # Explain what CQI represents
     explanation_text += (
         "CQI is a measure of the channel quality as perceived by the UE. "
-        "It is used by the network to determine the most suitable modulation and coding scheme (MCS) (queried via /sim/ue/{ue_imsi}/attribute/downlink_mcs_index and /sim/ue/{ue_imsi}/attribute/downlink_mcs_data) "
+        "It is used by the network to determine the most suitable modulation and coding scheme (MCS) (queried via /net/ue/{ue_imsi}/attribute/downlink_mcs_index and /net/ue/{ue_imsi}/attribute/downlink_mcs_data) "
         "to maximize data throughput while maintaining reliable communication."
     )
 
@@ -402,20 +402,20 @@ def ue_downlink_cqi_explainer(sim, knowledge_router, query_key, params):
 
 # ue.downlink_mcs_index = -1
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/attribute/downlink_mcs_index",
+    "/net/ue/{ue_imsi}/attribute/downlink_mcs_index",
     tags=[KnowledgeTag.UE, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.DERIVED_FROM,
-            "/sim/ue/{ue_imsi}/attribute/downlink_cqi",
+            "/net/ue/{ue_imsi}/attribute/downlink_cqi",
         ),
         (
             KnowledgeRelationship.ASSOCIATED_WITH,
-            "/sim/ue/{ue_imsi}/attribute/downlink_mcs_data",
+            "/net/ue/{ue_imsi}/attribute/downlink_mcs_data",
         ),
         (
             KnowledgeRelationship.DETERMINED_IN_METHOD,
-            "/sim/cells/{cell_id}/method/select_ue_mcs",
+            "/net/cells/{cell_id}/method/select_ue_mcs",
         ),
     ],
 )
@@ -435,7 +435,7 @@ def ue_downlink_mcs_index_explainer(sim, knowledge_router, query_key, params):
 
     # Explain the relationship with downlink CQI
     explanation_text += (
-        " The MCS index is derived from the UE's downlink CQI (Channel Quality Indicator, queried via /sim/ue/{ue_imsi}/attribute/downlink_cqi), "
+        " The MCS index is derived from the UE's downlink CQI (Channel Quality Indicator, queried via /net/ue/{ue_imsi}/attribute/downlink_cqi), "
         "which reflects the channel quality. Higher CQI values allow for higher MCS indices, "
         "enabling faster data rates."
     )
@@ -443,7 +443,7 @@ def ue_downlink_mcs_index_explainer(sim, knowledge_router, query_key, params):
     # Explain the relationship with downlink MCS data
     explanation_text += (
         " The MCS index is associated with specific modulation and coding parameters, "
-        "which are stored in the downlink MCS data attribute (queried via /sim/ue/{ue_imsi}/attribute/downlink_mcs_data). These parameters include the modulation order, "
+        "which are stored in the downlink MCS data attribute (queried via /net/ue/{ue_imsi}/attribute/downlink_mcs_data). These parameters include the modulation order, "
         "target code rate, and spectral efficiency."
     )
 
@@ -465,20 +465,20 @@ def ue_downlink_mcs_index_explainer(sim, knowledge_router, query_key, params):
 
 # ue.downlink_mcs_data = None
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/attribute/downlink_mcs_data",
+    "/net/ue/{ue_imsi}/attribute/downlink_mcs_data",
     tags=[KnowledgeTag.UE, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.ASSOCIATED_WITH,
-            "/sim/ue/{ue_imsi}/attribute/downlink_mcs_index",
+            "/net/ue/{ue_imsi}/attribute/downlink_mcs_index",
         ),
         (
             KnowledgeRelationship.DETERMINED_IN_METHOD,
-            "/sim/cells/{cell_id}/method/select_ue_mcs",
+            "/net/cells/{cell_id}/method/select_ue_mcs",
         ),
         (
             KnowledgeRelationship.DERIVED_FROM,
-            "/sim/ue/{ue_imsi}/attribute/downlink_cqi",
+            "/net/ue/{ue_imsi}/attribute/downlink_cqi",
         ),
     ],
 )
@@ -513,8 +513,8 @@ def ue_downlink_mcs_data_explainer(sim, knowledge_router, query_key, params):
 
     # Explain the relationship with MCS index
     explanation_text += (
-        " This MCS data is associated with the UE's downlink MCS index (queried via /sim/ue/{ue_imsi}/attribute/downlink_mcs_index), "
-        "which is selected based on the UE's downlink CQI (Channel Quality Indicator) (queried via /sim/ue/{ue_imsi}/attribute/downlink_cqi) "
+        " This MCS data is associated with the UE's downlink MCS index (queried via /net/ue/{ue_imsi}/attribute/downlink_mcs_index), "
+        "which is selected based on the UE's downlink CQI (Channel Quality Indicator) (queried via /net/ue/{ue_imsi}/attribute/downlink_cqi) "
         "and the network's modulation and coding scheme table."
     )
 
@@ -531,16 +531,16 @@ def ue_downlink_mcs_data_explainer(sim, knowledge_router, query_key, params):
 
 # ue.current_cell = None
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/attribute/current_cell",
+    "/net/ue/{ue_imsi}/attribute/current_cell",
     tags=[KnowledgeTag.UE],
     related=[
         (
             KnowledgeRelationship.DETERMINED_IN_METHOD,
-            "/sim/ue/{ue_imsi}/method/cell_selection_and_camping",
+            "/net/ue/{ue_imsi}/method/cell_selection_and_camping",
         ),
         (
             KnowledgeRelationship.ASSOCIATED_WITH,
-            "/sim/cell/{cell_id}",
+            "/net/cell/{cell_id}",
         ),
     ],
 )
@@ -557,9 +557,9 @@ def ue_current_cell_explainer(sim, knowledge_router, query_key, params):
     )
 
     explanation_text += (
-        " During the power up procedure (queried via /sim/ue/{ue_imsi}/method/power_up), the UE scans the cells and selects the cell with the highest received power, "
+        " During the power up procedure (queried via /net/ue/{ue_imsi}/method/power_up), the UE scans the cells and selects the cell with the highest received power, "
         "adjusted by the cell's individual offset (CIO) and frequency priority."
-        "This process is part of the cell selection and camping procedure queried via /sim/ue/{ue_imsi}/method/cell_selection_and_camping."
+        "This process is part of the cell selection and camping procedure queried via /net/ue/{ue_imsi}/method/cell_selection_and_camping."
     )
 
     explanation_text += " The UE's current cell can also be adjusted by handover controls from the network."
@@ -569,20 +569,20 @@ def ue_current_cell_explainer(sim, knowledge_router, query_key, params):
 
 # ue.power_up()
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/method/power_up",
+    "/net/ue/{ue_imsi}/method/power_up",
     tags=[KnowledgeTag.UE],
     related=[
         (
             KnowledgeRelationship.CALL_METHOD,
-            "/sim/ue/{ue_imsi}/method/monitor_signal_strength",
+            "/net/ue/{ue_imsi}/method/monitor_signal_strength",
         ),
         (
             KnowledgeRelationship.CALL_METHOD,
-            "/sim/ue/{ue_imsi}/method/cell_selection_and_camping",
+            "/net/ue/{ue_imsi}/method/cell_selection_and_camping",
         ),
         (
             KnowledgeRelationship.CALL_METHOD,
-            "/sim/ue/{ue_imsi}/method/authenticate_and_register",
+            "/net/ue/{ue_imsi}/method/authenticate_and_register",
         ),
     ],
 )
@@ -595,11 +595,11 @@ def ue_power_up_explainer(sim, knowledge_router, query_key, params):
         "The `power_up` method is responsible for initializing the UE's connection to the network. "
         "This process involves several steps:\n\n"
         "1. **Signal Strength Monitoring**: The UE scans for available cells and measures their signal strength. "
-        "Cells are ranked based on their received power and frequency priority. (method query key: /sim/ue/{ue_imsi}/method/monitor_signal_strength).\n\n"
+        "Cells are ranked based on their received power and frequency priority. (method query key: /net/ue/{ue_imsi}/method/monitor_signal_strength).\n\n"
         "2. **Cell Selection and Camping**: The UE selects the most suitable cell based on the measured signal strength "
-        "and camps on it. This step ensures that the UE is connected to the cell with the best signal quality. (method query key: /sim/ue/{ue_imsi}/method/cell_selection_and_camping)\n\n"
+        "and camps on it. This step ensures that the UE is connected to the cell with the best signal quality. (method query key: /net/ue/{ue_imsi}/method/cell_selection_and_camping)\n\n"
         "3. **Authentication and Registration**: The UE performs authentication and registration with the selected cell's base station. "
-        "During this step, the UE is assigned a network slice type (e.g., eMBB, URLLC, or mMTC) and a corresponding QoS profile. (method query key: /sim/ue/{ue_imsi}/method/authenticate_and_register).\n\n"
+        "During this step, the UE is assigned a network slice type (e.g., eMBB, URLLC, or mMTC) and a corresponding QoS profile. (method query key: /net/ue/{ue_imsi}/method/authenticate_and_register).\n\n"
         "\nOnce the above steps are successfully completed, the UE is marked as connected to the network."
     )
 
@@ -612,16 +612,16 @@ def ue_power_up_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/method/monitor_signal_strength",
+    "/net/ue/{ue_imsi}/method/monitor_signal_strength",
     tags=[KnowledgeTag.UE],
     related=[
         (
             KnowledgeRelationship.DETERMINE_ATTRIBUTE,
-            "/sim/ue/{ue_imsi}/attribute/downlink_received_power_dBm_dict",
+            "/net/ue/{ue_imsi}/attribute/downlink_received_power_dBm_dict",
         ),
         (
             KnowledgeRelationship.CALL_METHOD,
-            "/sim/ue/{ue_imsi}/method/calculate_SINR_and_CQI",
+            "/net/ue/{ue_imsi}/method/calculate_SINR_and_CQI",
         ),
     ],
 )
@@ -637,9 +637,9 @@ def ue_monitor_signal_strength_explainer(sim, knowledge_router, query_key, param
         "based on the cell's transmit power, distance, and the path loss model.\n\n"
         "2. **Filtering Detected Cells**: Only cells with received power above the detection threshold "
         "and meeting the minimum quality requirements are considered.\n\n"
-        "3. **SINR and CQI Calculation**: calls another method `/sim/ue/{ue_imsi}/method/calculate_SINR_and_CQi` where "
+        "3. **SINR and CQI Calculation**: calls another method `/net/ue/{ue_imsi}/method/calculate_SINR_and_CQi` where "
         "the UE calculates the Signal-to-Interference-plus-Noise Ratio (SINR) "
-        "and derives the Channel Quality Indicator (CQI) for the current serving cell (/sim/ue/{ue_imsi}/attribute/current_cell) if applicable."
+        "and derives the Channel Quality Indicator (CQI) for the current serving cell (/net/ue/{ue_imsi}/attribute/current_cell) if applicable."
     )
 
     explanation_text += (
@@ -651,16 +651,16 @@ def ue_monitor_signal_strength_explainer(sim, knowledge_router, query_key, param
 
 
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/method/cell_selection_and_camping",
+    "/net/ue/{ue_imsi}/method/cell_selection_and_camping",
     tags=[KnowledgeTag.UE],
     related=[
         (
             KnowledgeRelationship.DEPENDS_ON,
-            "/sim/ue/{ue_imsi}/attribute/downlink_received_power_dBm_dict",
+            "/net/ue/{ue_imsi}/attribute/downlink_received_power_dBm_dict",
         ),
         (
             KnowledgeRelationship.DETERMINE_ATTRIBUTE,
-            "/sim/ue/{ue_imsi}/attribute/current_cell",
+            "/net/ue/{ue_imsi}/attribute/current_cell",
         ),
     ],
 )
@@ -687,20 +687,20 @@ def ue_cell_selection_and_camping_explainer(sim, knowledge_router, query_key, pa
 
 
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/method/authenticate_and_register",
+    "/net/ue/{ue_imsi}/method/authenticate_and_register",
     tags=[KnowledgeTag.UE],
     related=[
         (
             KnowledgeRelationship.DETERMINE_ATTRIBUTE,
-            "/sim/ue/{ue_imsi}/attribute/slice_type",
+            "/net/ue/{ue_imsi}/attribute/slice_type",
         ),
         (
             KnowledgeRelationship.DETERMINE_ATTRIBUTE,
-            "/sim/ue/{ue_imsi}/attribute/qos_profile",
+            "/net/ue/{ue_imsi}/attribute/qos_profile",
         ),
         (
             KnowledgeRelationship.CALL_METHOD,
-            "/sim/cell/{cell_id}/method/setup_rrc_measurement_event_monitors",
+            "/net/cell/{cell_id}/method/setup_rrc_measurement_event_monitors",
         ),
     ],
 )
@@ -715,7 +715,7 @@ def ue_authenticate_and_register_explainer(sim, knowledge_router, query_key, par
         f"1. **Slice Type Assignment**: The UE randomly selects one of the slide types ({", ".join(NETWORK_SLICES.keys())})\n\n"
         "2. **QoS Profile Assignment**: based on the selected slice type, the UE gets the associated QoS Profile, "
         "defining parameters like 5QI, guaranteed uplink/donwlink bit rate (GBR) and uplink/downlink latency.\n\n"
-        "3. **Setup RRC Event Monitor**: calls method `/sim/ue/{ue_imsi}/method/setup_rrc_measurement_event_monitors` to set up RRC (Radio Resource Control) event monitors to track signal quality and other parameters. "
+        "3. **Setup RRC Event Monitor**: calls method `/net/ue/{ue_imsi}/method/setup_rrc_measurement_event_monitors` to set up RRC (Radio Resource Control) event monitors to track signal quality and other parameters. "
     )
 
     explanation_text += (

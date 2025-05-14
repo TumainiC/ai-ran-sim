@@ -71,14 +71,21 @@ class KnowledgeRouter:
         raise KeyError(f"No route found for key: {key}")
 
     def get_value(self, query_key: str):
-        route, params = self._find_getter_route(query_key)
-        return route.getter(query_key, params)
+        try:
+            route, params = self._find_getter_route(query_key)
+            return route.getter(query_key, params)
+        except KeyError:
+            return f"No getter found for key: {query_key}"
 
     def explain_value(self, key: str):
-        route, params = self._find_explainer_route(key)
-        if route.explainer:
-            return route.explainer(key, params)
-        return f"No explanation available for key: {key}"
+        try:
+            route, params = self._find_explainer_route(key)
+            if route.explainer:
+                return route.explainer(key, params)
+        except KeyError:
+            return f"No explainer found for key: {key}"
+        finally:
+            return f"No explainer found for key: {key}"
 
     def get_routes(self):
         return {

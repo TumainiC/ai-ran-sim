@@ -5,7 +5,7 @@ import SimulationRenderer from "./components/SimulationRenderer";
 import UEDashboard from "./components/UEDashboard";
 import BaseStationDashboard from "./components/BaseStationDashboard";
 import LogDashboard from "./components/LogDashboard";
-import KnowledgeTwinDashboard from "./components/KnowledgeTwinDashboard";
+import KnowledgeLayerDashboard from "./components/KnowledgeLayerDashboard";
 
 export default function Home() {
   const [websocket, setWebsocket] = useState(null);
@@ -26,13 +26,13 @@ export default function Home() {
         if (memoryRef.current.length > 1000) {
           memoryRef.current.shift(); // Maintain fixed size of 1000
         }
-      } else if (messageData.type === "knowledge_twin/routes") {
+      } else if (messageData.type === "knowledge_layer/routes") {
         console.log(messageData.data);
-      } else if (messageData.type === "knowledge_twin/value_response") {
-        console.log("Knowledge Twin Value Response:", messageData.data);
+      } else if (messageData.type === "knowledge_layer/value_response") {
+        console.log("Knowledge Layer Value Response:", messageData.data);
         setKnowledgeQueryResponse(messageData.data);
-      } else if (messageData.type === "knowledge_twin/explanation_response") {
-        console.log("Knowledge Twin Explain Response:", messageData.data);
+      } else if (messageData.type === "knowledge_layer/explanation_response") {
+        console.log("Knowledge Layer Explain Response:", messageData.data);
         setKnowledgeQueryResponse(messageData.data);
       }
     }
@@ -122,7 +122,7 @@ export default function Home() {
       </div>
 
       <SimulationRenderer simulationState={simulationState} />
-      <KnowledgeTwinDashboard websocket={websocket} knowledgeQueryResponse={knowledgeQueryResponse}/>
+      <KnowledgeLayerDashboard websocket={websocket} knowledgeQueryResponse={knowledgeQueryResponse}/>
       <UEDashboard simulationState={simulationState} />
       <BaseStationDashboard simulationState={simulationState} />
       <LogDashboard simulationState={simulationState} />

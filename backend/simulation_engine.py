@@ -6,7 +6,7 @@ from ran import BaseStation, Cell
 from ric import NearRTRIC
 from ue import UE
 import settings
-import knowledge_twin
+import knowledge_layer
 
 
 class SimulationEngine:
@@ -25,7 +25,7 @@ class SimulationEngine:
         self.global_UE_counter = 0
         self.logs = []
 
-        self.knowledge_twin = knowledge_twin.initialize_knowledge(self)
+        self.knowledge_router = knowledge_layer.initialize_knowledge(self)
 
     def add_base_station(self, bs):
         assert isinstance(bs, BaseStation)

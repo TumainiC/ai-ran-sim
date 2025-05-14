@@ -1,0 +1,1 @@
+from knowledge_layer.registry import initialize_knowledge
