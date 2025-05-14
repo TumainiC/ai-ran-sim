@@ -75,7 +75,7 @@ class SimulationEngine:
         target_y = random.randint(
             settings.UE_BOUNDARY_Y_MIN, settings.UE_BOUNDARY_Y_MAX
         )
-        speed_m = random.randint(settings.UE_speed_m_MIN, settings.UE_speed_m_MAX)
+        speed_mps = random.randint(settings.UE_speed_mps_MIN, settings.UE_speed_mps_MAX)
 
         ue = UE(
             ue_imsi=f"IMSI_{self.global_UE_counter}",
@@ -83,7 +83,7 @@ class SimulationEngine:
             position_y=position_y,
             target_x=target_x,
             target_y=target_y,
-            speed_m=speed_m,
+            speed_mps=speed_mps,
             simulation_engine=self,
         )
         if not ue.power_up():

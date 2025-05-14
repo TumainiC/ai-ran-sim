@@ -105,15 +105,15 @@ def ue_target_y_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_explainer(
-    "/sim/ue/{ue_imsi}/attribute/speed_m",
+    "/sim/ue/{ue_imsi}/attribute/speed_mps",
     tags=[KnowledgeTag.UE, KnowledgeTag.MOBILITY],
     related=[],
 )
-def ue_speed_m_explainer(sim, knowledge_router, query_key, params):
+def ue_speed_mps_explainer(sim, knowledge_router, query_key, params):
     ue = sim.ue_list[params["ue_imsi"]]
     if not ue:
         return f"UE {params["ue_imsi"]} not found."
-    return f"The UE's speed is {ue.speed_m} (unit: m/s)."
+    return f"The UE's speed is {ue.speed_mps} (unit: m/s)."
 
 
 @knowledge_explainer(

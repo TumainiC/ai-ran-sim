@@ -16,6 +16,8 @@ export default function SimulationRenderer({ simulationState }) {
   const backgroudCanvasRef = useRef(null);
   const bsCanvasRef = useRef(null);
   const ueCanvasRef = useRef(null);
+  const [knowledgeKey, setKnowledgeKey] = useState("");
+  const [response, setResponse] = useState("");
 
   const renderBackground = () => {
     const canvas = backgroudCanvasRef.current;
@@ -185,6 +187,59 @@ export default function SimulationRenderer({ simulationState }) {
     renderUEs();
   }, [simulationState, renderCells, renderUEs]);
 
+  const handleGetValue = () => {
+    if (knowledgeKey.trim() === "") return;
+    const message = JSON.stringify({
+      type: "knowledge_twin_get_value",
+      key: knowledgeKey,
+    });
+    simulationState.websocket.send(message);
+  };
+
+  const handleExplain = () => {
+    if (knowledgeKey.trim() === "") return;
+    const message = JSON.stringify({
+      type: "knowledge_twin_explain_value",
+      key: knowledgeKey,
+    });
+    simulationState.websocket.send(message);
+  };
+
+  let knowledgeTwinRendered = (
+    <div>Simulation Knowledge Twin Not Available Yet.</div>
+  );
+  if (
+    simulationState !== null &&
+    simulationState.base_station !== null &&
+    simulationState.UE_list !== null
+  ) {
+    knowledgeTwinRendered = (
+      <div className="gap-1">
+        <div className="divider">Knowledge Twin</div>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            className="input input-bordered w-full"
+            placeholder="Enter knowledge key"
+            value={knowledgeKey}
+            onChange={(e) => setKnowledgeKey(e.target.value)}
+          />
+          <button className="btn btn-primary" onClick={handleGetValue}>
+            Get Value
+          </button>
+          <button className="btn btn-secondary" onClick={handleExplain}>
+            Explain
+          </button>
+        </div>
+        {knowledgeResponse && (
+          <div className="mt-4 p-2 border rounded bg-gray-100 whitespace-pre-wrap">
+            {knowledgeResponse}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   let statsRendered = <div>Simulation Status Not Available Yet.</div>;
   if (
     simulationState !== null &&
@@ -225,14 +280,19 @@ export default function SimulationRenderer({ simulationState }) {
                   <td>
                     {Object.keys(ue.downlink_received_power_dBm_dict).map(
                       (cell_id) => {
-                        const frequency_priority = ue.downlink_received_power_dBm_dict[
-                          cell_id
-                        ].frequency_priority;
+                        const frequency_priority =
+                          ue.downlink_received_power_dBm_dict[cell_id]
+                            .frequency_priority;
 
-                        const received_power_dBm = ue.downlink_received_power_dBm_dict[
-                          cell_id
-                        ].received_power_dBm;
-                        return <div key={cell_id}>{cell_id}: freq priority: {frequency_priority} signal power: {received_power_dBm} dBm</div>;
+                        const received_power_dBm =
+                          ue.downlink_received_power_dBm_dict[cell_id]
+                            .received_power_dBm;
+                        return (
+                          <div key={cell_id}>
+                            {cell_id}: freq priority: {frequency_priority}{" "}
+                            signal power: {received_power_dBm} dBm
+                          </div>
+                        );
                       }
                     )}
                   </td>
@@ -286,7 +346,7 @@ export default function SimulationRenderer({ simulationState }) {
                     <div className="stats">
                       <div className="stat">
                         <div className="stat-value">
-                          {(cell.current_dl_load * 100).toFixed(1)} % / 
+                          {(cell.current_dl_load * 100).toFixed(1)} % /
                           {(cell.current_ul_load * 100).toFixed(1)} %
                         </div>
                       </div>
