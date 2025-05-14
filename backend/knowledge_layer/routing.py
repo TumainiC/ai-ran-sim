@@ -33,6 +33,8 @@ class KnowledgeRoute:
         return f"(?P<{name}>[^/]+)"
 
     def match(self, key: str):
+        # note that there may be no query params in the key,
+        # so the returned match.groupdict() could be a None (if no match) or a dict (can be an empty dict)
         match = self.regex.match(key)
         return match.groupdict() if match else None
 
@@ -59,14 +61,14 @@ class KnowledgeRouter:
     def _find_getter_route(self, key: str) -> Tuple[KnowledgeRoute, Dict[str, str]]:
         for route in self.getter_routes:
             params = route.match(key)
-            if params:
+            if params is not None:
                 return route, params
         raise KeyError(f"No route found for key: {key}")
 
     def _find_explainer_route(self, key: str) -> Tuple[KnowledgeRoute, Dict[str, str]]:
         for route in self.explainer_routes:
             params = route.match(key)
-            if params:
+            if params is not None:
                 return route, params
         raise KeyError(f"No route found for key: {key}")
 
@@ -77,15 +79,13 @@ class KnowledgeRouter:
         except KeyError:
             return f"No getter found for key: {query_key}"
 
-    def explain_value(self, key: str):
+    def explain_value(self, query_key: str):
         try:
-            route, params = self._find_explainer_route(key)
+            route, params = self._find_explainer_route(query_key)
             if route.explainer:
-                return route.explainer(key, params)
+                return route.explainer(query_key, params)
         except KeyError:
-            return f"No explainer found for key: {key}"
-        finally:
-            return f"No explainer found for key: {key}"
+            return f"No explainer found for key: {query_key}"
 
     def get_routes(self):
         return {

@@ -16,3 +16,6 @@ class KnowledgeTag(Enum):
 
     # simulation related
     SIMULATION = "SIMULATION"
+
+    # knowledge layer related
+    KNOWLEDGE_GUIDE = "KNOWLEDGE_GUIDE"
