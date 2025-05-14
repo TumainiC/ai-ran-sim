@@ -1,6 +1,7 @@
 import re
 from typing import Callable, Dict, List, Tuple, Optional
 from .relationships import KnowledgeRelationship
+from .tags import KnowledgeTag
 
 
 class KnowledgeRoute:
@@ -9,7 +10,7 @@ class KnowledgeRoute:
         pattern: str,
         getter: Optional[Callable] = None,
         explainer: Optional[Callable] = None,
-        tags: Optional[List[str]] = None,
+        tags: Optional[List[KnowledgeTag]] = None,
         related: Optional[List[Tuple[KnowledgeRelationship, str]]] = None,
     ):
         self.pattern = pattern
@@ -46,7 +47,7 @@ class KnowledgeRouter:
         pattern: str,
         getter: Optional[Callable] = None,
         explainer: Optional[Callable] = None,
-        tags: Optional[List[str]] = None,
+        tags: Optional[List[KnowledgeTag]] = None,
         related: Optional[List[Tuple[KnowledgeRelationship, str]]] = None,
     ):
         route = KnowledgeRoute(pattern, getter, explainer, tags, related)
@@ -78,3 +79,21 @@ class KnowledgeRouter:
         if route.explainer:
             return route.explainer(key, params)
         return f"No explanation available for key: {key}"
+
+    def get_routes(self):
+        return {
+            "getter_routes": [
+                {"pattern": route.pattern} for route in self.getter_routes
+            ],
+            "explainer_routes": [
+                {
+                    "pattern": route.pattern,
+                    "tags": [tag.value for tag in route.tags],
+                    "related": [
+                        {"relationship": relationship_tag.value, "pattern": pattern}
+                        for relationship_tag, pattern in route.related
+                    ],
+                }
+                for route in self.explainer_routes
+            ],
+        }

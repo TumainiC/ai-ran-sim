@@ -1,12 +1,17 @@
-'use client';
+"use client";
 
 import { useState, useRef } from "react";
 import SimulationRenderer from "./components/SimulationRenderer";
+import UEDashboard from "./components/UEDashboard";
+import BaseStationDashboard from "./components/BaseStationDashboard";
+import LogDashboard from "./components/LogDashboard";
+import KnowledgeTwinDashboard from "./components/KnowledgeTwinDashboard";
 
 export default function Home() {
   const [websocket, setWebsocket] = useState(null);
   const [wsConnectionStatus, setWsConnectionStatus] = useState("disconnected");
   const [simulationState, setSimulationState] = useState(null);
+  const [knowledgeQueryResponse, setKnowledgeQueryResponse] = useState(null);
   const memoryRef = useRef([]);
 
   const wsMessageHandler = (event) => {
@@ -21,6 +26,14 @@ export default function Home() {
         if (memoryRef.current.length > 1000) {
           memoryRef.current.shift(); // Maintain fixed size of 1000
         }
+      } else if (messageData.type === "knowledge_twin/routes") {
+        console.log(messageData.data);
+      } else if (messageData.type === "knowledge_twin/value_response") {
+        console.log("Knowledge Twin Value Response:", messageData.data);
+        setKnowledgeQueryResponse(messageData.data);
+      } else if (messageData.type === "knowledge_twin/explanation_response") {
+        console.log("Knowledge Twin Explain Response:", messageData.data);
+        setKnowledgeQueryResponse(messageData.data);
       }
     }
   };
@@ -46,11 +59,11 @@ export default function Home() {
 
   const onStartSimulation = () => {
     websocket.send("start_simulation");
-  }
+  };
 
   const onStopSimulation = () => {
     websocket.send("stop_simulation");
-  }
+  };
 
   const saveMemoryToFile = () => {
     const dataStr = JSON.stringify(memoryRef.current, null, 2);
@@ -61,44 +74,58 @@ export default function Home() {
     a.download = "simulation_memory.json";
     a.click();
     URL.revokeObjectURL(url);
-  }
+  };
 
   return (
     <div className="p-4 flex flex-col gap-2">
       <div className="flex flex-row gap-4 items-center">
-        <button className="btn btn-outline" onClick={connectWebSocket} disabled={wsConnectionStatus === "connected"}>
+        <button
+          className="btn btn-outline"
+          onClick={connectWebSocket}
+          disabled={wsConnectionStatus === "connected"}
+        >
           Connect To Simulation Server
         </button>
         <p>Status: {wsConnectionStatus}</p>
 
-        <button className="btn btn-outline"
+        <button
+          className="btn btn-outline"
           onClick={onStartSimulation}
           disabled={wsConnectionStatus !== "connected"}
         >
           Start Simulation
         </button>
 
-        <button className="btn btn-outline"
+        <button
+          className="btn btn-outline"
           onClick={onStopSimulation}
           disabled={wsConnectionStatus !== "connected"}
         >
           Stop Simulation
         </button>
 
-        <button className="btn btn-outline"
+        <button
+          className="btn btn-outline"
           onClick={() => websocket.send("get_simulation_state")}
-          disabled={wsConnectionStatus !== "connected"}>
+          disabled={wsConnectionStatus !== "connected"}
+        >
           Get Simulation State
         </button>
 
-        <button className="btn btn-outline"
+        <button
+          className="btn btn-outline"
           onClick={saveMemoryToFile}
-          disabled={memoryRef.current.length === 0}>
+          disabled={memoryRef.current.length === 0}
+        >
           Save Memory to JSON
         </button>
       </div>
 
       <SimulationRenderer simulationState={simulationState} />
+      <KnowledgeTwinDashboard websocket={websocket} knowledgeQueryResponse={knowledgeQueryResponse}/>
+      <UEDashboard simulationState={simulationState} />
+      <BaseStationDashboard simulationState={simulationState} />
+      <LogDashboard simulationState={simulationState} />
     </div>
   );
 }

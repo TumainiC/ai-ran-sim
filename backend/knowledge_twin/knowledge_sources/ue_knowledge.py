@@ -15,7 +15,9 @@ import inspect
     key="/sim/ue/{ue_imsi}/attribute/{attribute_name}",
 )
 def ue_attribute_getter(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
+    if not ue:
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
     attribute_name = params["attribute_name"]
     if hasattr(ue, attribute_name):
         attribute = getattr(ue, attribute_name)
@@ -35,7 +37,9 @@ def ue_attribute_getter(sim, knowledge_router, query_key, params):
     key="/sim/ue/{ue_imsi}/method/{method_name}",
 )
 def ue_method_getter(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
+    if not ue:
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
     method_name = params["method_name"]
     if hasattr(ue, method_name):
         method = getattr(ue, method_name)
@@ -50,9 +54,9 @@ def ue_method_getter(sim, knowledge_router, query_key, params):
     related=[],
 )
 def ue_imsi_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
-        return f"UE {params["ue_imsi"]} not found."
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
     return f"The UE's unique IMSI string is {ue.ue_imsi}."
 
 
@@ -62,9 +66,9 @@ def ue_imsi_explainer(sim, knowledge_router, query_key, params):
     related=[],
 )
 def ue_position_x_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
-        return f"UE {params["ue_imsi"]} not found."
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
     return f"The UE's x-coordinate is {ue.position_x} (unit: m)."
 
 
@@ -74,9 +78,9 @@ def ue_position_x_explainer(sim, knowledge_router, query_key, params):
     related=[],
 )
 def ue_position_y_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
-        return f"UE {params["ue_imsi"]} not found."
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
     return f"The UE's y-coordinate is {ue.position_y} (unit: m)."
 
 
@@ -86,9 +90,9 @@ def ue_position_y_explainer(sim, knowledge_router, query_key, params):
     related=[],
 )
 def ue_target_x_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
-        return f"UE {params["ue_imsi"]} not found."
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
     return f"The UE's target x-coordinate is {ue.target_x} (unit: m)."
 
 
@@ -98,9 +102,9 @@ def ue_target_x_explainer(sim, knowledge_router, query_key, params):
     related=[],
 )
 def ue_target_y_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
-        return f"UE {params["ue_imsi"]} not found."
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
     return f"The UE's target y-coordinate is {ue.target_y} (unit: m)."
 
 
@@ -110,9 +114,9 @@ def ue_target_y_explainer(sim, knowledge_router, query_key, params):
     related=[],
 )
 def ue_speed_mps_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
-        return f"UE {params["ue_imsi"]} not found."
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
     return f"The UE's speed is {ue.speed_mps} (unit: m/s)."
 
 
@@ -122,9 +126,9 @@ def ue_speed_mps_explainer(sim, knowledge_router, query_key, params):
     related=[],
 )
 def ue_time_remaining_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
-        return f"UE {params["ue_imsi"]} not found."
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
     return f"The UE has {ue.time_remaining} (unit: simulation step) time left. When it becomes 0, the UE will be deregister itself from the network and removed from simulation."
 
 
@@ -136,9 +140,9 @@ def ue_time_remaining_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ue_slice_type_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
-        return f"UE {params["ue_imsi"]} not found."
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
     slice_type = ue["slice_type"]
     slice_qos_profile = NETWORK_SLICES.get(slice_type)
     if slice_type == NETWORK_SLICE_EMBB_NAME:
@@ -161,9 +165,9 @@ def ue_slice_type_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ue_qos_profile_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
-        return f"UE {params["ue_imsi"]} not found."
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
     slice_type = ue["slice_type"]
     slice_qos_profile = NETWORK_SLICES.get(slice_type)
 
@@ -192,9 +196,9 @@ def ue_qos_profile_explainer(sim, knowledge_router, query_key, params):
     related=[],
 )
 def ue_connected_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
-        return f"UE {params["ue_imsi"]} not found."
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
     return f"The UE is {'connected' if ue.connected else 'not connected'} to the network (served by a cell and registered with the core)."
 
 
@@ -213,7 +217,7 @@ def ue_connected_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ue_downlink_bitrate_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     qos_profile = ue.qos_profile
     gbr_dl = qos_profile.get("GBR_DL")
     if not ue:
@@ -239,7 +243,7 @@ def ue_downlink_bitrate_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ue_downlink_latency_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     qos_profile = ue.qos_profile
     if not ue:
         return f"UE {params["ue_imsi"]} not found."
@@ -282,9 +286,9 @@ def ue_downlink_latency_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ue_downlink_sinr_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
-        return f"UE {params['ue_imsi']} not found."
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
 
     if ue.current_cell is None:
         return "The UE is not connected to any cell, so SINR cannot be calculated."
@@ -354,9 +358,9 @@ def ue_downlink_sinr_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ue_downlink_cqi_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
-        return f"UE {params['ue_imsi']} not found."
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
 
     explanation_text = (
         f"The UE's downlink CQI (Channel Quality Indicator) is {ue.downlink_cqi}. "
@@ -416,9 +420,9 @@ def ue_downlink_cqi_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ue_downlink_mcs_index_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
-        return f"UE {params['ue_imsi']} not found."
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
 
     explanation_text = f"The UE's downlink MCS (Modulation and Coding Scheme) index is {ue.downlink_mcs_index}. "
 
@@ -479,9 +483,9 @@ def ue_downlink_mcs_index_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ue_downlink_mcs_data_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
-        return f"UE {params['ue_imsi']} not found."
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
 
     if ue.downlink_mcs_data is None:
         return (
@@ -534,16 +538,16 @@ def ue_downlink_mcs_data_explainer(sim, knowledge_router, query_key, params):
             KnowledgeRelationship.DETERMINED_IN_METHOD,
             "/sim/ue/{ue_imsi}/method/cell_selection_and_camping",
         ),
-        {
+        (
             KnowledgeRelationship.ASSOCIATED_WITH,
             "/sim/cell/{cell_id}",
-        },
+        ),
     ],
 )
 def ue_current_cell_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
-        return f"UE {params['ue_imsi']} not found."
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
 
     if ue.current_cell is None:
         return "The UE is not currently connected to any cell."
@@ -583,9 +587,9 @@ def ue_current_cell_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ue_power_up_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
-        return f"UE {params['ue_imsi']} not found."
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
 
     explanation_text = (
         "The `power_up` method is responsible for initializing the UE's connection to the network. "
@@ -622,9 +626,9 @@ def ue_power_up_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ue_monitor_signal_strength_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
-        return f"UE {params['ue_imsi']} not found."
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
 
     explanation_text = (
         "The `monitor_signal_strength` method allows the UE to scan for available cells "
@@ -661,9 +665,9 @@ def ue_monitor_signal_strength_explainer(sim, knowledge_router, query_key, param
     ],
 )
 def ue_cell_selection_and_camping_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
-        return f"UE {params['ue_imsi']} not found."
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
 
     explanation_text = (
         "The `cell_selection_and_camping` method enables the UE to select the most suitable cell "
@@ -701,9 +705,9 @@ def ue_cell_selection_and_camping_explainer(sim, knowledge_router, query_key, pa
     ],
 )
 def ue_authenticate_and_register_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list[params["ue_imsi"]]
+    ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
-        return f"UE {params['ue_imsi']} not found."
+        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
 
     explanation_text = (
         "The `authenticate_and_register` method allows the UE to authenticate with the network "

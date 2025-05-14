@@ -1,23 +1,9 @@
 import { useEffect, useRef, useCallback } from "react";
 
-export function formatBitrate(bps) {
-  if (bps >= 1e9) {
-    return (bps / 1e9).toFixed(2) + " Gbps";
-  } else if (bps >= 1e6) {
-    return (bps / 1e6).toFixed(2) + " Mbps";
-  } else if (bps >= 1e3) {
-    return (bps / 1e3).toFixed(2) + " Kbps";
-  } else {
-    return bps + " bps";
-  }
-}
-
 export default function SimulationRenderer({ simulationState }) {
   const backgroudCanvasRef = useRef(null);
   const bsCanvasRef = useRef(null);
   const ueCanvasRef = useRef(null);
-  const [knowledgeKey, setKnowledgeKey] = useState("");
-  const [response, setResponse] = useState("");
 
   const renderBackground = () => {
     const canvas = backgroudCanvasRef.current;
@@ -187,225 +173,35 @@ export default function SimulationRenderer({ simulationState }) {
     renderUEs();
   }, [simulationState, renderCells, renderUEs]);
 
-  const handleGetValue = () => {
-    if (knowledgeKey.trim() === "") return;
-    const message = JSON.stringify({
-      type: "knowledge_twin_get_value",
-      key: knowledgeKey,
-    });
-    simulationState.websocket.send(message);
-  };
-
-  const handleExplain = () => {
-    if (knowledgeKey.trim() === "") return;
-    const message = JSON.stringify({
-      type: "knowledge_twin_explain_value",
-      key: knowledgeKey,
-    });
-    simulationState.websocket.send(message);
-  };
-
-  let knowledgeTwinRendered = (
-    <div>Simulation Knowledge Twin Not Available Yet.</div>
-  );
-  if (
-    simulationState !== null &&
-    simulationState.base_station !== null &&
-    simulationState.UE_list !== null
-  ) {
-    knowledgeTwinRendered = (
-      <div className="gap-1">
-        <div className="divider">Knowledge Twin</div>
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            className="input input-bordered w-full"
-            placeholder="Enter knowledge key"
-            value={knowledgeKey}
-            onChange={(e) => setKnowledgeKey(e.target.value)}
-          />
-          <button className="btn btn-primary" onClick={handleGetValue}>
-            Get Value
-          </button>
-          <button className="btn btn-secondary" onClick={handleExplain}>
-            Explain
-          </button>
-        </div>
-        {knowledgeResponse && (
-          <div className="mt-4 p-2 border rounded bg-gray-100 whitespace-pre-wrap">
-            {knowledgeResponse}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  let statsRendered = <div>Simulation Status Not Available Yet.</div>;
-  if (
-    simulationState !== null &&
-    simulationState.base_station !== null &&
-    simulationState.UE_list !== null
-  ) {
-    statsRendered = (
-      <div className="gap-1">
-        <div className="divider">UE Dashboard</div>
-        <div className="overflow-x-auto overflow-y-auto max-h-[50vh]">
-          <table className="table table-xs table-pin-rows table-pin-cols">
-            <thead>
-              <tr>
-                <th>UE IMSI</th>
-                <td>Current Cell</td>
-                <td>Position</td>
-                <td>Slice / QoS</td>
-                <td>Downlink Bitrate</td>
-                <td>Downlink Signals</td>
-                <td>Downlink SINR / CQI</td>
-                <td>Downlink MCS Index / MCS Data</td>
-              </tr>
-            </thead>
-            <tbody>
-              {simulationState.UE_list.map((ue) => (
-                <tr key={ue.ue_imsi}>
-                  <th>{ue.ue_imsi}</th>
-                  <td>{ue.current_cell}</td>
-                  <td>
-                    X: {ue.vis_position_x}, Y: {ue.vis_position_y}
-                  </td>
-                  <td>
-                    Slice: {ue.slice_type} <br /> 5QI: {ue.qos_profile["5QI"]}{" "}
-                    <br /> GBR_DL: {formatBitrate(ue.qos_profile["GBR_DL"])}{" "}
-                    <br /> GBR_UL: {formatBitrate(ue.qos_profile["GBR_UL"])}
-                  </td>
-                  <td>{formatBitrate(ue.downlink_bitrate)}</td>
-                  <td>
-                    {Object.keys(ue.downlink_received_power_dBm_dict).map(
-                      (cell_id) => {
-                        const frequency_priority =
-                          ue.downlink_received_power_dBm_dict[cell_id]
-                            .frequency_priority;
-
-                        const received_power_dBm =
-                          ue.downlink_received_power_dBm_dict[cell_id]
-                            .received_power_dBm;
-                        return (
-                          <div key={cell_id}>
-                            {cell_id}: freq priority: {frequency_priority}{" "}
-                            signal power: {received_power_dBm} dBm
-                          </div>
-                        );
-                      }
-                    )}
-                  </td>
-                  <td>
-                    {ue.downlink_sinr} dB <br /> CQI: {ue.downlink_cqi}
-                  </td>
-                  <td>
-                    MCS Index: {ue.downlink_mcs_index} <br />{" "}
-                    {JSON.stringify(ue.downlink_mcs_data)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="divider">Network Dashboard</div>
-
-        {/* bs_id, cell_id, carrier_frequency_MHz, allocated_prb/max_prb/load, prb_ue_allocation_dict */}
-        <div className="grid grid-cols-3 gap-2 items-center px-6">
-          {simulationState.base_stations.map((bs) => (
-            <div
-              key={bs.bs_id + "_bs"}
-              className="border-1 border-gray-300 p-2 rounded-md"
-            >
-              <div className="text-center">Base Station: {bs.bs_id}</div>
-              {bs.cell_list.map((cell) => (
-                <div key={cell.cell_id + "_cell"}>
-                  <div className="divider">Cell: {cell.cell_id}</div>
-                  <div className="grid grid-cols-2 gap-2 items-center">
-                    <div>
-                      Carrier Freq. <br /> / BW.{" "}
-                    </div>
-                    <div>
-                      {cell.carrier_frequency_MHz} / {cell.bandwidth_Hz / 1e6}{" "}
-                      MHz
-                    </div>
-                    <div>
-                      Alloc. / Max Downlink PRB <br />
-                    </div>
-                    <div>
-                      {cell.allocated_dl_prb} / {cell.max_dl_prb}
-                    </div>
-                    <div>
-                      Alloc. / Max Uplink PRB <br />
-                    </div>
-                    <div>
-                      {cell.allocated_ul_prb} / {cell.max_ul_prb}
-                    </div>
-                    <div>Downlink / Up Load</div>
-                    <div className="stats">
-                      <div className="stat">
-                        <div className="stat-value">
-                          {(cell.current_dl_load * 100).toFixed(1)} % /
-                          {(cell.current_ul_load * 100).toFixed(1)} %
-                        </div>
-                      </div>
-                    </div>
-                    <div>Cell Radius</div>
-                    <div>{cell.vis_cell_radius * 2} m</div>
-                    <div>UE served</div>
-                    <div>{Object.keys(cell.prb_ue_allocation_dict).length}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-
-        <div className="divider">Logs</div>
-        <div className="log-container">
-          {simulationState.logs.map((log, index) => (
-            <div key={"log_" + index} className="log">
-              {log}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  const canvasWidth = 2000;
+  const canvasWidth = 1000;
   const canvasHeight = 1000;
 
   return (
-    <div>
-      <div
-        className="canvas-container relative my-5"
-        style={{ width: `${canvasWidth}px`, height: `${canvasHeight}px` }}
-      >
-        <canvas
-          ref={backgroudCanvasRef}
-          width={canvasWidth}
-          height={canvasHeight}
-          id="background_canvas"
-          style={{ position: "absolute", top: 0, left: 0 }}
-        />
-        <canvas
-          ref={bsCanvasRef}
-          width={canvasWidth}
-          height={canvasHeight}
-          id="bs_canvas"
-          style={{ position: "absolute", top: 0, left: 0 }}
-        />
-        <canvas
-          ref={ueCanvasRef}
-          width={canvasWidth}
-          height={canvasHeight}
-          id="ue_canvas"
-          style={{ position: "absolute", top: 0, left: 0 }}
-        />
-      </div>
-      {statsRendered}
+    <div
+      className="canvas-container relative my-5"
+      style={{ width: `${canvasWidth}px`, height: `${canvasHeight}px` }}
+    >
+      <canvas
+        ref={backgroudCanvasRef}
+        width={canvasWidth}
+        height={canvasHeight}
+        id="background_canvas"
+        style={{ position: "absolute", top: 0, left: 0 }}
+      />
+      <canvas
+        ref={bsCanvasRef}
+        width={canvasWidth}
+        height={canvasHeight}
+        id="bs_canvas"
+        style={{ position: "absolute", top: 0, left: 0 }}
+      />
+      <canvas
+        ref={ueCanvasRef}
+        width={canvasWidth}
+        height={canvasHeight}
+        id="ue_canvas"
+        style={{ position: "absolute", top: 0, left: 0 }}
+      />
     </div>
   );
 }

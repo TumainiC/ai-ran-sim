@@ -17,4 +17,4 @@ class KnowledgeRelationship(Enum):
     CALL_METHOD = "call_method"
     CALLED_IN_METHOD = "called_in_method"
 
-    DETERMINE_ATTRIBUTE = "calculate_attribute"
+    DETERMINE_ATTRIBUTE = "determine_attribute"

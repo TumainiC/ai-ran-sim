@@ -29,6 +29,39 @@ async def websocket_handler(websocket):
                     {"type": "simulation_state", "data": simulation_engine.to_json()}
                 )
             )
+        elif message == "knowledge_twin/get_routes":
+            await websocket.send(
+                json.dumps(
+                    {
+                        "type": "knowledge_twin/routes",
+                        "data": simulation_engine.knowledge_twin.get_routes(),
+                    }
+                )
+            )
+        elif message.startswith("knowledge_twin/get_value/"):
+            query_key = message.replace("knowledge_twin/get_value/", "")
+            print(f"Querying value for key: {query_key}")
+            await websocket.send(
+                json.dumps(
+                    {
+                        "type": "knowledge_twin/value_response",
+                        "data": simulation_engine.knowledge_twin.get_value(query_key),
+                    }
+                )
+            )
+        elif message.startswith("knowledge_twin/explain_value/"):
+            query_key = message.replace("knowledge_twin/explain_value/", "")
+            print(f"Explaining value for key: {query_key}")
+            await websocket.send(
+                json.dumps(
+                    {
+                        "type": "knowledge_twin/explanation_response",
+                        "data": simulation_engine.knowledge_twin.explain_value(
+                            query_key
+                        ),
+                    }
+                )
+            )
         else:
             print("Unknown command")
 
