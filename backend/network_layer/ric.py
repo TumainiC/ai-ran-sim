@@ -1,5 +1,4 @@
-import xApps
-
+from network_layer.xApps.loader import load_all_xapps
 
 class NearRTRIC:
     # Near Real-Time Ran Intelligent Controller
@@ -12,7 +11,7 @@ class NearRTRIC:
         # dynamically load xApps from the xApp directory
         self.xapp_list = {}
 
-        for xapp_cls in xApps.load_all_xapps():
+        for xapp_cls in load_all_xapps():
             xapp_instance = xapp_cls(ric=self)
             assert (
                 xapp_instance.xapp_id not in self.xapp_list

@@ -1,10 +1,10 @@
 import asyncio
 import json
 import random
-from core_network import CoreNetwork
-from ran import BaseStation, Cell
-from ric import NearRTRIC
-from ue import UE
+from .core_network import CoreNetwork
+from .ran import BaseStation, Cell
+from .ric import NearRTRIC
+from .ue import UE
 import settings
 import knowledge_layer
 

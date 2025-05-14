@@ -2,7 +2,7 @@ import asyncio
 import websockets
 import json
 import settings
-from simulation_engine import SimulationEngine
+from network_layer.simulation_engine import SimulationEngine
 from utils import setup_logging
 
 setup_logging()
@@ -13,17 +13,17 @@ async def websocket_handler(websocket):
     simulation_engine.network_setup()
     while True:
         message = await websocket.recv()
-        if message == "start_simulation":
+        if message == "network_layer/start_simulation":
             await websocket.send(
                 json.dumps({"type": "log", "data": "Starting simulation"})
             )
             asyncio.create_task(simulation_engine.start_simulation())
-        elif message == "stop_simulation":
+        elif message == "network_layer/stop_simulation":
             await websocket.send(
                 json.dumps({"type": "log", "data": "Stopping simulation"})
             )
             simulation_engine.stop()
-        elif message == "get_simulation_state":
+        elif message == "network_layer/get_simulation_state":
             await websocket.send(
                 json.dumps(
                     {"type": "simulation_state", "data": simulation_engine.to_json()}

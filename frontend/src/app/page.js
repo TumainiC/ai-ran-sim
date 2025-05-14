@@ -58,11 +58,11 @@ export default function Home() {
   };
 
   const onStartSimulation = () => {
-    websocket.send("start_simulation");
+    websocket.send("network_layer/start_simulation");
   };
 
   const onStopSimulation = () => {
-    websocket.send("stop_simulation");
+    websocket.send("network_layer/stop_simulation");
   };
 
   const saveMemoryToFile = () => {
@@ -106,7 +106,7 @@ export default function Home() {
 
         <button
           className="btn btn-outline"
-          onClick={() => websocket.send("get_simulation_state")}
+          onClick={() => websocket.send("network_layer/get_simulation_state")}
           disabled={wsConnectionStatus !== "connected"}
         >
           Get Simulation State
