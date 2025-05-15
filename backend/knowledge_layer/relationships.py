@@ -13,7 +13,7 @@ class KnowledgeRelationship(Enum):
     USED_BY = "used_by"
     DETERMINED_IN_METHOD = "DETERMINED_IN_METHOD"
     ASSOCIATED_WITH = "associated_with"
-    
+
     CALL_METHOD = "call_method"
     CALLED_IN_METHOD = "called_in_method"
 

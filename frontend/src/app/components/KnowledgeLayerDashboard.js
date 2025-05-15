@@ -1,20 +1,20 @@
 import { useState } from "react";
 
 export default function KnowledgeLayerDashboard({
-  websocket,
+  sendMessage,
   knowledgeQueryResponse,
 }) {
   const [knowledgeQueryInput, setKnowledgeQueryInput] = useState("");
   const getKnowledgeRoutes = () => {
-    if (!websocket) {
-      console.error("WebSocket is not connected");
+    if (!sendMessage) {
+      console.error("websocket is not connected");
       return;
     }
-    websocket.send("knowledge_layer/get_routes");
+    sendMessage("knowledge_layer", "get_routes");
   };
 
   const getKnowledgeValue = () => {
-    if (!websocket) {
+    if (!sendMessage) {
       console.error("WebSocket is not connected");
       return;
     }
@@ -22,11 +22,11 @@ export default function KnowledgeLayerDashboard({
       console.error("Knowledge query input is empty");
       return;
     }
-    websocket.send(`knowledge_layer/get_value/${knowledgeQueryInput.trim()}`);
+    sendMessage("knowledge_layer", "get_value", knowledgeQueryInput.trim());
   };
 
   const explainKnowledgeValue = () => {
-    if (!websocket) {
+    if (!sendMessage) {
       console.error("WebSocket is not connected");
       return;
     }
@@ -34,9 +34,7 @@ export default function KnowledgeLayerDashboard({
       console.error("Knowledge query input is empty");
       return;
     }
-    websocket.send(
-      `knowledge_layer/explain_value/${knowledgeQueryInput.trim()}`
-    );
+    sendMessage("knowledge_layer", "explain_value", knowledgeQueryInput.trim());
   };
 
   return (

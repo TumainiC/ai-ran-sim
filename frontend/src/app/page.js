@@ -6,12 +6,14 @@ import UEDashboard from "./components/UEDashboard";
 import BaseStationDashboard from "./components/BaseStationDashboard";
 import LogDashboard from "./components/LogDashboard";
 import KnowledgeLayerDashboard from "./components/KnowledgeLayerDashboard";
+import ChatInterface from "./components/ChatInterface";
 
 export default function Home() {
   const [websocket, setWebsocket] = useState(null);
   const [wsConnectionStatus, setWsConnectionStatus] = useState("disconnected");
   const [simulationState, setSimulationState] = useState(null);
   const [knowledgeQueryResponse, setKnowledgeQueryResponse] = useState(null);
+  const [chatResponse, setChatResponse] = useState(null);
   const [bottomTabListIndex, setBottomTabListIndex] = useState("ue_dashboard");
   const [rightTabListIndex, setRightTabListIndex] = useState(
     "knowledge_dashboard"
@@ -22,22 +24,41 @@ export default function Home() {
     console.log("WebSocket message received:", event);
     if (event.data) {
       const messageData = JSON.parse(event.data);
-      if (messageData.type === "simulation_state") {
-        // console.log("Received simulation state:", messageData.data);
-        setSimulationState(messageData.data);
-        // Save the message to memory
-        memoryRef.current.push(messageData.data);
+
+      const { layer, command, response, error } = messageData;
+
+      if (error) {
+        console.error(`Error from ${layer}: ${error}`);
+        return;
+      }
+
+      if (layer === "network_layer" && command === "get_simulation_state") {
+        console.log("Simulation State:", response);
+      } else if (
+        layer === "network_layer" &&
+        command === "simulation_state_update"
+      ) {
+        console.log("Simulation State Update:", response);
+        setSimulationState(response);
+        memoryRef.current.push(response);
+        // Maintain fixed size of 1000
         if (memoryRef.current.length > 1000) {
-          memoryRef.current.shift(); // Maintain fixed size of 1000
+          memoryRef.current.shift();
         }
-      } else if (messageData.type === "knowledge_layer/routes") {
-        console.log(messageData.data);
-      } else if (messageData.type === "knowledge_layer/value_response") {
-        console.log("Knowledge Layer Value Response:", messageData.data);
-        setKnowledgeQueryResponse(messageData.data);
-      } else if (messageData.type === "knowledge_layer/explanation_response") {
-        console.log("Knowledge Layer Explain Response:", messageData.data);
-        setKnowledgeQueryResponse(messageData.data);
+      } else if (layer === "knowledge_layer" && command === "get_routes") {
+        console.log("Knowledge Layer Routes:", response);
+      } else if (layer === "knowledge_layer" && command === "get_value") {
+        console.log("Knowledge Layer Value Response:", response);
+        setKnowledgeQueryResponse(response);
+      } else if (layer === "knowledge_layer" && command === "explain_value") {
+        console.log("Knowledge Layer Explain Response:", response);
+        setKnowledgeQueryResponse(response);
+      } else if (
+        layer === "intelligence_layer" &&
+        command === "chat_response"
+      ) {
+        console.log("Chat Response:", response);
+        setChatResponse(response);
       }
     }
   };
@@ -61,12 +82,30 @@ export default function Home() {
     ws.onmessage = wsMessageHandler;
   };
 
+  const sendMessage = (layer, command, data = {}) => {
+    if (websocket && wsConnectionStatus === "connected") {
+      websocket.send(
+        JSON.stringify({
+          layer,
+          command,
+          data,
+        })
+      );
+    } else {
+      console.error("WebSocket is not connected.");
+    }
+  };
+
   const onStartSimulation = () => {
-    websocket.send("network_layer/start_simulation");
+    sendMessage("network_layer", "start_simulation");
   };
 
   const onStopSimulation = () => {
-    websocket.send("network_layer/stop_simulation");
+    sendMessage("network_layer", "stop_simulation");
+  };
+
+  const onGetSimulationState = () => {
+    sendMessage("network_layer", "get_simulation_state");
   };
 
   const saveMemoryToFile = () => {
@@ -110,7 +149,7 @@ export default function Home() {
 
         <button
           className="btn btn-outline"
-          onClick={() => websocket.send("network_layer/get_simulation_state")}
+          onClick={onGetSimulationState}
           disabled={wsConnectionStatus !== "connected"}
         >
           Get Simulation State
@@ -127,8 +166,18 @@ export default function Home() {
 
       <div className="flex flex-row gap-4">
         <SimulationRenderer simulationState={simulationState} />
-        <div className="flex flex-col gap-3 max-h-[950px] overflow-y-auto flex-1">
+        <div className="flex flex-col gap-3 h-[1000px] overflow-y-auto flex-1 my-5">
           <div role="tablist" className="tabs tabs-border">
+            <a
+              role="tab"
+              className={
+                "tab " +
+                (rightTabListIndex === "chat_interface" ? "tab-active" : "")
+              }
+              onClick={() => setRightTabListIndex("chat_interface")}
+            >
+              Talk to the Network
+            </a>
             <a
               role="tab"
               className={
@@ -154,11 +203,21 @@ export default function Home() {
           </div>
           <div
             className={
+              rightTabListIndex === "chat_interface" ? "flex-1" : "hidden"
+            }
+          >
+            <ChatInterface
+              sendMessage={sendMessage}
+              chatResponse={chatResponse}
+            />
+          </div>
+          <div
+            className={
               rightTabListIndex === "knowledge_dashboard" ? "" : "hidden"
             }
           >
             <KnowledgeLayerDashboard
-              websocket={websocket}
+              sendMessage={sendMessage}
               knowledgeQueryResponse={knowledgeQueryResponse}
             />
           </div>

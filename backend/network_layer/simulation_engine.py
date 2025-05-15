@@ -6,7 +6,6 @@ from .ran import BaseStation, Cell
 from .ric import NearRTRIC
 from .ue import UE
 import settings
-import knowledge_layer
 
 
 class SimulationEngine:
@@ -24,8 +23,6 @@ class SimulationEngine:
 
         self.global_UE_counter = 0
         self.logs = []
-
-        self.knowledge_router = knowledge_layer.initialize_knowledge(self)
 
     def add_base_station(self, bs):
         assert isinstance(bs, BaseStation)
@@ -173,7 +170,14 @@ class SimulationEngine:
             self.sim_step += 1
             self.step(settings.SIM_STEP_TIME_DEFAULT)
             await self.websocket.send(
-                json.dumps({"type": "simulation_state", "data": self.to_json()})
+                json.dumps(
+                    {
+                        "layer": "network_layer",
+                        "command": "simulation_state_update",
+                        "response": self.to_json(),
+                        "error": None,
+                    }
+                )
             )
             await asyncio.sleep(settings.SIM_STEP_TIME_DEFAULT)
 

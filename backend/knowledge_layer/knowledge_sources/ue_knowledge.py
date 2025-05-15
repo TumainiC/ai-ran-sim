@@ -1,5 +1,6 @@
 import json
-from ..router import knowledge_getter, knowledge_explainer
+from ..knowledge_getter import knowledge_getter
+from ..knowledge_explainer import knowledge_explainer
 from ..tags import KnowledgeTag
 from ..relationships import KnowledgeRelationship
 from settings import (

@@ -16,24 +16,6 @@ This module enables scalable, explainable, and introspectable access to live sim
 
 ---
 
-## 🗂️ Folder Structure
-
-knowledge_layer/
-│
-├── init.py # exports top layer knowledge router classes
-├── router.py # Main decorators and router instance
-├── routing.py # KnowledgeRouter & KnowledgeRoute classes
-├── relationships.py # Enum of standard knowledge relationships
-├── registry.py # Entry point for initializing and registering routes
-│
-├── knowledge_sources/ # Modular knowledge source files
-│ ├── init.py # Imports all modules to trigger decorators
-│ ├── ue_knowledge.py # UE-related getters and explainers
-│ ├── cell_knowledge.py # Cell-related knowledge
-│ └── ...
-
----
-
 ## 🧩 Extending the System
 Add new files under knowledge_sources/, e.g. ric_getters.py
 
