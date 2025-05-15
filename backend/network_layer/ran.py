@@ -22,7 +22,7 @@ class Cell:
         self.frequency_priority = cell_init_data["frequency_priority"]
         self.qrx_level_min = cell_init_data["qrx_level_min"]
 
-        self.prb_ue_allocation_dict = {}  # { "ue_ismi": {"downlink": 30, "uplink": 5}}
+        self.prb_ue_allocation_dict = {}  # { "ue_imsi": {"downlink": 30, "uplink": 5}}
         self.connected_ue_list = {}
         self.ue_uplink_signal_strength_dict = {}
 
@@ -33,8 +33,8 @@ class Cell:
     def allocated_dl_prb(self):
         return sum(
             [
-                self.prb_ue_allocation_dict[ue_ismi]["downlink"]
-                for ue_ismi in self.connected_ue_list.keys()
+                self.prb_ue_allocation_dict[ue_imsi]["downlink"]
+                for ue_imsi in self.connected_ue_list.keys()
             ]
         )
 
@@ -42,8 +42,8 @@ class Cell:
     def allocated_ul_prb(self):
         return sum(
             [
-                self.prb_ue_allocation_dict[ue_ismi]["uplink"]
-                for ue_ismi in self.connected_ue_list.keys()
+                self.prb_ue_allocation_dict[ue_imsi]["uplink"]
+                for ue_imsi in self.connected_ue_list.keys()
             ]
         )
 
@@ -51,9 +51,9 @@ class Cell:
     def allocated_prb(self):
         return sum(
             [
-                self.prb_ue_allocation_dict[ue_ismi]["uplink"]
-                + self.prb_ue_allocation_dict[ue_ismi]["downlink"]
-                for ue_ismi in self.connected_ue_list.keys()
+                self.prb_ue_allocation_dict[ue_imsi]["uplink"]
+                + self.prb_ue_allocation_dict[ue_imsi]["downlink"]
+                for ue_imsi in self.connected_ue_list.keys()
             ]
         )
 

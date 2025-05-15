@@ -12,6 +12,10 @@ export default function Home() {
   const [wsConnectionStatus, setWsConnectionStatus] = useState("disconnected");
   const [simulationState, setSimulationState] = useState(null);
   const [knowledgeQueryResponse, setKnowledgeQueryResponse] = useState(null);
+  const [bottomTabListIndex, setBottomTabListIndex] = useState("ue_dashboard");
+  const [rightTabListIndex, setRightTabListIndex] = useState(
+    "knowledge_dashboard"
+  );
   const memoryRef = useRef([]);
 
   const wsMessageHandler = (event) => {
@@ -19,7 +23,7 @@ export default function Home() {
     if (event.data) {
       const messageData = JSON.parse(event.data);
       if (messageData.type === "simulation_state") {
-        console.log("Received simulation state:", messageData.data);
+        // console.log("Received simulation state:", messageData.data);
         setSimulationState(messageData.data);
         // Save the message to memory
         memoryRef.current.push(messageData.data);
@@ -121,11 +125,86 @@ export default function Home() {
         </button>
       </div>
 
-      <SimulationRenderer simulationState={simulationState} />
-      <KnowledgeLayerDashboard websocket={websocket} knowledgeQueryResponse={knowledgeQueryResponse}/>
-      <UEDashboard simulationState={simulationState} />
-      <BaseStationDashboard simulationState={simulationState} />
-      <LogDashboard simulationState={simulationState} />
+      <div className="flex flex-row gap-4">
+        <SimulationRenderer simulationState={simulationState} />
+        <div className="flex flex-col gap-3 max-h-[950px] overflow-y-auto flex-1">
+          <div role="tablist" className="tabs tabs-border">
+            <a
+              role="tab"
+              className={
+                "tab " +
+                (rightTabListIndex === "knowledge_dashboard"
+                  ? "tab-active"
+                  : "")
+              }
+              onClick={() => setRightTabListIndex("knowledge_dashboard")}
+            >
+              Knowledge Dashboard
+            </a>
+            <a
+              role="tab"
+              className={
+                "tab " +
+                (rightTabListIndex === "log_dashboard" ? "tab-active" : "")
+              }
+              onClick={() => setRightTabListIndex("log_dashboard")}
+            >
+              Log Dashboard
+            </a>
+          </div>
+          <div
+            className={
+              rightTabListIndex === "knowledge_dashboard" ? "" : "hidden"
+            }
+          >
+            <KnowledgeLayerDashboard
+              websocket={websocket}
+              knowledgeQueryResponse={knowledgeQueryResponse}
+            />
+          </div>
+          <div
+            className={rightTabListIndex === "log_dashboard" ? "" : "hidden"}
+          >
+            <LogDashboard simulationState={simulationState} />
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-col gap-3">
+        <div role="tablist" className="tabs tabs-border">
+          <a
+            role="tab"
+            className={
+              "tab " +
+              (bottomTabListIndex === "ue_dashboard" ? "tab-active" : "")
+            }
+            onClick={() => setBottomTabListIndex("ue_dashboard")}
+          >
+            UE Dashboard
+          </a>
+          <a
+            role="tab"
+            className={
+              "tab " +
+              (bottomTabListIndex === "base_station_dashboard"
+                ? "tab-active"
+                : "")
+            }
+            onClick={() => setBottomTabListIndex("base_station_dashboard")}
+          >
+            Base Station Dashboard
+          </a>
+        </div>
+        <div className={bottomTabListIndex === "ue_dashboard" ? "" : "hidden"}>
+          <UEDashboard simulationState={simulationState} />
+        </div>
+        <div
+          className={
+            bottomTabListIndex === "base_station_dashboard" ? "" : "hidden"
+          }
+        >
+          <BaseStationDashboard simulationState={simulationState} />
+        </div>
+      </div>
     </div>
   );
 }

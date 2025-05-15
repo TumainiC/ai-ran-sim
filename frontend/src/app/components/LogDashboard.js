@@ -5,13 +5,17 @@ export default function LogDashboard({ simulationState }) {
 
   return (
     <div className="gap-1">
-      <div className="divider">Logs</div>
       <div className="log-container">
         {simulationState.logs.map((log, index) => (
           <div key={"log_" + index} className="log">
             {log}
           </div>
         ))}
+        {
+          simulationState.logs.length === 0 && (
+            <div className="log">No logs available.</div>
+          )
+        }
       </div>
     </div>
   );

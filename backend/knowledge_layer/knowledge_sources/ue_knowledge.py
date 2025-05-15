@@ -136,14 +136,16 @@ def ue_time_remaining_explainer(sim, knowledge_router, query_key, params):
     "/net/ue/attribute/{ue_imsi}/slice_type",
     tags=[KnowledgeTag.UE, KnowledgeTag.SIMULATION],
     related=[
-        (KnowledgeRelationship.AFFECTS, "/net/ue/{ue_ismi}/attribute/qos_profile")
+        (KnowledgeRelationship.AFFECTS, "/net/ue/{ue_imsi}/attribute/qos_profile")
     ],
 )
 def ue_slice_type_explainer(sim, knowledge_router, query_key, params):
     ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
         return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
-    slice_type = ue["slice_type"]
+    slice_type = getattr(ue, "slice_type", None)
+    if not slice_type:
+        return f"UE {params['ue_imsi']} does not have a slice type defined yet. Note that slice type is assigned during the authentication and registration process."
     slice_qos_profile = NETWORK_SLICES.get(slice_type)
     if slice_type == NETWORK_SLICE_EMBB_NAME:
         slice_type_explanation = "eMBB (Enhanced Mobile Broadband) slice is designed to provide high data rates and capacity for applications like video streaming."
@@ -154,21 +156,23 @@ def ue_slice_type_explainer(sim, knowledge_router, query_key, params):
     else:
         slice_type_explanation = "Unknown slice type."
 
-    return f"The UE's (randomly selected) slice is {ue.slice_type}. {slice_type_explanation}. The corresponding QoS profile of this slice type is {json.dumps(slice_qos_profile)}"
+    return f"The UE's (randomly selected) slice is {ue.slice_type}. {slice_type_explanation} The corresponding QoS profile of this slice type is {json.dumps(slice_qos_profile)} (query /net/ue/attribute/{params['ue_imsi']}/qos_profile for more details)."
 
 
 @knowledge_explainer(
     "/net/ue/attribute/{ue_imsi}/qos_profile",
     tags=[KnowledgeTag.UE, KnowledgeTag.SIMULATION],
     related=[
-        (KnowledgeRelationship.DEPENDS_ON, "/net/ue/{ue_ismi}/attribute/slice_type")
+        (KnowledgeRelationship.DEPENDS_ON, "/net/ue/{ue_imsi}/attribute/slice_type")
     ],
 )
 def ue_qos_profile_explainer(sim, knowledge_router, query_key, params):
     ue = sim.ue_list.get(params["ue_imsi"], None)
     if not ue:
         return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
-    slice_type = ue["slice_type"]
+    slice_type = getattr(ue, "slice_type", None)
+    if not slice_type:
+        return f"UE {params['ue_imsi']} does not have a slice type defined yet. Cannot proceed with slice QoS Profile explanation. Note that slice type is assigned during the authentication and registration process."
     slice_qos_profile = NETWORK_SLICES.get(slice_type)
 
     v_5qi = f"5QI: {slice_qos_profile.get("5QI")}"

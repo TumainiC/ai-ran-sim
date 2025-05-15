@@ -9,10 +9,8 @@ export default function BaseStationDashboard({ simulationState }) {
 
   return (
     <div className="gap-1">
-      <div className="divider">Network Dashboard</div>
-
       {/* bs_id, cell_id, carrier_frequency_MHz, allocated_prb/max_prb/load, prb_ue_allocation_dict */}
-      <div className="grid grid-cols-3 gap-2 items-center px-6">
+      <div className="grid grid-cols-2 gap-2 items-center px-6">
         {simulationState.base_stations.map((bs) => (
           <div
             key={bs.bs_id + "_bs"}

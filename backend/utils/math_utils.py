@@ -29,7 +29,7 @@ def estimate_throughput(ue_modulation_order, ue_code_rate, ue_dl_prb):
 
     # DL & UL TBS estimates (bits per slot)
     estimated_tbs_dl = ue_dl_prb * bits_per_prb_per_slot
-    # estimated_tbs_ul = self.prb_ue_allocation_dict[ue.ue_ismi]["uplink"] * bits_per_prb_per_slot
+    # estimated_tbs_ul = self.prb_ue_allocation_dict[ue.ue_imsi]["uplink"] * bits_per_prb_per_slot
 
     # Throughput = bits per second
     dl_throughput = estimated_tbs_dl / settings.RAN_SLOT_DURATION

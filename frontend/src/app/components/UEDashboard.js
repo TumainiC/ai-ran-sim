@@ -12,7 +12,7 @@ export default function UEDashboard({ simulationState }) {
   return (
     <div className="gap-1">
       <div className="divider">UE Dashboard</div>
-      <div className="overflow-x-auto overflow-y-auto max-h-[50vh]">
+      <div className="overflow-x-auto overflow-y-auto max-h-[1000px]">
         <table className="table table-xs table-pin-rows table-pin-cols">
           <thead>
             <tr>
