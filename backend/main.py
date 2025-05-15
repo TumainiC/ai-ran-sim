@@ -5,6 +5,10 @@ import settings
 from network_layer.simulation_engine import SimulationEngine
 from utils import setup_logging
 import knowledge_layer
+from agents import Runner
+import dotenv
+dotenv.load_dotenv()
+from intelligence_layer import chat_agent
 
 setup_logging()
 
@@ -103,7 +107,17 @@ async def websocket_handler(websocket):
                     )
                 )
             elif layer == "intelligence_layer" and command == "chat":
-                pass
+                chat_agent_response = await Runner.run(chat_agent, data["content"])
+                await websocket.send(
+                    json.dumps(
+                        {
+                            "layer": "intelligence_layer",
+                            "command": "chat",
+                            "response": chat_agent_response.final_output,
+                            "error": None,
+                        }
+                    )
+                )
             else:
                 await websocket.send(
                     json.dumps(

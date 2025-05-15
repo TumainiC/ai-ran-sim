@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 
 export default function ChatInterface({ sendMessage, chatResponse }) {
   const [messages, setMessages] = useState([]);
+  const [chatDisabled, setChatDisabled] = useState(false);
   const [input, setInput] = useState("");
   // const chatEndRef = useRef(null);
   const messageContainerRef = useRef(null);
@@ -10,8 +11,9 @@ export default function ChatInterface({ sendMessage, chatResponse }) {
     if (chatResponse) {
       setMessages((prevMessages) => [
         ...prevMessages,
-        { role: chatResponse.role, content: chatResponse.content },
+        { role: "assistant", content: chatResponse },
       ]);
+      setChatDisabled(false);
     }
   }, [chatResponse]);
 
@@ -29,6 +31,7 @@ export default function ChatInterface({ sendMessage, chatResponse }) {
     setMessages((prev) => [...prev, userMessage]);
     sendMessage("intelligence_layer", "chat", userMessage);
     setInput("");
+    setChatDisabled(true);
   };
 
   const handleKeyDown = (e) => {
@@ -76,7 +79,11 @@ export default function ChatInterface({ sendMessage, chatResponse }) {
           className="textarea textarea-bordered flex-1 resize-none"
           rows={1}
         />
-        <button onClick={handleSend} className="btn btn-primary">
+        <button
+          onClick={handleSend}
+          className="btn btn-primary"
+          disabled={chatDisabled}
+        >
           Send
         </button>
       </div>

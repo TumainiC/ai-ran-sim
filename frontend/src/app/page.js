@@ -15,9 +15,7 @@ export default function Home() {
   const [knowledgeQueryResponse, setKnowledgeQueryResponse] = useState(null);
   const [chatResponse, setChatResponse] = useState(null);
   const [bottomTabListIndex, setBottomTabListIndex] = useState("ue_dashboard");
-  const [rightTabListIndex, setRightTabListIndex] = useState(
-    "knowledge_dashboard"
-  );
+  const [rightTabListIndex, setRightTabListIndex] = useState("chat_interface");
   const memoryRef = useRef([]);
 
   const wsMessageHandler = (event) => {
@@ -31,34 +29,36 @@ export default function Home() {
         console.error(`Error from ${layer}: ${error}`);
         return;
       }
-
-      if (layer === "network_layer" && command === "get_simulation_state") {
-        console.log("Simulation State:", response);
-      } else if (
-        layer === "network_layer" &&
-        command === "simulation_state_update"
-      ) {
-        console.log("Simulation State Update:", response);
-        setSimulationState(response);
-        memoryRef.current.push(response);
-        // Maintain fixed size of 1000
-        if (memoryRef.current.length > 1000) {
-          memoryRef.current.shift();
+      if (layer === "network_layer") {
+        if (command === "simulation_state_update") {
+          console.log("Simulation State Update:", response);
+          setSimulationState(response);
+          memoryRef.current.push(response);
+          // Maintain fixed size of 1000
+          if (memoryRef.current.length > 1000) {
+            memoryRef.current.shift();
+          }
         }
-      } else if (layer === "knowledge_layer" && command === "get_routes") {
-        console.log("Knowledge Layer Routes:", response);
-      } else if (layer === "knowledge_layer" && command === "get_value") {
-        console.log("Knowledge Layer Value Response:", response);
-        setKnowledgeQueryResponse(response);
-      } else if (layer === "knowledge_layer" && command === "explain_value") {
-        console.log("Knowledge Layer Explain Response:", response);
-        setKnowledgeQueryResponse(response);
-      } else if (
-        layer === "intelligence_layer" &&
-        command === "chat_response"
-      ) {
-        console.log("Chat Response:", response);
-        setChatResponse(response);
+        if (command === "get_simulation_state") {
+          console.log("Simulation State:", response);
+        }
+      } else if (layer === "knowledge_layer") {
+        if (command === "get_routes") {
+          console.log("Knowledge Layer Routes:", response);
+        } else if (command === "get_value") {
+          console.log("Knowledge Layer Value Response:", response);
+          setKnowledgeQueryResponse(response);
+        } else if (command === "explain_value") {
+          console.log("Knowledge Layer Explain Response:", response);
+          setKnowledgeQueryResponse(response);
+        }
+      } else if (layer === "intelligence_layer") {
+        if (command === "chat") {
+          console.log("Chat Response:", response);
+          setChatResponse(response);
+        }
+      } else {
+        console.error(`Unknown layer: ${layer}`);
       }
     }
   };
@@ -203,7 +203,9 @@ export default function Home() {
           </div>
           <div
             className={
-              rightTabListIndex === "chat_interface" ? "flex-1 flex min-h-0" : "hidden"
+              rightTabListIndex === "chat_interface"
+                ? "flex-1 flex min-h-0"
+                : "hidden"
             }
           >
             <ChatInterface
