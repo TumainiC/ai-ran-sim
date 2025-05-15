@@ -136,7 +136,7 @@ def ue_time_remaining_explainer(sim, knowledge_router, query_key, params):
     "/net/ue/attribute/{ue_imsi}/slice_type",
     tags=[KnowledgeTag.UE, KnowledgeTag.SIMULATION],
     related=[
-        (KnowledgeRelationship.AFFECTS, "/net/ue/{ue_imsi}/attribute/qos_profile")
+        (KnowledgeRelationship.AFFECTS, "/net/ue/attribute/{ue_imsi}/qos_profile")
     ],
 )
 def ue_slice_type_explainer(sim, knowledge_router, query_key, params):
@@ -163,7 +163,7 @@ def ue_slice_type_explainer(sim, knowledge_router, query_key, params):
     "/net/ue/attribute/{ue_imsi}/qos_profile",
     tags=[KnowledgeTag.UE, KnowledgeTag.SIMULATION],
     related=[
-        (KnowledgeRelationship.DEPENDS_ON, "/net/ue/{ue_imsi}/attribute/slice_type")
+        (KnowledgeRelationship.DEPENDS_ON, "/net/ue/attribute/{ue_imsi}/slice_type")
     ],
 )
 def ue_qos_profile_explainer(sim, knowledge_router, query_key, params):

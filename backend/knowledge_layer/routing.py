@@ -84,17 +84,13 @@ class KnowledgeRouter:
             route, params = self._find_explainer_route(query_key)
             if route.explainer:
                 explanation = route.explainer(query_key, params)
-                print(explanation)
                 if route.related:
-                    explanation += "\n\nRelated knowledge:\n"
-                    print(explanation)
+                    explanation += "\nRelated knowledge:\n"
                     for relationship, related_pattern in route.related:
-                        # explanation += f"- {relationship.value}: {related_pattern.format(**params)}\n"
-                        explanation += f"- {relationship.value}: {related_pattern}\n"
-                    print(explanation)
+                        explanation += f"- {relationship.value}: {related_pattern.format(**params)}\n"
                 return explanation
-        except KeyError:
-            return f"No explainer found for key: {query_key}"
+        except Exception as e:
+            return f"Error explaining value for key {query_key}: {str(e)}"
 
     def get_routes(self):
         return {
