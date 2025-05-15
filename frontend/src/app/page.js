@@ -166,7 +166,7 @@ export default function Home() {
 
       <div className="flex flex-row gap-4">
         <SimulationRenderer simulationState={simulationState} />
-        <div className="flex flex-col gap-3 h-[1000px] overflow-y-auto flex-1 my-5">
+        <div className="flex flex-col gap-3 h-[1000px] my-5 flex-1">
           <div role="tablist" className="tabs tabs-border">
             <a
               role="tab"
@@ -203,7 +203,7 @@ export default function Home() {
           </div>
           <div
             className={
-              rightTabListIndex === "chat_interface" ? "flex-1" : "hidden"
+              rightTabListIndex === "chat_interface" ? "flex-1 flex min-h-0" : "hidden"
             }
           >
             <ChatInterface

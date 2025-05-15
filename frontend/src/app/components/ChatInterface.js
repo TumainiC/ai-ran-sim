@@ -3,7 +3,8 @@ import React, { useState, useEffect, useRef } from "react";
 export default function ChatInterface({ sendMessage, chatResponse }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const chatEndRef = useRef(null);
+  // const chatEndRef = useRef(null);
+  const messageContainerRef = useRef(null);
 
   useEffect(() => {
     if (chatResponse) {
@@ -15,7 +16,10 @@ export default function ChatInterface({ sendMessage, chatResponse }) {
   }, [chatResponse]);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = messageContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages]);
 
   const handleSend = () => {
@@ -35,9 +39,12 @@ export default function ChatInterface({ sendMessage, chatResponse }) {
   };
 
   return (
-    <div className="flex flex-col h-[100%]">
+    <div className="flex flex-col h-full flex-1">
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div
+        className="overflow-y-auto p-4 space-y-4 flex-1"
+        ref={messageContainerRef}
+      >
         {messages.map((msg, index) => (
           <div
             key={index}
@@ -56,7 +63,7 @@ export default function ChatInterface({ sendMessage, chatResponse }) {
             </div>
           </div>
         ))}
-        <div ref={chatEndRef} />
+        {/* <div ref={chatEndRef} /> */}
       </div>
 
       {/* Input Box */}

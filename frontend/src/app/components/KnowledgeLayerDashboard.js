@@ -38,11 +38,11 @@ export default function KnowledgeLayerDashboard({
   };
 
   return (
-    <div>
+    <div className="flex-1">
+      <button className="btn btn-outline mb-3" onClick={getKnowledgeRoutes}>
+        Get Knowledge Routes
+      </button>
       <div className="flex flex-row gap-3 items-center">
-        <button className="btn btn-outline" onClick={getKnowledgeRoutes}>
-          Get Knowledge Routes
-        </button>
         <input
           className={"input w-[600]"}
           type="text"
@@ -51,10 +51,10 @@ export default function KnowledgeLayerDashboard({
           placeholder="Enter your knowledge query key here, e.g., /net/ue/ue_1/attribute/downlink_cqi"
         />
         <button className="btn btn-outline" onClick={getKnowledgeValue}>
-          Get Knowledge Value
+          Get Knowledge
         </button>
         <button className="btn btn-outline" onClick={explainKnowledgeValue}>
-          Explain Knowledge Value
+          Explain Knowledge
         </button>
       </div>
       <div>
