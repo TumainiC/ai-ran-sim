@@ -4,9 +4,10 @@ import json
 import settings
 from network_layer.simulation_engine import SimulationEngine
 from utils import setup_logging
-import knowledge_layer
+from knowledge_layer import KnowledgeRouter
 from agents import Runner
 import dotenv
+
 dotenv.load_dotenv()
 from intelligence_layer import chat_agent
 
@@ -16,7 +17,8 @@ setup_logging()
 async def websocket_handler(websocket):
     simulation_engine = SimulationEngine(websocket)
     simulation_engine.network_setup()
-    knowledge_router = knowledge_layer.initialize_knowledge_router(simulation_engine)
+    knowledge_router = KnowledgeRouter()
+    knowledge_router.import_routes(simulation_engine)
     while True:
         message = await websocket.recv()
         try:

@@ -6,9 +6,10 @@ from .ran import BaseStation, Cell
 from .ric import NearRTRIC
 from .ue import UE
 import settings
+import utils
 
 
-class SimulationEngine:
+class SimulationEngine(metaclass=utils.SingletonMeta):
     def __init__(self, websocket=None):
         self.websocket = websocket
         self.core_network = None

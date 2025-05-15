@@ -4,7 +4,6 @@ export default function ChatInterface({ sendMessage, chatResponse }) {
   const [messages, setMessages] = useState([]);
   const [chatDisabled, setChatDisabled] = useState(false);
   const [input, setInput] = useState("");
-  // const chatEndRef = useRef(null);
   const messageContainerRef = useRef(null);
 
   useEffect(() => {
@@ -55,15 +54,15 @@ export default function ChatInterface({ sendMessage, chatResponse }) {
               msg.role === "user" ? "chat-end" : "chat-start"
             }`}
           >
-            <div
-              className={`chat-bubble ${
+            <pre
+              className={`chat-bubble whitespace-pre-wrap ${
                 msg.role === "user"
                   ? "bg-primary text-white"
                   : "bg-base-200 text-base-content"
               }`}
             >
               {msg.content}
-            </div>
+            </pre>
           </div>
         ))}
         {/* <div ref={chatEndRef} /> */}
