@@ -10,6 +10,7 @@ from settings import (
     NETWORK_SLICE_MTC_NAME,
 )
 import inspect
+from network_layer.ue import UE
 
 SUPPORTED_UE_ATTRIBUTES = [
     "ue_imsi",
@@ -89,11 +90,8 @@ Supported attributes: {", ".join(SUPPORTED_UE_ATTRIBUTES)}"""
 )
 def ue_method_getter(sim, knowledge_router, query_key, params):
     method_name = params["method_name"]
-    if len(sim.ue_list.keys()) == 0:
-        return f"No UE are available. Please start the simulation and try again."
-    ue = list(sim.ue_list.values())[0]
-    if hasattr(ue, method_name):
-        method = getattr(ue, method_name)
+    if hasattr(UE, method_name):
+        method = getattr(UE, method_name)
         if callable(method):
             return inspect.getsource(method)
         else:
@@ -603,7 +601,7 @@ def ue_cell_selection_and_camping_explainer(sim, knowledge_router, query_key, pa
         ),
         (
             KnowledgeRelationship.CALL_METHOD,
-            "/net/cell/{cell_id}/method/setup_rrc_measurement_event_monitors",
+            "/net/cell/method/setup_rrc_measurement_event_monitors",
         ),
     ],
 )
@@ -1070,12 +1068,12 @@ def ue_knowledge_getter(sim, knowledge_router, query_key, params):
 def ue_knowledge_explainer(sim, knowledge_router, query_key, params):
     return f"""Welcome to the UE knowledge base!
 This knowledge base provides access to the knowledge of all the connected UE.
-You can retrieve UE live attribute value or method source code:
-    * `/net/ue/attribute/{{ue_imsi}}/{{attribute_name}}`: Retrieve a specific attribute of a UE.
-    * `/net/ue/method/{{method_name}}`: Access a specific method of the UE class.
-Or, you can get the explanation of a specific attribute or method logic:
-    * `/net/ue/attribute/{{attribute_name}}`: Get the explanation of a specific attribute.
-    * `/net/ue/method/{{method_name}}`: Get the explanation of a specific method.
+You can retrieve UE live attribute value or method source code in the following query format:
+    * `/net/ue/attribute/{{ue_imsi}}/{{attribute_name}}` 
+    * `/net/ue/method/{{method_name}}`
+Or, you can get the explanation of a specific attribute or method logic in the following query format:
+    * `/net/ue/attribute/{{attribute_name}}`
+    * `/net/ue/method/{{method_name}}`
 
 supported attributes include:
 {", ".join(SUPPORTED_UE_ATTRIBUTES)}

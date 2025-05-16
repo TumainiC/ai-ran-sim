@@ -4,6 +4,7 @@ from ..knowledge_getter import knowledge_getter
 from ..knowledge_explainer import knowledge_explainer
 from ..tags import KnowledgeTag
 from ..relationships import KnowledgeRelationship
+from network_layer.ran import Cell
 
 SUPPORTED_CELL_ATTRIBUTES = [
     "cell_id",
@@ -68,11 +69,8 @@ def cell_attribute_getter(sim, knowledge_router, query_key, params):
 )
 def cell_method_getter(sim, knowledge_router, query_key, params):
     method_name = params["method_name"]
-    if len(sim.cell_list.keys()) == 0:
-        return f"No cells are available. Please start the simulation and try again."
-    cell = list(sim.cell_list.values())[0]
-    if hasattr(cell, method_name):
-        method = getattr(cell, method_name)
+    if hasattr(Cell, method_name):
+        method = getattr(Cell, method_name)
         if callable(method):
             return inspect.getsource(method)
         else:
@@ -88,12 +86,12 @@ def cell_method_getter(sim, knowledge_router, query_key, params):
 def cell_knowledge_explainer(sim, knowledge_router, query_key, params):
     return f"""Welcome to the Cell knowledge base!
 This knowledge base provides access to the knowledge of all the cells in the simulation.
-You can retrieve information about Cell attributes and methods using the following query keys:
-* `/net/cell/attribute/{{cell_id}}/{{attribute_name}}`: Retrieve a specific attribute of a Cell.
-* `/net/cell/method/{{method_name}}`: Access a specific method of the Cell class.
-For example, you can query `/net/cell/attribute/{{cell_id}}/bandwidth_Hz` to get the bandwidth of a cell,
-or `/net/cell/method/allocate_prb` to get the source code or explanation of the `allocate_prb` method.
-
+You can retrieve the Cell's live attribute value or method source code in the following query formats:
+    * `/net/cell/attribute/{{cell_id}}/{{attribute_name}}`
+    * `/net/cell/method/{{method_name}}`
+Or, you can get the explanation of the Cell's attribute or method logic in the following query formats:
+    * `/net/cell/attribute/{{attribute_name}}`
+    * `/net/cell/method/{{method_name}}`
 Supported attributes include:
 {", ".join(SUPPORTED_CELL_ATTRIBUTES)}
 
@@ -103,110 +101,90 @@ Supported methods include:
 
 
 @knowledge_explainer(
-    "/net/cell/attribute/{cell_id}/cell_id",
+    "/net/cell/attribute/cell_id",
     tags=[KnowledgeTag.CELL, KnowledgeTag.ID],
     related=[],
 )
 def cell_id_explainer(sim, knowledge_router, query_key, params):
-    cell = sim.cell_list.get(params["cell_id"], None)
-    if not cell:
-        return f"Cell {params['cell_id']} not found."
-    return f"The cell's unique identifier is {cell.cell_id}."
+    return "The `cell_id` attribute is a unique identifier assigned to each cell in the network. "
 
 
 @knowledge_explainer(
-    "/net/cell/attribute/{cell_id}/frequency_band",
+    "/net/cell/attribute/frequency_band",
     tags=[KnowledgeTag.CELL],
     related=[],
 )
 def cell_frequency_band_explainer(sim, knowledge_router, query_key, params):
-    cell = sim.cell_list.get(params["cell_id"], None)
-    if not cell:
-        return f"Cell {params['cell_id']} not found."
     return (
-        f"The `frequency_band` attribute specifies the frequency band (e.g., n78 or n258) in which the cell operates. "
-        f"This determines the radio spectrum allocated to the cell, affecting propagation characteristics, coverage, and capacity. "
-        f"The current value is: {cell.frequency_band}."
+        "The `frequency_band` attribute specifies the radio frequency band (e.g., n78, n258) in which a cell operates. "
+        "This in real-life determines the portion of the radio spectrum allocated to the cell, which in turn affects propagation characteristics, coverage, and capacity. "
+        "Different frequency bands may be used for different deployment scenarios, such as urban, suburban, or rural environments."
     )
 
 
 @knowledge_explainer(
-    "/net/cell/attribute/{cell_id}/max_dl_prb",
+    "/net/cell/attribute/max_dl_prb",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
-        (KnowledgeRelationship.CONSTRAINED_BY, "/net/cell/attribute/{cell_id}/max_prb"),
+        (KnowledgeRelationship.CONSTRAINED_BY, "/net/cell/attribute/max_prb"),
         (KnowledgeRelationship.USED_BY_METHOD, "/net/cell/method/allocate_prb"),
     ],
 )
 def cell_max_dl_prb_explainer(sim, knowledge_router, query_key, params):
-    cell = sim.cell_list.get(params["cell_id"], None)
-    if not cell:
-        return f"Cell {params['cell_id']} not found."
     return (
-        f"The `max_dl_prb` attribute defines the maximum number of Physical Resource Blocks (PRBs) available for downlink (DL) transmission in this cell. "
-        f"PRBs are the smallest unit of radio resource allocation in the system. "
-        f"Downlink PRBs are allocated to UEs for data transmission from the cell to the UE. "
-        f"Current value: {cell.max_dl_prb}."
+        "The `max_dl_prb` attribute defines the maximum number of Physical Resource Blocks (PRBs) available for downlink (DL) transmission in a cell. "
+        "PRBs are the smallest unit of radio resource allocation in the system. "
+        "Downlink PRBs are allocated to user equipments (UEs) for data transmission from the cell to the UE. "
     )
 
 
 @knowledge_explainer(
-    "/net/cell/attribute/{cell_id}/max_ul_prb",
+    "/net/cell/attribute/max_ul_prb",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
-        (KnowledgeRelationship.CONSTRAINED_BY, "/net/cell/attribute/{cell_id}/max_prb"),
+        (KnowledgeRelationship.CONSTRAINED_BY, "/net/cell/attribute/max_prb"),
     ],
 )
 def cell_max_ul_prb_explainer(sim, knowledge_router, query_key, params):
-    cell = sim.cell_list.get(params["cell_id"], None)
-    if not cell:
-        return f"Cell {params['cell_id']} not found."
     return (
-        f"The `max_ul_prb` attribute specifies the maximum number of Physical Resource Blocks (PRBs) available for uplink (UL) transmission in this cell. "
-        f"Uplink PRBs are used for data sent from the UE to the cell. "
-        f"Current value: {cell.max_ul_prb}."
+        "The `max_ul_prb` attribute specifies the maximum number of Physical Resource Blocks (PRBs) available for uplink (UL) transmission in a cell. "
+        "Uplink PRBs are used for data sent from the UE to the cell. "
     )
 
 
 @knowledge_explainer(
-    "/net/cell/attribute/{cell_id}/transmit_power_dBm",
+    "/net/cell/attribute/transmit_power_dBm",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (KnowledgeRelationship.USED_BY_METHOD, "/net/ue/method/monitor_signal_strength")
     ],
 )
 def cell_transmit_power_explainer(sim, knowledge_router, query_key, params):
-    cell = sim.cell_list.get(params["cell_id"], None)
-    if not cell:
-        return f"Cell {params['cell_id']} not found."
     return (
-        f"The `transmit_power_dBm` attribute specifies the maximum transmit power of the cell in decibel-milliwatts (dBm). "
-        f"This value affects the received signal strength at UEs. "
-        f"Higher transmit power can improve coverage but may increase interference to neighboring cells. "
-        f"Current value: {cell.transmit_power_dBm} dBm."
+        "The `transmit_power_dBm` attribute specifies the transmit power of a cell, measured in decibel-milliwatts (dBm). "
+        "This value directly affects the received signal strength at UEs, influencing coverage area and signal quality. "
+        "Higher transmit power can improve coverage but may also increase interference to neighboring cells. "
+        "Network operators configure this attribute to balance coverage, capacity, and interference management."
     )
 
 
 @knowledge_explainer(
-    "/net/cell/attribute/{cell_id}/cell_individual_offset_dBm",
+    "/net/cell/attribute/cell_individual_offset_dBm",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (KnowledgeRelationship.USED_BY_METHOD, "/net/ue/method/monitor_signal_strength")
     ],
 )
 def cell_individual_offset_explainer(sim, knowledge_router, query_key, params):
-    cell = sim.cell_list.get(params["cell_id"], None)
-    if not cell:
-        return f"Cell {params['cell_id']} not found."
     return (
-        f"The `cell_individual_offset_dBm` attribute is a cell-specific offset (in dB) applied to signal measurements for handover and cell selection decisions. "
-        f"This allows network operators to bias UE association towards or away from specific cells, supporting load balancing and coverage optimization. "
-        f"Current value: {cell.cell_individual_offset_dBm} dB."
+        "The `cell_individual_offset_dBm` attribute is a cell-specific offset (in dB) applied to signal measurements for handover and cell selection decisions. "
+        "It allows network operators to bias UE association towards or away from specific cells, supporting load balancing and coverage optimization. "
+        "A positive offset makes a cell more attractive for selection, while a negative offset makes it less attractive."
     )
 
 
 @knowledge_explainer(
-    "/net/cell/attribute/{cell_id}/frequency_priority",
+    "/net/cell/attribute/frequency_priority",
     tags=[KnowledgeTag.CELL],
     related=[
         (
@@ -216,18 +194,15 @@ def cell_individual_offset_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def cell_frequency_priority_explainer(sim, knowledge_router, query_key, params):
-    cell = sim.cell_list.get(params["cell_id"], None)
-    if not cell:
-        return f"Cell {params['cell_id']} not found."
     return (
-        f"The `frequency_priority` attribute indicates the relative priority of this cell's frequency band for UE selection and reselection. "
-        f"Higher values may cause UEs to prefer this cell when multiple candidates are available. "
-        f"Current value: {cell.frequency_priority}."
+        "The `frequency_priority` attribute indicates the relative priority of a cell's frequency band for UE selection and reselection. "
+        "Cells with higher frequency priority values are preferred by UEs when multiple candidate cells are available. "
+        "This mechanism helps guide UE distribution across the network and can be used to optimize resource utilization."
     )
 
 
 @knowledge_explainer(
-    "/net/cell/attribute/{cell_id}/qrx_level_min",
+    "/net/cell/attribute/qrx_level_min",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (
@@ -237,18 +212,14 @@ def cell_frequency_priority_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def cell_qrx_level_min_explainer(sim, knowledge_router, query_key, params):
-    cell = sim.cell_list.get(params["cell_id"], None)
-    if not cell:
-        return f"Cell {params['cell_id']} not found."
     return (
-        f"The `qrx_level_min` attribute defines the minimum required received signal level (in dBm) for a UE to camp on or connect to this cell. "
-        f"This threshold helps ensure that UEs only associate with cells where adequate signal quality is available. "
-        f"Current value: {cell.qrx_level_min} dBm."
+        "The `qrx_level_min` attribute defines the minimum required received signal level (in dBm) for a UE to camp on or connect to a cell. "
+        "This threshold ensures that UEs only associate with cells where adequate signal quality is available, helping maintain service reliability and user experience."
     )
 
 
 @knowledge_explainer(
-    "/net/cell/attribute/{cell_id}/prb_ue_allocation_dict",
+    "/net/cell/attribute/prb_ue_allocation_dict",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (KnowledgeRelationship.SET_BY_METHOD, "/net/cell/method/allocate_prb"),
@@ -259,110 +230,95 @@ def cell_qrx_level_min_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def cell_prb_ue_allocation_dict_explainer(sim, knowledge_router, query_key, params):
-    cell = sim.cell_list.get(params["cell_id"], None)
-    if not cell:
-        return f"Cell {params['cell_id']} not found."
     return (
-        f"The `prb_ue_allocation_dict` attribute is a dictionary mapping each connected UE's IMSI to its allocated number of downlink and uplink PRBs. "
-        f"Example: {{'IMSI_1': {{'downlink': 10, 'uplink': 5}}, ...}}. "
-        f"This structure is updated each scheduling cycle by the `allocate_prb` method and reflects the current radio resource allocation for all UEs in the cell."
+        "The `prb_ue_allocation_dict` attribute is a dictionary mapping each connected UE's identifier to its allocated number of downlink and uplink PRBs. "
+        "For example: {'IMSI_1': {'downlink': 10, 'uplink': 5}, ...}. "
+        "This structure is updated each scheduling cycle (simulation step) by the cell's resource allocation logic and reflects the current radio resource allocation for all UEs in the cell."
     )
 
 
 @knowledge_explainer(
-    "/net/cell/attribute/{cell_id}/allocated_dl_prb",
+    "/net/cell/attribute/allocated_dl_prb",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.DERIVED_FROM,
-            "/net/cell/attribute/{cell_id}/prb_ue_allocation_dict",
+            "/net/cell/attribute/prb_ue_allocation_dict",
         ),
     ],
 )
 def cell_allocated_dl_prb_explainer(sim, knowledge_router, query_key, params):
-    cell = sim.cell_list.get(params["cell_id"], None)
-    if not cell:
-        return f"Cell {params['cell_id']} not found."
     return (
-        f"The `allocated_dl_prb` attribute represents the total number of downlink PRBs currently allocated to all UEs in the cell. "
-        f"It is computed as the sum of the 'downlink' PRB allocations for each UE in `prb_ue_allocation_dict`. "
-        f"This value provides a snapshot of downlink resource usage in the cell."
+        "The `allocated_dl_prb` attribute represents the total number of downlink PRBs currently allocated to all UEs in a cell. "
+        "It is computed as the sum of the 'downlink' PRB allocations for each UE in the `prb_ue_allocation_dict`. "
+        "This value provides a snapshot of downlink resource usage in the cell at any given time."
     )
 
 
 @knowledge_explainer(
-    "/net/cell/attribute/{cell_id}/allocated_ul_prb",
+    "/net/cell/attribute/allocated_ul_prb",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.DERIVED_FROM,
-            "/net/cell/attribute/{cell_id}/prb_ue_allocation_dict",
+            "/net/cell/attribute/prb_ue_allocation_dict",
         ),
     ],
 )
 def cell_allocated_ul_prb_explainer(sim, knowledge_router, query_key, params):
-    cell = sim.cell_list.get(params["cell_id"], None)
-    if not cell:
-        return f"Cell {params['cell_id']} not found."
     return (
-        f"The `allocated_ul_prb` attribute represents the total number of uplink PRBs currently allocated to all UEs in the cell. "
-        f"It is computed as the sum of the 'uplink' PRB allocations for each UE in `prb_ue_allocation_dict`. "
-        f"This value provides a snapshot of uplink resource usage in the cell."
+        "The `allocated_ul_prb` attribute represents the total number of uplink PRBs currently allocated to all UEs in a cell. "
+        "It is computed as the sum of the 'uplink' PRB allocations for each UE in the `prb_ue_allocation_dict`. "
+        "This value provides a snapshot of uplink resource usage in the cell at any given time."
     )
 
 
 @knowledge_explainer(
-    "/net/cell/attribute/{cell_id}/current_dl_load",
+    "/net/cell/attribute/current_dl_load",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.DERIVED_FROM,
-            "/net/cell/attribute/{cell_id}/allocated_dl_prb",
+            "/net/cell/attribute/allocated_dl_prb",
         ),
         (
             KnowledgeRelationship.DERIVED_FROM,
-            "/net/cell/attribute/{cell_id}/max_dl_prb",
+            "/net/cell/attribute/max_dl_prb",
         ),
     ],
 )
 def cell_current_dl_load_explainer(sim, knowledge_router, query_key, params):
-    cell = sim.cell_list.get(params["cell_id"], None)
-    if not cell:
-        return f"Cell {params['cell_id']} not found."
     return (
-        f"The `current_dl_load` attribute indicates the current downlink load of the cell, expressed as the ratio of allocated downlink PRBs to the maximum available downlink PRBs. "
-        f"Formula: allocated_dl_prb / max_dl_prb. "
-        f"This metric reflects how much of the cell's downlink capacity is currently in use."
+        "The `current_dl_load` attribute indicates the current downlink load of a cell, expressed as the ratio of allocated downlink PRBs to the maximum available downlink PRBs. "
+        "Formula: allocated_dl_prb / max_dl_prb. "
+        "This metric reflects how much of the cell's downlink capacity is currently in use and is useful for monitoring congestion and resource utilization."
     )
 
 
 @knowledge_explainer(
-    "/net/cell/attribute/{cell_id}/current_ul_load",
+    "/net/cell/attribute/current_ul_load",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.DERIVED_FROM,
-            "/net/cell/attribute/{cell_id}/allocated_ul_prb",
+            "/net/cell/attribute/allocated_ul_prb",
         ),
         (
             KnowledgeRelationship.DERIVED_FROM,
-            "/net/cell/attribute/{cell_id}/max_ul_prb",
+            "/net/cell/attribute/max_ul_prb",
         ),
     ],
 )
 def cell_current_ul_load_explainer(sim, knowledge_router, query_key, params):
-    cell = sim.cell_list.get(params["cell_id"], None)
-    if not cell:
-        return f"Cell {params['cell_id']} not found."
     return (
-        f"The `current_ul_load` attribute indicates the current uplink load of the cell, expressed as the ratio of allocated uplink PRBs to the maximum available uplink PRBs. "
-        f"Formula: allocated_ul_prb / max_ul_prb. "
-        f"This metric reflects how much of the cell's uplink capacity is currently in use."
+        "The `current_ul_load` attribute indicates the current uplink load of a cell, expressed as the ratio of allocated uplink PRBs to the maximum available uplink PRBs. "
+        "Formula: allocated_ul_prb / max_ul_prb. "
+        "This metric reflects how much of the cell's uplink capacity is currently in use and helps identify potential bottlenecks."
     )
 
 
 @knowledge_explainer(
-    "/net/cell/attribute/{cell_id}/position_x",
+    "/net/cell/attribute/position_x",
     tags=[KnowledgeTag.CELL, KnowledgeTag.LOCATION],
     related=[
         (
@@ -376,17 +332,14 @@ def cell_current_ul_load_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def cell_position_x_explainer(sim, knowledge_router, query_key, params):
-    cell = sim.cell_list.get(params["cell_id"], None)
-    if not cell:
-        return f"Cell {params['cell_id']} not found."
     return (
-        f"The `position_x` attribute gives the X-coordinate of the cell's location in the simulation environment. "
-        f"This value is inherited from the base station's position and is used for distance calculations, signal strength estimation, and visualization."
+        "The `position_x` attribute gives the X-coordinate of a cell's location in the simulation environment. "
+        "This value is typically inherited from the base station's position and is used for distance calculations, signal strength estimation, and visualization of the network topology."
     )
 
 
 @knowledge_explainer(
-    "/net/cell/attribute/{cell_id}/position_y",
+    "/net/cell/attribute/position_y",
     tags=[KnowledgeTag.CELL, KnowledgeTag.LOCATION],
     related=[
         (
@@ -400,63 +353,58 @@ def cell_position_x_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def cell_position_y_explainer(sim, knowledge_router, query_key, params):
-    cell = sim.cell_list.get(params["cell_id"], None)
-    if not cell:
-        return f"Cell {params['cell_id']} not found."
     return (
-        f"The `position_y` attribute gives the Y-coordinate of the cell's location in the simulation environment. "
-        f"This value is inherited from the base station's position and is used for distance calculations, signal strength estimation, and visualization."
+        "The `position_y` attribute gives the Y-coordinate of a cell's location in the simulation environment. "
+        "Like `position_x`, this value is used for spatial calculations, signal strength estimation, and visualization."
     )
 
 
 @knowledge_explainer(
-    "/net/cell/attribute/{cell_id}/carrier_frequency_MHz",
+    "/net/cell/attribute/carrier_frequency_MHz",
     tags=[KnowledgeTag.CELL],
     related=[],
 )
 def cell_carrier_frequency_explainer(sim, knowledge_router, query_key, params):
-    cell = sim.cell_list.get(params["cell_id"], None)
-    if not cell:
-        return f"Cell {params['cell_id']} not found."
     return (
-        f"The cell operates at a carrier frequency of {cell.carrier_frequency_MHz} MHz."
+        "The `carrier_frequency_MHz` attribute specifies the center frequency (in MHz) at which a cell operates. "
+        "This value determines the exact location of the cell's allocated spectrum within its frequency band and is critical for radio planning and interference management."
     )
 
 
 @knowledge_explainer(
-    "/net/cell/attribute/{cell_id}/bandwidth_Hz",
+    "/net/cell/attribute/bandwidth_Hz",
     tags=[KnowledgeTag.CELL],
     related=[],
 )
 def cell_bandwidth_explainer(sim, knowledge_router, query_key, params):
-    cell = sim.cell_list.get(params["cell_id"], None)
-    if not cell:
-        return f"Cell {params['cell_id']} not found."
-    return f"The cell's bandwidth is {cell.bandwidth_Hz} Hz."
+    return (
+        "The `bandwidth_Hz` attribute defines the total bandwidth (in Hz) allocated to a cell. "
+        "This bandwidth determines the maximum data rate the cell can support and influences how many PRBs are available for allocation to UEs."
+    )
 
 
 @knowledge_explainer(
-    "/net/cell/attribute/{cell_id}/max_prb",
+    "/net/cell/attribute/max_prb",
     tags=[KnowledgeTag.CELL],
     related=[],
 )
 def cell_max_prb_explainer(sim, knowledge_router, query_key, params):
-    cell = sim.cell_list.get(params["cell_id"], None)
-    if not cell:
-        return f"Cell {params['cell_id']} not found."
-    return f"The cell supports a maximum of {cell.max_prb} Physical Resource Blocks (PRBs). The PRBs are divided into downlink PRBs and uplink PRBs."
+    return (
+        "The `max_prb` attribute specifies the total number of Physical Resource Blocks (PRBs) supported by a cell. "
+        "These PRBs are divided between downlink and uplink transmissions and represent the fundamental units of radio resource allocation in the system."
+    )
 
 
 @knowledge_explainer(
-    "/net/cell/attribute/{cell_id}/connected_ue_list",
+    "/net/cell/attribute/connected_ue_list",
     tags=[KnowledgeTag.CELL, KnowledgeTag.UE],
     related=[],
 )
 def cell_connected_ue_list_explainer(sim, knowledge_router, query_key, params):
-    cell = sim.cell_list.get(params["cell_id"], None)
-    if not cell:
-        return f"Cell {params['cell_id']} not found."
-    return f"The cell currently serving the following UEs: {list(cell.connected_ue_list.keys())}"
+    return (
+        "The `connected_ue_list` attribute contains a list or dictionary of all UEs currently connected to a cell. "
+        "This list is dynamically updated as UEs register, deregister, or handover between cells, and is essential for managing resource allocation and mobility."
+    )
 
 
 @knowledge_explainer(
@@ -465,7 +413,7 @@ def cell_connected_ue_list_explainer(sim, knowledge_router, query_key, params):
     related=[
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/cell/attribute/{cell_id}/connected_ue_list",
+            "/net/cell/attribute/connected_ue_list",
         ),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
@@ -483,7 +431,7 @@ def cell_register_ue_explainer(sim, knowledge_router, query_key, params):
     related=[
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/cell/attribute/{cell_id}/prb_ue_allocation_dict",
+            "/net/cell/attribute/prb_ue_allocation_dict",
         ),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
@@ -514,7 +462,7 @@ def cell_allocate_prb_explainer(sim, knowledge_router, query_key, params):
     related=[
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/cell/attribute/{cell_id}/ue_uplink_signal_strength_dict",
+            "/net/cell/attribute/ue_uplink_signal_strength_dict",
         ),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
@@ -573,8 +521,8 @@ def cell_select_ue_mcs_explainer(sim, knowledge_router, query_key, params):
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS, KnowledgeTag.CODE],
     related=[
         (
-            KnowledgeRelationship.SET_BY_METHOD,
-            "/net/ue/attribute/{ue_imsi}/downlink_bitrate",
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/downlink_bitrate",
         ),
     ],
 )
@@ -601,7 +549,7 @@ def cell_estimate_ue_throughput_and_latency_explainer(
     related=[
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/cell/attribute/{cell_id}/connected_ue_list",
+            "/net/cell/attribute/connected_ue_list",
         ),
     ],
 )
