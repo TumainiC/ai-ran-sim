@@ -1,4 +1,13 @@
 from typing import Callable, Dict, List, Tuple, Optional
+
+from .knowledge_sources.ue_knowledge import (
+    SUPPORTED_UE_METHODS,
+    SUPPORTED_UE_ATTRIBUTES,
+)
+from .knowledge_sources.cell_knowledge import (
+    SUPPORTED_CELL_METHODS,
+    SUPPORTED_CELL_ATTRIBUTES,
+)
 from .relationships import KnowledgeRelationship
 from .tags import KnowledgeTag
 from .knowledge_route import KnowledgeRoute
@@ -64,30 +73,50 @@ class KnowledgeRouter(metaclass=utils.SingletonMeta):
             params = route.match(key)
             if params is not None:
                 return route, params
-        if "method" in key:
+        if key.startswith("/net/ue/method/"):
             raise KeyError(
-                f"Query key {key} is not recognized. Please check if the method name is supported"
+                f"Query key {key} is not recognized. Please check if the method name is supported. Currently supported UE methods are: {SUPPORTED_UE_METHODS}"
             )
-        if "attribute" in key:
+        if key.startswith("/net/cell/method/"):
             raise KeyError(
-                f"Query key {key} is not recognized. Please check if the attribute name is supported"
+                f"Query key {key} is not recognized. Please check if the method name is supported. Currently supported cell methods are: {SUPPORTED_CELL_METHODS}"
             )
-        raise KeyError(f"Query key {key} is not recognized. Please check if the key is supported")
+        if key.startswith("/net/ue/attribute/"):
+            raise KeyError(
+                f"Query key {key} is not recognized. Please check if the attribute name is supported. Currently supported UE attributes are: {SUPPORTED_UE_ATTRIBUTES}"
+            )
+        if key.startswith("/net/cell/attribute/"):
+            raise KeyError(
+                f"Query key {key} is not recognized. Please check if the attribute name is supported. Currently supported cell attributes are: {SUPPORTED_CELL_ATTRIBUTES}"
+            )
+        raise KeyError(
+            f"Query key {key} is not recognized. Please check if the key is supported"
+        )
 
     def _find_explainer_route(self, key: str) -> Tuple[KnowledgeRoute, Dict[str, str]]:
         for route in self.explainer_routes:
             params = route.match(key)
             if params is not None:
                 return route, params
-        if "method" in key:
+        if key.startswith("/net/ue/method/"):
             raise KeyError(
-                f"Query key {key} is not recognized. Please check if the method name is supported"
+                f"Query key {key} is not recognized. Please check if the method name is supported. Currently supported UE methods are: {SUPPORTED_UE_METHODS}"
             )
-        if "attribute" in key:
+        if key.startswith("/net/cell/method/"):
             raise KeyError(
-                f"Query key {key} is not recognized. Please check if the attribute name is supported"
+                f"Query key {key} is not recognized. Please check if the method name is supported. Currently supported cell methods are: {SUPPORTED_CELL_METHODS}"
             )
-        raise KeyError(f"Query key {key} is not recognized. Please check if the key is supported")
+        if key.startswith("/net/ue/attribute/"):
+            raise KeyError(
+                f"Query key {key} is not recognized. Please check if the attribute name is supported. Currently supported UE attributes are: {SUPPORTED_UE_ATTRIBUTES}"
+            )
+        if key.startswith("/net/cell/attribute/"):
+            raise KeyError(
+                f"Query key {key} is not recognized. Please check if the attribute name is supported. Currently supported cell attributes are: {SUPPORTED_CELL_ATTRIBUTES}"
+            )
+        raise KeyError(
+            f"Query key {key} is not recognized. Please check if the key is supported"
+        )
 
     def get_value(self, query_key: str) -> str:
         try:

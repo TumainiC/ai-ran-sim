@@ -45,6 +45,13 @@ SUPPORTED_UE_METHODS = [
     "set_downlink_sinr",
     "set_downlink_cqi",
     "move_towards_target",
+    "setup_rrc_measurement_event_monitors",
+    "check_rrc_meas_events_to_monitor",
+    "execute_handover",
+    "set_current_cell",
+    "deregister",
+    "calculate_SINR_and_CQI",
+    "step",
 ]
 
 
@@ -969,6 +976,217 @@ def ue_move_towards_target_explainer(sim, knowledge_router, query_key, params):
         "   - Otherwise, the UE moves along the straight line towards the target by the maximum allowed distance, updating both `position_x` and `position_y` proportionally.\n"
         "   - The new position is rounded to the nearest integer to reflect discrete simulation steps.\n"
         "4. **No Movement**: If the UE is already at the target, its position remains unchanged.\n\n"
+    )
+
+
+@knowledge_explainer(
+    "/net/ue/method/execute_handover",
+    tags=[KnowledgeTag.UE, KnowledgeTag.MOBILITY, KnowledgeTag.CODE],
+    related=[
+        (KnowledgeRelationship.CALL_METHOD, "/net/ue/method/set_current_cell"),
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/current_cell",
+        ),
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/serving_cell_history",
+        ),
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/downlink_received_power_dBm_dict",
+        ),
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/downlink_sinr",
+        ),
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/downlink_cqi",
+        ),
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/downlink_mcs_index",
+        ),
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/downlink_mcs_data",
+        ),
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/downlink_bitrate",
+        ),
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/downlink_latency",
+        ),
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/uplink_bitrate",
+        ),
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/uplink_latency",
+        ),
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/uplink_transmit_power_dBm",
+        ),
+        (
+            KnowledgeRelationship.USES_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/rrc_measurement_event_monitors",
+        ),
+        (
+            KnowledgeRelationship.CALLED_BY_METHOD,
+            "/net/base_station/method/execute_handover",
+        ),
+    ],
+)
+def ue_execute_handover_explainer(sim, knowledge_router, query_key, params):
+    return (
+        "The `execute_handover` method enables the UE (User Equipment) to switch its connection from the current serving cell to a new target cell. "
+        "This is a critical mobility management procedure in cellular networks, ensuring seamless connectivity as the UE moves or as radio conditions change.\n\n"
+        "**Detailed behavior:**\n"
+        "1. **Reset Radio State:** The method clears the UE's downlink received power measurements (`downlink_received_power_dBm_dict`), resets the downlink SINR (`downlink_sinr`), CQI (`downlink_cqi`), MCS index (`downlink_mcs_index`), MCS data (`downlink_mcs_data`), downlink bitrate (`downlink_bitrate`), and downlink latency (`downlink_latency`). "
+        "It also resets uplink bitrate (`uplink_bitrate`), uplink latency (`uplink_latency`), and uplink transmit power (`uplink_transmit_power_dBm`). This ensures that all radio parameters are re-initialized for the new cell context.\n"
+        "2. **Update Serving Cell:** The method calls `set_current_cell(target_cell)`, which updates the UE's `current_cell` attribute to the new cell and appends the cell's ID to the `serving_cell_history` list. This maintains a record of the UE's cell association over time.\n"
+        "3. **Reset RRC Event Monitors:** For each configured RRC (Radio Resource Control) measurement event monitor in `rrc_measurement_event_monitors`, the method calls `reset_trigger_history()`. This clears any event trigger history, ensuring that mobility event detection (such as handover triggers) starts fresh in the new cell context.\n"
+    )
+
+
+@knowledge_explainer(
+    "/net/ue/method/set_current_cell",
+    tags=[KnowledgeTag.UE, KnowledgeTag.MOBILITY, KnowledgeTag.CODE],
+    related=[
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/current_cell",
+        ),
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/serving_cell_history",
+        ),
+        (KnowledgeRelationship.CALLED_BY_METHOD, "/net/ue/method/execute_handover"),
+        (
+            KnowledgeRelationship.CALLED_BY_METHOD,
+            "/net/ue/method/cell_selection_and_camping",
+        ),
+    ],
+)
+def ue_set_current_cell_explainer(sim, knowledge_router, query_key, params):
+    return (
+        "The `set_current_cell` method updates the UE's association with a specific cell. "
+        "It sets the `current_cell` attribute to the provided cell object and maintains a history of all serving cells in the `serving_cell_history` list.\n\n"
+        "**Detailed behavior:**\n"
+        "1. If the new cell is `None`, the method appends `None` to the `serving_cell_history`, indicating the UE is not currently served by any cell.\n"
+        "2. If the new cell is not `None`, the method asserts that the UE is not already served by this cell (to avoid duplicate entries), then appends the cell's ID to the `serving_cell_history`.\n"
+        "3. The `serving_cell_history` list is truncated to a maximum length (as defined by `UE_SERVING_CELL_HISTORY_LENGTH` in settings) to keep only the most recent associations.\n\n"
+        "This method is called during cell selection, handover, and deregistration procedures to accurately track the UE's mobility and cell association history."
+    )
+
+
+@knowledge_explainer(
+    "/net/ue/method/deregister",
+    tags=[
+        KnowledgeTag.UE,
+        KnowledgeTag.MOBILITY,
+        KnowledgeTag.SIMULATION,
+        KnowledgeTag.CODE,
+    ],
+    related=[
+        (KnowledgeRelationship.CALL_METHOD, "/net/ue/method/set_current_cell"),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/{ue_imsi}/connected"),
+        (KnowledgeRelationship.CALLED_BY_METHOD, "/net/ue/method/step"),
+    ],
+)
+def ue_deregister_explainer(sim, knowledge_router, query_key, params):
+    return (
+        "The `deregister` method removes the UE from the network and marks it as disconnected. "
+        "This is typically called when the UE's simulation time expires or when it leaves the network.\n\n"
+        "**Detailed behavior:**\n"
+        "1. The method prints a deregistration message for logging.\n"
+        "2. It notifies the current base station by calling `handle_deregistration_request(self)` on the serving base station, allowing the network to release resources associated with the UE.\n"
+        "3. It calls `set_current_cell(None)` to clear the UE's current cell association and update the serving cell history.\n"
+        "4. The `connected` attribute is set to `False`, indicating the UE is no longer part of the network.\n\n"
+        "This method ensures a clean removal of the UE from the simulation, releasing all network resources and updating the UE's state."
+    )
+
+
+@knowledge_explainer(
+    "/net/ue/method/calculate_SINR_and_CQI",
+    tags=[KnowledgeTag.UE, KnowledgeTag.QoS, KnowledgeTag.CODE],
+    related=[
+        (
+            KnowledgeRelationship.CALL_METHOD,
+            "/net/ue/method/set_downlink_sinr",
+        ),
+        (
+            KnowledgeRelationship.CALL_METHOD,
+            "/net/ue/method/set_downlink_cqi",
+        ),
+        (
+            KnowledgeRelationship.USES_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/downlink_received_power_dBm_dict",
+        ),
+        (
+            KnowledgeRelationship.USES_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/current_cell",
+        ),
+        (
+            KnowledgeRelationship.CALLED_BY_METHOD,
+            "/net/ue/method/monitor_signal_strength",
+        ),
+    ],
+)
+def ue_calculate_sinr_and_cqi_explainer(sim, knowledge_router, query_key, params):
+    return (
+        "The `calculate_SINR_and_CQI` method computes the UE's downlink SINR (Signal-to-Interference-plus-Noise Ratio) and CQI (Channel Quality Indicator) "
+        "based on the latest received power measurements from all detected cells.\n\n"
+        "**Detailed behavior:**\n"
+        "1. If the UE is not connected to any cell (`current_cell` is `None`), the method returns immediately.\n"
+        "2. It retrieves the received power for the current cell from `downlink_received_power_dBm_dict`. If not available, it uses the cell's minimum required power.\n"
+        "3. It calculates the total received power from all cells on the same frequency as the serving cell, converting dBm to Watts.\n"
+        "4. The interference power is computed as the sum of all received powers on the same frequency, minus the serving cell's power.\n"
+        "5. The thermal noise power is calculated using the Boltzmann constant, UE temperature, and serving cell bandwidth.\n"
+        "6. The SINR is computed as the ratio of serving cell power to the sum of interference and noise, and converted to dB.\n"
+        "7. The CQI is derived from the SINR using a mapping function (`sinr_to_cqi`).\n"
+        "8. The method updates the UE's `downlink_sinr` and `downlink_cqi` attributes accordingly.\n\n"
+        "This method is essential for link adaptation, resource allocation, and mobility decisions, as SINR and CQI directly impact data rates and handover triggers."
+    )
+
+
+@knowledge_explainer(
+    "/net/ue/method/step",
+    tags=[
+        KnowledgeTag.UE,
+        KnowledgeTag.SIMULATION,
+        KnowledgeTag.CODE,
+    ],
+    related=[
+        (KnowledgeRelationship.CALL_METHOD, "/net/ue/method/move_towards_target"),
+        (KnowledgeRelationship.CALL_METHOD, "/net/ue/method/monitor_signal_strength"),
+        (
+            KnowledgeRelationship.CALL_METHOD,
+            "/net/ue/method/check_rrc_meas_events_to_monitor",
+        ),
+        (KnowledgeRelationship.CALL_METHOD, "/net/ue/method/deregister"),
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/time_remaining",
+        ),
+    ],
+)
+def ue_step_explainer(sim, knowledge_router, query_key, params):
+    return (
+        "The `step` method advances the UE's state by one simulation time step. "
+        "It orchestrates mobility, radio measurements, event monitoring, and lifecycle management for the UE.\n\n"
+        "**Detailed behavior:**\n"
+        "1. Calls `move_towards_target(delta_time)` to update the UE's position based on its speed and target coordinates.\n"
+        "2. Calls `monitor_signal_strength()` to update the UE's received power measurements and recalculate SINR and CQI.\n"
+        "3. Calls `check_rrc_meas_events_to_monitor()` to evaluate RRC measurement events and trigger handover or reporting if needed.\n"
+        "4. Decrements the `time_remaining` attribute by the elapsed simulation time (`delta_time`).\n"
+        "5. If `time_remaining` reaches zero or below, calls `deregister()` to remove the UE from the network and simulation.\n\n"
+        "This method is typically called once per simulation tick, ensuring the UE's mobility, connectivity, and lifecycle are accurately modeled."
     )
 
 

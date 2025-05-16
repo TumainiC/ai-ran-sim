@@ -30,7 +30,7 @@ class UE:
         self.target_x = target_x
         self.target_y = target_y
         self.speed_mps = speed_mps
-        self.time_ramaining = connection_time
+        self.time_remaining = connection_time
         self.simulation_engine = simulation_engine
 
         self.slice_type = None
@@ -171,11 +171,11 @@ class UE:
     def execute_handover(self, target_cell):
         # reset current cell data
         self.downlink_received_power_dBm_dict = {}
-        self.downlink_sinr = 0
-        self.downlink_cqi = 0
-        self.downlink_mcs_index = -1
-        self.downlink_mcs_data = None
-        self.downlink_bitrate = 0
+        self.set_downlink_sinr(0)
+        self.set_downlink_cqi(0)
+        self.set_downlink_mcs_index(-1)
+        self.set_downlink_mcs_data(None)
+        self.set_downlink_bitrate(0)
         self.downlink_latency = 0
         self.uplink_bitrate = 0
         self.uplink_latency = 0
@@ -338,8 +338,8 @@ class UE:
         self.move_towards_target(delta_time)
         self.monitor_signal_strength()
         self.check_rrc_meas_events_to_monitor()
-        self.time_ramaining -= delta_time
-        if self.time_ramaining <= 0:
+        self.time_remaining -= delta_time
+        if self.time_remaining <= 0:
             self.deregister()
 
     def to_json(self):
@@ -359,7 +359,7 @@ class UE:
             "current_cell": self.current_cell.cell_id if self.current_cell else None,
             "current_bs": self.current_bs.bs_id if self.current_bs else None,
             "connected": self.connected,
-            "time_ramaining": self.time_ramaining,
+            "time_remaining": self.time_remaining,
             "serving_cell_history": [cell_id for cell_id in self.serving_cell_history],
             "downlink_bitrate": self.downlink_bitrate,
             "downlink_latency": self.downlink_latency,
