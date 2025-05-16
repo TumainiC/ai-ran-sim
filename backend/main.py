@@ -2,7 +2,9 @@ import asyncio
 import websockets
 import json
 import settings
+from agents import ItemHelpers
 from network_layer.simulation_engine import SimulationEngine
+from openai.types.responses import ResponseTextDeltaEvent, ResponseFunctionToolCall
 from utils import setup_logging
 from knowledge_layer import KnowledgeRouter
 from agents import Runner
@@ -109,17 +111,113 @@ async def websocket_handler(websocket):
                     )
                 )
             elif layer == "intelligence_layer" and command == "chat":
-                chat_agent_response = await Runner.run(chat_agent, data["content"])
-                await websocket.send(
-                    json.dumps(
-                        {
-                            "layer": "intelligence_layer",
-                            "command": "chat",
-                            "response": chat_agent_response.final_output,
-                            "error": None,
-                        }
-                    )
-                )
+                # by default the data is the chat history with the new user input
+                chat_agent_streamer = Runner.run_streamed(chat_agent, data)
+
+                async for event in chat_agent_streamer.stream_events():
+                    # We'll ignore the raw responses event deltas
+                    if event.type == "raw_response_event" and isinstance(
+                        event.data, ResponseTextDeltaEvent
+                    ):
+                        # print(event.data.delta, end="", flush=True)
+                        await websocket.send(
+                            json.dumps(
+                                {
+                                    "layer": "intelligence_layer",
+                                    "command": "chat_event_stream",
+                                    "response": {
+                                        "event_type": "response_text_delta_event",
+                                        "response_text_delta": event.data.delta,
+                                    },
+                                    "error": None,
+                                }
+                            )
+                        )
+                    # When the agent updates, print that
+                    elif event.type == "agent_updated_stream_event":
+                        # print(f"Agent updated: {event.new_agent.name}")
+                        await websocket.send(
+                            json.dumps(
+                                {
+                                    "layer": "intelligence_layer",
+                                    "command": "chat_event_stream",
+                                    "response": {
+                                        "event_type": "agent_updated_stream_event",
+                                        "agent_name": event.new_agent.name,
+                                    },
+                                    "error": None,
+                                }
+                            )
+                        )
+                    # When items are generated, print them
+                    elif event.type == "run_item_stream_event":
+                        if event.item.type == "tool_call_item" and isinstance(
+                            event.item.raw_item, ResponseFunctionToolCall
+                        ):
+                            # print("-- Tool was called")
+                            await websocket.send(
+                                json.dumps(
+                                    {
+                                        "layer": "intelligence_layer",
+                                        "command": "chat_event_stream",
+                                        "response": {
+                                            "event_type": "tool_call_item",
+                                            "tool_name": event.item.raw_item.name,
+                                            "tool_args": event.item.raw_item.arguments,
+                                        },
+                                        "error": None,
+                                    }
+                                )
+                            )
+                        elif event.item.type == "tool_call_output_item":
+                            # print(f"-- Tool output: {event.item.output}")
+                            await websocket.send(
+                                json.dumps(
+                                    {
+                                        "layer": "intelligence_layer",
+                                        "command": "chat_event_stream",
+                                        "response": {
+                                            "event_type": "tool_call_output_item",
+                                            "tool_output": event.item.raw_item[
+                                                "output"
+                                            ],
+                                        },
+                                        "error": None,
+                                    }
+                                )
+                            )
+                        elif event.item.type == "message_output_item":
+                            # print(
+                            #     f"-- Message output:\n {ItemHelpers.text_message_output(event.item)}"
+                            # )
+                            await websocket.send(
+                                json.dumps(
+                                    {
+                                        "layer": "intelligence_layer",
+                                        "command": "chat_event_stream",
+                                        "response": {
+                                            "event_type": "message_output_item",
+                                            "message_output": ItemHelpers.text_message_output(
+                                                event.item
+                                            ),
+                                        },
+                                        "error": None,
+                                    }
+                                )
+                            )
+                        else:
+                            pass  # Ignore other event types
+
+                    # await websocket.send(
+                    #     json.dumps(
+                    #         {
+                    #             "layer": "intelligence_layer",
+                    #             "command": "chat",
+                    #             "response": chat_agent_response.final_output,
+                    #             "error": None,
+                    #         }
+                    #     )
+                    # )
             else:
                 await websocket.send(
                     json.dumps(

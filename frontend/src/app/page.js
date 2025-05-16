@@ -13,7 +13,7 @@ export default function Home() {
   const [wsConnectionStatus, setWsConnectionStatus] = useState("disconnected");
   const [simulationState, setSimulationState] = useState(null);
   const [knowledgeQueryResponse, setKnowledgeQueryResponse] = useState(null);
-  const [chatResponse, setChatResponse] = useState(null);
+  const [streamedChatEvent, setStreamedChatEvent] = useState(null);
   const [bottomTabListIndex, setBottomTabListIndex] = useState("ue_dashboard");
   const [rightTabListIndex, setRightTabListIndex] = useState("chat_interface");
   const memoryRef = useRef([]);
@@ -53,9 +53,11 @@ export default function Home() {
           setKnowledgeQueryResponse(response);
         }
       } else if (layer === "intelligence_layer") {
-        if (command === "chat") {
-          console.log("Chat Response:", response);
-          setChatResponse(response);
+        if (command === "chat_event_stream") {
+          console.log("Chat Event Stream:", response);
+          setStreamedChatEvent(response);
+        } else {
+          console.error(`Unknown command from intelligence_layer: ${command}`);
         }
       } else {
         console.error(`Unknown layer: ${layer}`);
@@ -209,8 +211,9 @@ export default function Home() {
             }
           >
             <ChatInterface
+              streamedChatEvent={streamedChatEvent}
+              setStreamedChatEvent={setStreamedChatEvent}
               sendMessage={sendMessage}
-              chatResponse={chatResponse}
             />
           </div>
           <div

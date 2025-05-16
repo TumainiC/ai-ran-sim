@@ -11,6 +11,36 @@ from settings import (
 )
 import inspect
 
+SUPPORTED_UE_ATTRIBUTES = [
+    "ue_imsi",
+    "position_x",
+    "position_y",
+    "target_x",
+    "target_y",
+    "speed_mps",
+    "time_remaining",
+    "slice_type",
+    "qos_profile",
+    "connected",
+    "downlink_bitrate",
+    "downlink_latency",
+    "downlink_sinr",
+    "downlink_cqi",
+    "downlink_mcs_index",
+    "downlink_mcs_data",
+    # "uplink_bitrate",
+    # "uplink_latency",
+    # "uplink_transmit_power_dBm",
+    "current_cell",
+]
+
+SUPPORTED_UE_METHODS = [
+    "power_up",
+    "monitor_signal_strength",
+    "cell_selection_and_camping",
+    "authenticate_and_register",
+]
+
 
 @knowledge_getter(
     key="/net/ue/attribute/{ue_imsi}/{attribute_name}",
@@ -31,7 +61,8 @@ def ue_attribute_getter(sim, knowledge_router, query_key, params):
             return json.dumps(attribute)
         return str(attribute)
     else:
-        raise ValueError(f"Attribute {attribute_name} not found in UE object.")
+        # raise ValueError(f"Attribute {attribute_name} not found in UE object.")
+        return f"""Attribute {attribute_name} not found in UE class. Supported attributes: {", ".join(SUPPORTED_UE_ATTRIBUTES)}"""
 
 
 @knowledge_getter(
@@ -46,7 +77,9 @@ def ue_method_getter(sim, knowledge_router, query_key, params):
         method = getattr(ue, method_name)
         if callable(method):
             return inspect.getsource(method)
-    raise ValueError(f"Method {method_name} not found or not callable.")
+        else:
+            return f"{method_name} is not a method. Something is wrong :)"
+    return f"""Method {method_name} not found in UE class. Supported methods: {", ".join(SUPPORTED_UE_METHODS)}"""
 
 
 @knowledge_explainer(
@@ -726,34 +759,8 @@ def ue_knowledge_getter(sim, knowledge_router, query_key, params):
                 "/net/ue/attribute/{ue_imsi}/{attribute_name}",
                 "/net/ue/method/{method_name}",
             ],
-            "supported_attributes": [
-                "ue_imsi",
-                "position_x",
-                "position_y",
-                "target_x",
-                "target_y",
-                "speed_mps",
-                "time_remaining",
-                "slice_type",
-                "qos_profile",
-                "connected",
-                "downlink_bitrate",
-                "downlink_latency",
-                "downlink_sinr",
-                "downlink_cqi",
-                "downlink_mcs_index",
-                "downlink_mcs_data",
-                # "uplink_bitrate",
-                # "uplink_latency",
-                # "uplink_transmit_power_dBm",
-                "current_cell",
-            ],
-            "supported_methods": [
-                "power_up",
-                "monitor_signal_strength",
-                "cell_selection_and_camping",
-                "authenticate_and_register",
-            ],
+            "supported_attributes": SUPPORTED_UE_ATTRIBUTES,
+            "supported_methods": SUPPORTED_UE_METHODS,
         },
         indent=4,
     )
@@ -765,12 +772,16 @@ def ue_knowledge_getter(sim, knowledge_router, query_key, params):
     related=[],
 )
 def ue_knowledge_explainer(sim, knowledge_router, query_key, params):
-    return (
-        "Welcome to the UE knowledge base!\n"
-        "This knowledge base provides access to the knowledge of all the connected UE. "
-        "You can retrieve information about UE attributes and methods using the following query keys:\n\n"
-        "* `/net/ue/attribute/{ue_imsi}/{attribute_name}`: Retrieve a specific attribute of a UE.\n"
-        "* `/net/ue/method/{method_name}`: Access a specific method of the UE class.\n"
-        "For example, you can query `/net/ue/attribute/{ue_imsi}/position_x` to get the x-coordinate of a UE.\n\n"
-        "or `/net/ue/method/power_up` to get the source code or explanation of the `power_up` method.\n\n"
-    )
+    return f"""Welcome to the UE knowledge base!
+This knowledge base provides access to the knowledge of all the connected UE.
+You can retrieve information about UE attributes and methods using the following query keys:
+* `/net/ue/attribute/{{ue_imsi}}/{{attribute_name}}`: Retrieve a specific attribute of a UE.
+* `/net/ue/method/{{method_name}}`: Access a specific method of the UE class.
+For example, you can query `/net/ue/attribute/{{ue_imsi}}/position_x` to get the x-coordinate of a UE.
+or `/net/ue/method/power_up` to get the source code or explanation of the `power_up` method.
+
+supported attributes include:
+{", ".join(SUPPORTED_UE_ATTRIBUTES)}
+
+supported methods include: 
+{", ".join(SUPPORTED_UE_METHODS)}"""

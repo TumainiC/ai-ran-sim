@@ -3,8 +3,8 @@ from .relationships import KnowledgeRelationship
 from .tags import KnowledgeTag
 from .knowledge_route import KnowledgeRoute
 import utils
-from .knowledge_getter import _getter_registry
-from .knowledge_explainer import _explainer_registry
+from .knowledge_getter import getter_registry
+from .knowledge_explainer import explainer_registry
 from .knowledge_sources import *  # do not remove this import, it is to import all the getters and explainers.
 
 
@@ -29,7 +29,7 @@ class KnowledgeRouter(metaclass=utils.SingletonMeta):
 
     def import_routes(self, sim=None):
 
-        for reg_key, getter_func in _getter_registry.items():
+        for reg_key, getter_func in getter_registry.items():
 
             def wrapped_getter(query_key, params, f=getter_func):
                 return f(sim, self, query_key, params)
@@ -39,7 +39,7 @@ class KnowledgeRouter(metaclass=utils.SingletonMeta):
                 getter=wrapped_getter,
             )
 
-        for reg_key, explainer_entry in _explainer_registry.items():
+        for reg_key, explainer_entry in explainer_registry.items():
 
             explainer_func = explainer_entry["func"]
             tags = explainer_entry["tags"]
@@ -64,23 +64,41 @@ class KnowledgeRouter(metaclass=utils.SingletonMeta):
             params = route.match(key)
             if params is not None:
                 return route, params
-        raise KeyError(f"No route found for key: {key}")
+        if "method" in key:
+            raise KeyError(
+                f"Query key {key} is not recognized. Please check if the method name is supported"
+            )
+        if "attribute" in key:
+            raise KeyError(
+                f"Query key {key} is not recognized. Please check if the attribute name is supported"
+            )
+        raise KeyError(f"Query key {key} is not recognized. Please check if the key is supported")
 
     def _find_explainer_route(self, key: str) -> Tuple[KnowledgeRoute, Dict[str, str]]:
         for route in self.explainer_routes:
             params = route.match(key)
             if params is not None:
                 return route, params
-        raise KeyError(f"No route found for key: {key}")
+        if "method" in key:
+            raise KeyError(
+                f"Query key {key} is not recognized. Please check if the method name is supported"
+            )
+        if "attribute" in key:
+            raise KeyError(
+                f"Query key {key} is not recognized. Please check if the attribute name is supported"
+            )
+        raise KeyError(f"Query key {key} is not recognized. Please check if the key is supported")
 
-    def get_value(self, query_key: str):
+    def get_value(self, query_key: str) -> str:
         try:
             route, params = self._find_getter_route(query_key)
+            if not route.getter:
+                return f"No getter found for key: {query_key}"
             return route.getter(query_key, params)
         except KeyError:
             return f"No getter found for key: {query_key}"
 
-    def explain_value(self, query_key: str):
+    def explain_value(self, query_key: str) -> str:
         try:
             route, params = self._find_explainer_route(query_key)
             if route.explainer:
@@ -88,8 +106,10 @@ class KnowledgeRouter(metaclass=utils.SingletonMeta):
                 if route.related:
                     explanation += "\nRelated knowledge:\n"
                     for relationship, related_pattern in route.related:
-                        explanation += f"- {relationship.value}: {related_pattern.format(**params)}\n"
+                        explanation += f"- {relationship.value}: {related_pattern}\n"
                 return explanation
+            else:
+                return f"No explanation available for key: {query_key}"
         except Exception as e:
             return f"Error explaining value for key {query_key}: {str(e)}"
 

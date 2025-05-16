@@ -1,6 +1,4 @@
-import json
-
-from agents import Agent, FunctionTool, RunContextWrapper, function_tool
+from agents import function_tool
 
 
 from knowledge_layer import KnowledgeRouter
@@ -39,7 +37,7 @@ async def get_knowledge_value_bulk(knowledge_query_key_list: list[str]) -> str:
     response_text = ""
 
     for knowledge_query_key in knowledge_query_key_list:
-        if knowledge_query_key.trim():
+        if knowledge_query_key.strip():
             response_text += f"Query {knowledge_query_key} response: \n{knowledge_router.get_value(knowledge_query_key)}\n"
 
     return response_text
@@ -56,7 +54,7 @@ async def get_knowledge_explanation_bulk(knowledge_query_key_list: list[str]) ->
     response_text = ""
 
     for knowledge_query_key in knowledge_query_key_list:
-        if knowledge_query_key.trim():
+        if knowledge_query_key.strip():
             response_text += f"Query {knowledge_query_key} explanation: \n{knowledge_router.explain_value(knowledge_query_key)}\n"
 
     return response_text
