@@ -1,2 +1,3 @@
 from . import ue_knowledge
 from . import net_knowledge
+from . import cell_knowledge

@@ -39,6 +39,9 @@ SUPPORTED_UE_METHODS = [
     "monitor_signal_strength",
     "cell_selection_and_camping",
     "authenticate_and_register",
+    "set_downlink_bitrate",
+    "set_downlink_mcs_index",
+    "set_downlink_mcs_data",
 ]
 
 
@@ -50,11 +53,15 @@ def ue_attribute_getter(sim, knowledge_router, query_key, params):
     if not ue:
         return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
     attribute_name = params["attribute_name"]
+
+    if attribute_name not in SUPPORTED_UE_ATTRIBUTES:
+        return f"Attribute {attribute_name} not supported. Supported attributes: {', '.join(SUPPORTED_UE_ATTRIBUTES)}"
+
     if hasattr(ue, attribute_name):
         attribute = getattr(ue, attribute_name)
         # check the attribute is not a function
         if callable(attribute):
-            return f"{attribute_name} is a function, query it via /net/ue/{params["ue_imsi"]}/method/{attribute_name} instead."
+            return f"{attribute_name} is a function, query it via /net/ue/method/{attribute_name} instead."
         if isinstance(attribute, dict):
             return json.dumps(attribute)
         elif isinstance(attribute, list):
@@ -318,7 +325,7 @@ def ue_downlink_latency_explainer(sim, knowledge_router, query_key, params):
             "/net/ue/attribute/{ue_imsi}/downlink_cqi",
         ),
         (
-            KnowledgeRelationship.DETERMINED_IN_METHOD,
+            KnowledgeRelationship.SET_BY_METHOD,
             "/net/ue/method/calculate_SINR_and_CQI",
         ),
     ],
@@ -390,7 +397,7 @@ def ue_downlink_sinr_explainer(sim, knowledge_router, query_key, params):
             "/net/ue/attribute/{ue_imsi}/mcs_index",
         ),
         (
-            KnowledgeRelationship.DETERMINED_IN_METHOD,
+            KnowledgeRelationship.SET_BY_METHOD,
             "/net/ue/method/calculate_SINR_and_CQI",
         ),
     ],
@@ -452,7 +459,7 @@ def ue_downlink_cqi_explainer(sim, knowledge_router, query_key, params):
             "/net/ue/attribute/{ue_imsi}/downlink_mcs_data",
         ),
         (
-            KnowledgeRelationship.DETERMINED_IN_METHOD,
+            KnowledgeRelationship.SET_BY_METHOD,
             "/net/cells/{cell_id}/method/select_ue_mcs",
         ),
     ],
@@ -511,7 +518,7 @@ def ue_downlink_mcs_index_explainer(sim, knowledge_router, query_key, params):
             "/net/ue/attribute/{ue_imsi}/downlink_mcs_index",
         ),
         (
-            KnowledgeRelationship.DETERMINED_IN_METHOD,
+            KnowledgeRelationship.SET_BY_METHOD,
             "/net/cells/{cell_id}/method/select_ue_mcs",
         ),
         (
@@ -573,7 +580,7 @@ def ue_downlink_mcs_data_explainer(sim, knowledge_router, query_key, params):
     tags=[KnowledgeTag.UE],
     related=[
         (
-            KnowledgeRelationship.DETERMINED_IN_METHOD,
+            KnowledgeRelationship.SET_BY_METHOD,
             "/net/ue/method/cell_selection_and_camping",
         ),
         (
@@ -650,7 +657,7 @@ def ue_power_up_explainer(sim, knowledge_router, query_key, params):
     tags=[KnowledgeTag.UE],
     related=[
         (
-            KnowledgeRelationship.DETERMINE_ATTRIBUTE,
+            KnowledgeRelationship.SET_ATTRIBUTE,
             "/net/ue/attribute/{ue_imsi}/downlink_received_power_dBm_dict",
         ),
         (
@@ -689,7 +696,7 @@ def ue_monitor_signal_strength_explainer(sim, knowledge_router, query_key, param
             "/net/ue/attribute/{ue_imsi}/downlink_received_power_dBm_dict",
         ),
         (
-            KnowledgeRelationship.DETERMINE_ATTRIBUTE,
+            KnowledgeRelationship.SET_ATTRIBUTE,
             "/net/ue/attribute/{ue_imsi}/current_cell",
         ),
     ],
@@ -717,11 +724,11 @@ def ue_cell_selection_and_camping_explainer(sim, knowledge_router, query_key, pa
     tags=[KnowledgeTag.UE],
     related=[
         (
-            KnowledgeRelationship.DETERMINE_ATTRIBUTE,
+            KnowledgeRelationship.SET_ATTRIBUTE,
             "/net/ue/attribute/{ue_imsi}/slice_type",
         ),
         (
-            KnowledgeRelationship.DETERMINE_ATTRIBUTE,
+            KnowledgeRelationship.SET_ATTRIBUTE,
             "/net/ue/attribute/{ue_imsi}/qos_profile",
         ),
         (
@@ -746,6 +753,65 @@ def ue_authenticate_and_register_explainer(sim, knowledge_router, query_key, par
     )
 
     return explanation_text
+
+
+@knowledge_explainer(
+    "/net/ue/method/set_downlink_bitrate",
+    tags=[KnowledgeTag.UE, KnowledgeTag.QoS, KnowledgeTag.CODE],
+    related=[
+        (
+            KnowledgeRelationship.CALLED_BY_METHOD,
+            "/net/cell/method/estimate_ue_throughput_and_latency",
+        ),
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/downlink_bitrate",
+        ),
+    ],
+)
+def ue_set_downlink_bitrate_explainer(sim, knowledge_router, query_key, params):
+    return (
+        "The `set_downlink_bitrate` method is a setter used to update the UE's downlink bitrate attribute. "
+        "This method does not perform any calculations itself; it simply assigns the provided bitrate value to the UE."
+    )
+
+
+@knowledge_explainer(
+    "/net/ue/method/set_downlink_mcs_index",
+    tags=[KnowledgeTag.UE, KnowledgeTag.QoS, KnowledgeTag.CODE],
+    related=[
+        (KnowledgeRelationship.CALLED_BY_METHOD, "/net/cell/method/select_ue_mcs"),
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/downlink_mcs_index",
+        ),
+    ],
+)
+def ue_set_downlink_mcs_index_explainer(sim, knowledge_router, query_key, params):
+    return (
+        "The `set_downlink_mcs_index` method is a setter for the UE's downlink MCS (Modulation and Coding Scheme) index. "
+        "This method simply updates the UE's internal record of which MCS index is currently assigned."
+    )
+
+
+@knowledge_explainer(
+    "/net/ue/method/set_downlink_mcs_data",
+    tags=[KnowledgeTag.UE, KnowledgeTag.QoS, KnowledgeTag.CODE],
+    related=[
+        (KnowledgeRelationship.CALLED_BY_METHOD, "/net/cell/method/select_ue_mcs"),
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/downlink_mcs_data",
+        ),
+    ],
+)
+def ue_set_downlink_mcs_data_explainer(sim, knowledge_router, query_key, params):
+    return (
+        "The `set_downlink_mcs_data` method is a setter for the UE's downlink MCS data, "
+        "which includes parameters such as modulation order, target code rate, and spectral efficiency. "
+        "This method does not compute the MCS data itself, but stores the data structure provided by the cell, "
+        "enabling the UE to reference its current transmission parameters."
+    )
 
 
 @knowledge_getter(

@@ -76,15 +76,6 @@ class Cell:
             "uplink": 0,
         }
 
-    def get_ue_prb_allocation(self, ue):
-        if ue.ue_imsi in self.prb_ue_allocation_dict:
-            return (
-                self.prb_ue_allocation_dict[ue.ue_imsi]["downlink"],
-                self.prb_ue_allocation_dict[ue.ue_imsi]["uplink"],
-            )
-        else:
-            return 0, 0
-
     def monitor_ue_signal_strength(self):
         self.ue_uplink_signal_strength_dict = {}
         pass_loss_model = settings.CHANNEL_PASS_LOSS_MODEL_MAP[
@@ -106,8 +97,8 @@ class Cell:
 
     def select_ue_mcs(self):
         for ue in self.connected_ue_list.values():
-            ue.downlink_mcs_index = -1
-            ue.downlink_mcs_data = None
+            ue.set_downlink_mcs_index(-1)
+            ue.set_downlink_mcs_data(None)
             ue_cqi_mcs_data = settings.UE_CQI_MCS_SPECTRAL_EFFICIENCY_TABLE.get(
                 ue.downlink_cqi, None
             )
@@ -127,10 +118,10 @@ class Cell:
             # print(
             #     f"Cell {self.cell_id}: UE {ue.ue_imsi} selected MCS index {max_mcs_index} based on CQI {ue.downlink_cqi}"
             # )
-            ue.downlink_mcs_index = max_mcs_index
-            ue.downlink_mcs_data = settings.RAN_MCS_SPECTRAL_EFFICIENCY_TABLE.get(
-                max_mcs_index, None
-            ).copy()
+            ue.set_downlink_mcs_index(max_mcs_index)
+            ue.set_downlink_mcs_data(
+                settings.RAN_MCS_SPECTRAL_EFFICIENCY_TABLE.get(max_mcs_index, None).copy()
+            )
 
     def step(self, delta_time):
         self.monitor_ue_signal_strength()
@@ -220,7 +211,7 @@ class Cell:
             dl_bitrate = estimate_throughput(
                 ue_modulation_order, ue_code_rate, ue_dl_prb
             )
-            ue.downlink_bitrate = dl_bitrate
+            ue.set_downlink_bitrate(dl_bitrate)
             # TODO: downlink and uplink latency
 
     def deregister_ue(self, ue):

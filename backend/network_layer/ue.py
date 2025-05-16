@@ -75,6 +75,15 @@ class UE:
     def target_reached(self):
         return self.dist_to_target == 0
 
+    def set_downlink_bitrate(self, downlink_bitrate):
+        self.downlink_bitrate = downlink_bitrate
+    
+    def set_downlink_mcs_index(self, downlink_mcs_index):
+        self.downlink_mcs_index = downlink_mcs_index
+    
+    def set_downlink_mcs_data(self, downlink_mcs_data):
+        self.downlink_mcs_data = downlink_mcs_data
+
     def cell_selection_and_camping(self):
         # Sort SSBs by received power
         # first sort by frequency priority, then by received power (both the higher the better)
