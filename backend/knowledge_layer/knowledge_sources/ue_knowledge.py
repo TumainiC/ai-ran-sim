@@ -23,7 +23,7 @@ SUPPORTED_UE_ATTRIBUTES = [
     "qos_profile",
     "connected",
     "downlink_bitrate",
-    "downlink_latency",
+    # "downlink_latency",
     "downlink_sinr",
     "downlink_cqi",
     "downlink_mcs_index",
@@ -65,7 +65,8 @@ def ue_attribute_getter(sim, knowledge_router, query_key, params):
     attribute_name = params["attribute_name"]
 
     if attribute_name not in SUPPORTED_UE_ATTRIBUTES:
-        return f"Attribute {attribute_name} not supported. Supported attributes: {', '.join(SUPPORTED_UE_ATTRIBUTES)}"
+        return f"""Attribute {attribute_name} not supported. 
+Supported attributes: {', '.join(SUPPORTED_UE_ATTRIBUTES)}"""
 
     if hasattr(ue, attribute_name):
         attribute = getattr(ue, attribute_name)
@@ -79,7 +80,8 @@ def ue_attribute_getter(sim, knowledge_router, query_key, params):
         return str(attribute)
     else:
         # raise ValueError(f"Attribute {attribute_name} not found in UE object.")
-        return f"""Attribute {attribute_name} not found in UE class. Supported attributes: {", ".join(SUPPORTED_UE_ATTRIBUTES)}"""
+        return f"""Attribute {attribute_name} not found in UE class. 
+Supported attributes: {", ".join(SUPPORTED_UE_ATTRIBUTES)}"""
 
 
 @knowledge_getter(
@@ -96,175 +98,198 @@ def ue_method_getter(sim, knowledge_router, query_key, params):
             return inspect.getsource(method)
         else:
             return f"{method_name} is not a method. Something is wrong :)"
-    return f"""Method {method_name} not found in UE class. Supported methods: {", ".join(SUPPORTED_UE_METHODS)}"""
+    return f"""Method {method_name} not found in UE class. 
+Supported methods: {", ".join(SUPPORTED_UE_METHODS)}"""
 
 
 @knowledge_explainer(
-    "/net/ue/attribute/{ue_imsi}/ue_imsi",
+    "/net/ue/attribute/ue_imsi",
     tags=[KnowledgeTag.UE, KnowledgeTag.ID],
     related=[],
 )
 def ue_imsi_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list.get(params["ue_imsi"], None)
-    if not ue:
-        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
-    return f"The UE's unique IMSI string is {ue.ue_imsi}."
+    return (
+        "The UE's IMSI (International Mobile Subscriber Identity) is a unique identifier "
+        "assigned to the UE. Examples in this simulated network are IMSI_1, IMSI_32, etc."
+    )
 
 
 @knowledge_explainer(
-    "/net/ue/attribute/{ue_imsi}/position_x",
+    "/net/ue/attribute/position_x",
     tags=[KnowledgeTag.UE, KnowledgeTag.LOCATION],
-    related=[],
+    related=[
+        (
+            KnowledgeRelationship.SET_BY_METHOD,
+            "/net/ue/method/move_towards_target",
+        )
+    ],
 )
 def ue_position_x_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list.get(params["ue_imsi"], None)
-    if not ue:
-        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
-    return f"The UE's x-coordinate is {ue.position_x} (unit: m)."
+    return f"The UE's x-coordinate (unit: m) in the simulated area."
 
 
 @knowledge_explainer(
-    "/net/ue/attribute/{ue_imsi}/position_y",
+    "/net/ue/attribute/position_y",
     tags=[KnowledgeTag.UE, KnowledgeTag.LOCATION],
-    related=[],
+    related=[
+        (
+            KnowledgeRelationship.SET_BY_METHOD,
+            "/net/ue/method/move_towards_target",
+        )
+    ],
 )
 def ue_position_y_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list.get(params["ue_imsi"], None)
-    if not ue:
-        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
-    return f"The UE's y-coordinate is {ue.position_y} (unit: m)."
+    return f"The UE's y-coordinate (unit: m) in the simulated area."
 
 
 @knowledge_explainer(
-    "/net/ue/attribute/{ue_imsi}/target_x",
+    "/net/ue/attribute/target_x",
     tags=[KnowledgeTag.UE, KnowledgeTag.MOBILITY],
-    related=[],
+    related=[
+        (
+            KnowledgeRelationship.USED_BY_METHOD,
+            "/net/ue/method/move_towards_target",
+        )
+    ],
 )
 def ue_target_x_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list.get(params["ue_imsi"], None)
-    if not ue:
-        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
-    return f"The UE's target x-coordinate is {ue.target_x} (unit: m)."
+    return f"The UE's target x-coordinate (unit: m) in the simulated area."
 
 
 @knowledge_explainer(
-    "/net/ue/attribute/{ue_imsi}/target_y",
+    "/net/ue/attribute/target_y",
     tags=[KnowledgeTag.UE, KnowledgeTag.MOBILITY],
-    related=[],
+    related=[
+        (
+            KnowledgeRelationship.USED_BY_METHOD,
+            "/net/ue/method/move_towards_target",
+        )
+    ],
 )
 def ue_target_y_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list.get(params["ue_imsi"], None)
-    if not ue:
-        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
-    return f"The UE's target y-coordinate is {ue.target_y} (unit: m)."
+    return f"The UE's target y-coordinate (unit: m) in the simulated area."
 
 
 @knowledge_explainer(
-    "/net/ue/attribute/{ue_imsi}/speed_mps",
+    "/net/ue/attribute/speed_mps",
     tags=[KnowledgeTag.UE, KnowledgeTag.MOBILITY],
-    related=[],
+    related=[
+        (
+            KnowledgeRelationship.USED_BY_METHOD,
+            "/net/ue/method/move_towards_target",
+        )
+    ],
 )
 def ue_speed_mps_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list.get(params["ue_imsi"], None)
-    if not ue:
-        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
-    return f"The UE's speed is {ue.speed_mps} (unit: m/s)."
+    return """The UE's speed (unit: m/s) in the simulated area. 
+The UE will move towards its target position at this speed."""
 
 
 @knowledge_explainer(
-    "/net/ue/attribute/{ue_imsi}/time_remaining",
-    tags=[KnowledgeTag.UE, KnowledgeTag.SIMULATION],
-    related=[],
-)
-def ue_time_remaining_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list.get(params["ue_imsi"], None)
-    if not ue:
-        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
-    return f"The UE has {ue.time_remaining} (unit: simulation step) time left. When it becomes 0, the UE will be deregister itself from the network and removed from simulation."
-
-
-@knowledge_explainer(
-    "/net/ue/attribute/{ue_imsi}/slice_type",
+    "/net/ue/attribute/time_remaining",
     tags=[KnowledgeTag.UE, KnowledgeTag.SIMULATION],
     related=[
         (
+            KnowledgeRelationship.USED_BY_METHOD,
+            "/net/ue/method/step",
+        ),
+        (
+            KnowledgeRelationship.SET_BY_METHOD,
+            "/net/ue/method/step",
+        ),
+    ],
+)
+def ue_time_remaining_explainer(sim, knowledge_router, query_key, params):
+    return (
+        "The number of simulation steps remaining for the UE, "
+        "which is decremented by 1 every simulation step. "
+        "When it reaches 0, the UE will deregister itself from the newtork "
+        "and removed from the simulation."
+    )
+
+
+@knowledge_explainer(
+    "/net/ue/attribute/slice_type",
+    tags=[KnowledgeTag.UE, KnowledgeTag.SIMULATION],
+    related=[
+        (
+            KnowledgeRelationship.SET_BY_METHOD,
+            "/net/ue/method/authenticate_and_register",
+        ),
+        (
             KnowledgeRelationship.ASSOCIATED_WITH,
-            "/net/ue/attribute/{ue_imsi}/qos_profile",
-        )
+            "/net/ue/attribute/qos_profile",
+        ),
     ],
 )
 def ue_slice_type_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list.get(params["ue_imsi"], None)
-    if not ue:
-        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
-    slice_type = getattr(ue, "slice_type", None)
-    if not slice_type:
-        return f"UE {params['ue_imsi']} does not have a slice type defined yet. Note that slice type is assigned during the authentication and registration process."
-    slice_qos_profile = NETWORK_SLICES.get(slice_type)
-    if slice_type == NETWORK_SLICE_EMBB_NAME:
-        slice_type_explanation = "eMBB (Enhanced Mobile Broadband) slice is designed to provide high data rates and capacity for applications like video streaming."
-    elif slice_type == NETWORK_SLICE_URLLC_NAME:
-        slice_type_explanation = "URLLC (Ultra-Reliable Low Latency Communication) slice is designed for applications requiring ultra-reliable and low-latency communication, such as autonomous driving."
-    elif slice_type == NETWORK_SLICE_MTC_NAME:
-        slice_type_explanation = "mMTC (Massive Machine Type Communication) slice is designed for applications with a large number of low-power devices, such as IoT sensors."
-    else:
-        slice_type_explanation = "Unknown slice type."
+    return f"""
+The UE's slice type is randomly selected during the authentication and registration process, 
+which can be one of the following:
+* eMBB (Enhanced Mobile Broadband): Designed to provide high data rates and capacity for applications like video streaming.
+    corresponding QoS profile: {json.dumps(NETWORK_SLICES[NETWORK_SLICE_EMBB_NAME])}
+* URLLC (Ultra-Reliable Low Latency Communication): Designed for applications requiring ultra-reliable and low-latency communication, such as autonomous driving.
+    corresponding QoS profile: {json.dumps(NETWORK_SLICES[NETWORK_SLICE_URLLC_NAME])}
+* mMTC (Massive Machine Type Communication): Designed for applications with a large number of low-power devices, such as IoT sensors.
+    corresponding QoS profile: {json.dumps(NETWORK_SLICES[NETWORK_SLICE_MTC_NAME])}
 
-    return f"The UE's (randomly selected) slice is {ue.slice_type}. {slice_type_explanation} The corresponding QoS profile of this slice type is {json.dumps(slice_qos_profile)} (query /net/ue/attribute/{params['ue_imsi']}/qos_profile for more details)."
+When the UE picks up a slice type, it will also get the corresponding QoS profile 
+(query /net/ue/attribute/qos_profile for more details).
+"""
 
 
 @knowledge_explainer(
-    "/net/ue/attribute/{ue_imsi}/qos_profile",
+    "/net/ue/attribute/qos_profile",
     tags=[KnowledgeTag.UE, KnowledgeTag.SIMULATION],
     related=[
         (
+            KnowledgeRelationship.SET_BY_METHOD,
+            "/net/ue/method/authenticate_and_register",
+        ),
+        (
             KnowledgeRelationship.ASSOCIATED_WITH,
-            "/net/ue/attribute/{ue_imsi}/slice_type",
-        )
+            "/net/ue/attribute/slice_type",
+        ),
     ],
 )
 def ue_qos_profile_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list.get(params["ue_imsi"], None)
-    if not ue:
-        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
-    slice_type = getattr(ue, "slice_type", None)
-    if not slice_type:
-        return f"UE {params['ue_imsi']} does not have a slice type defined yet. Cannot proceed with slice QoS Profile explanation. Note that slice type is assigned during the authentication and registration process."
-    slice_qos_profile = NETWORK_SLICES.get(slice_type)
+    # v_5qi = f"5QI: {slice_qos_profile.get("5QI")}"
+    # v_gbr_dl = f"GBR_DL: {slice_qos_profile.get("GBR_DL")}"
+    # v_gbr_ul = f"GBR_UL: {slice_qos_profile.get("GBR_UL")}"
+    # v_latency_dl = f"latency_dl: {slice_qos_profile.get("latency_dl")}"
+    # v_latency_ul = f"latency_ul: {slice_qos_profile.get("latency_ul")}"
 
-    v_5qi = f"5QI: {slice_qos_profile.get("5QI")}"
-    v_gbr_dl = f"GBR_DL: {slice_qos_profile.get("GBR_DL")}"
-    v_gbr_ul = f"GBR_UL: {slice_qos_profile.get("GBR_UL")}"
-    v_latency_dl = f"latency_dl: {slice_qos_profile.get("latency_dl")}"
-    v_latency_ul = f"latency_ul: {slice_qos_profile.get("latency_ul")}"
-
-    attr_expanations = """
+    return """The UE's QoS (Quality of Service) profile is a set of parameters that define how the network should treat the UE's traffic:
     * 5QI is a numerical identifier (e.g., 1, 9, 66, etc.) that maps to a specific QoS profile — a predefined set of parameters that define how the network should treat a particular type of traffic. It simplifies QoS management by bundling parameters under a single value.
     * GBR_DL (Guaranteed Bit Rate Downlink) is the minimum guaranteed data rate for downlink traffic. It ensures that the user equipment (UE) receives a certain amount of bandwidth for its downlink communication. 
     * GBR_UL (Guaranteed Bit Rate Uplink) is the minimum guaranteed data rate for uplink traffic. It ensures that the UE can send a certain amount of data to the network without being throttled.
     * latency_ul (Uplink Latency) is the maximum time it takes for a packet to travel from the UE to the network. 
     * latency_dl (Downlink Latency) is the maximum time it takes for a packet to travel from the network to the UE. 
 
-    Note that the actual bitrate (queried via /net/ue/attribute/{ue_imsi}/downlink_bitrate, /net/ue/attribute/{ue_imsi}/uplink_bitrate) and latency (queried via /net/ue/attribute/{ue_imsi}/uplink_latency, /net/ue/attribute/{ue_imsi}/downlink_latency) may vary based on network conditions and other factors.
-    The values provided in the QoS profile are guarantees that the network aims to meet, but they are not absolute limits.
-"""
-    return f"The UE's QoS profile: {v_5qi}, {v_gbr_dl}, {v_gbr_ul}, {v_latency_dl}, {v_latency_ul}. {attr_expanations}"
+Note that the actual bitrate and latency (get_knowledge_value: /net/ue/attribute/{ue_imsi}/downlink_bitrate, /net/ue/attribute/{ue_imsi}/uplink_bitrate, /net/ue/attribute/{ue_imsi}/uplink_latency, /net/ue/attribute/{ue_imsi}/downlink_latency) may vary based on network conditions and other factors.
+The values provided in the QoS profile are guarantees that the network aims to meet, but they are not absolute limits."""
 
 
 @knowledge_explainer(
-    "/net/ue/attribute/{ue_imsi}/connected",
+    "/net/ue/attribute/connected",
     tags=[KnowledgeTag.UE, KnowledgeTag.SIMULATION],
-    related=[],
+    related=[
+        (
+            KnowledgeRelationship.SET_BY_METHOD,
+            "/net/ue/method/authenticate_and_register",
+        ),
+        (
+            KnowledgeRelationship.SET_BY_METHOD,
+            "/net/ue/method/deregister",
+        ),
+    ],
 )
 def ue_connected_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list.get(params["ue_imsi"], None)
-    if not ue:
-        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
-    return f"The UE is {'connected' if ue.connected else 'not connected'} to the network (served by a cell and registered with the core)."
+    return "A boolean representing whether the UE is connected or not to the network (served by a cell and registered with the core)."
 
 
 @knowledge_explainer(
-    "/net/ue/attribute/{ue_imsi}/downlink_bitrate",
+    "/net/ue/attribute/downlink_bitrate",
     tags=[KnowledgeTag.UE, KnowledgeTag.QoS],
     related=[
         (
@@ -274,67 +299,51 @@ def ue_connected_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ue_downlink_bitrate_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list.get(params["ue_imsi"], None)
-    qos_profile = ue.qos_profile
-    gbr_dl = qos_profile.get("GBR_DL")
-    if not ue:
-        return f"UE {params["ue_imsi"]} not found."
-    explanation_text = (
-        f"The UE's actual downlink bitrate is {ue.downlink_bitrate} (unit: bps)"
-    )
-    if ue.downlink_bitrate >= gbr_dl:
-        explanation_text += f", which satisfies the guaranteed bitrate ({gbr_dl} bps) defined in the QoS profile."
-    else:
-        explanation_text += f", which does not satisfy the guaranteed bitrate ({gbr_dl} bps) defined in the QoS profile."
-    return explanation_text
-
-
-@knowledge_explainer(
-    "/net/ue/attribute/{ue_imsi}/downlink_latency",
-    tags=[KnowledgeTag.UE, KnowledgeTag.QoS],
-    related=[
-        (
-            KnowledgeRelationship.CONSTRAINED_BY,
-            "/net/ue/attribute/{ue_imsi}/qos_profile",
-        ),
-    ],
-)
-def ue_downlink_latency_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list.get(params["ue_imsi"], None)
-    qos_profile = ue.qos_profile
-    if not ue:
-        return f"UE {params["ue_imsi"]} not found."
-    explanation_text = (
-        f"The UE's actual downlink latency is {ue.downlink_latency} (unit: ms)."
+    return (
+        "The UE's actual downlink bitrate (unit: bps), calculated by the serving cell."
+        " Comparing this value to the UE's QoS profile (get_knowledge_value: /net/ue/attribute/{ue_imsi}/qos_profile) "
+        "can help determine if the UE is receiving the expected service quality."
     )
 
-    if ue.downlink_latency <= qos_profile.get("latency_dl"):
-        explanation_text += f", which satisfies the guaranteed latency ({qos_profile.get("latency_dl")} ms) defined in the QoS profile."
-    else:
-        explanation_text += f", which does not satisfy the guaranteed latency ({qos_profile.get("latency_dl")} ms) defined in the QoS profile."
-    return explanation_text
+
+# @knowledge_explainer(
+#     "/net/ue/attribute/downlink_latency",
+#     tags=[KnowledgeTag.UE, KnowledgeTag.QoS],
+#     related=[
+#         (
+#             KnowledgeRelationship.CONSTRAINED_BY,
+#             "/net/ue/attribute/qos_profile",
+#         ),
+#     ],
+# )
+# def ue_downlink_latency_explainer(sim, knowledge_router, query_key, params):
+#     return (
+#         "The downlink latency attribute represents the time (in milliseconds) it takes for a data packet to travel from the network to the user equipment (UE). "
+#         "This latency is influenced by factors such as radio access network scheduling, propagation delay, and network congestion. "
+#         "The downlink latency is typically compared against the guaranteed latency defined in the UE's QoS profile to assess whether the network is meeting service expectations. "
+#         "Lower downlink latency is critical for applications requiring real-time responsiveness, such as online gaming, voice/video calls, and industrial automation."
+#     )
 
 
 # skip ue/attribute/rrc_measurement_event_monitors
 # skip ue/attribute/downlink_received_power_dBm_dict
 
 
-# "/net/ue/attribute/{ue_imsi}/downlink_sinr",
 @knowledge_explainer(
-    "/net/ue/attribute/{ue_imsi}/downlink_sinr",
+    "/net/ue/attribute/downlink_sinr",
     tags=[KnowledgeTag.UE, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.DEPENDS_ON,
-            "/net/ue/attribute/{ue_imsi}/downlink_received_power_dBm_dict",
+            "/net/ue/attribute/downlink_received_power_dBm_dict",
         ),
         (
             KnowledgeRelationship.DEPENDS_ON,
-            "/net/cell/{cell_id}/attribute/transmit_power_dBm",
+            "/net/cell/attribute/transmit_power_dBm",
         ),
         (
             KnowledgeRelationship.AFFECTS,
-            "/net/ue/attribute/{ue_imsi}/downlink_cqi",
+            "/net/ue/attribute/downlink_cqi",
         ),
         (
             KnowledgeRelationship.SET_BY_METHOD,
@@ -343,239 +352,101 @@ def ue_downlink_latency_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ue_downlink_sinr_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list.get(params["ue_imsi"], None)
-    if not ue:
-        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
-
-    if ue.current_cell is None:
-        return "The UE is not connected to any cell, so SINR cannot be calculated."
-
-    explanation_text = f"The UE's downlink SINR (Signal-to-Interference-plus-Noise Ratio) is {ue.downlink_sinr:.2f} dB. "
-
-    # Explain SINR calculation
-    explanation_text += (
-        "SINR is calculated as the ratio of the received power from the serving cell "
-        "to the sum of interference power from other cells operating on the same frequency "
-        "and thermal noise power. (query /net/ue/method/calculate_SINR_and_CQI for more details)"
+    return (
+        "The downlink SINR (Signal-to-Interference-plus-Noise Ratio) attribute quantifies the quality of the radio signal received by the UE from its serving cell. "
+        "A higher SINR indicates better signal quality, which enables higher data rates and more reliable communication. "
+        "Typical SINR value ranges are interpreted as follows: values above 20 dB are considered excellent, 13–20 dB are good, 0–13 dB are acceptable, -10–0 dB are poor, and values below -10 dB indicate very poor signal quality. "
+        "SINR directly impacts the selection of modulation and coding schemes and is a key factor in link adaptation and handover decisions."
     )
-
-    # Add details about interference and noise
-    explanation_text += (
-        "Interference power is the total received power from other cells on the same frequency, "
-        "while thermal noise power is determined by the Boltzmann constant, the UE's temperature, "
-        "and the bandwidth of the serving cell."
-    )
-
-    # Add SINR value range interpretation
-    if ue.downlink_sinr > 20:
-        explanation_text += (
-            "This SINR value is considered **very good**, indicating excellent signal quality. "
-            "The UE is likely to experience high data rates and reliable communication."
-        )
-    elif 13 <= ue.downlink_sinr <= 20:
-        explanation_text += (
-            "This SINR value is considered **good**, indicating decent signal quality. "
-            "The UE should experience stable communication with moderate to high data rates."
-        )
-    elif 0 <= ue.downlink_sinr < 13:
-        explanation_text += (
-            "This SINR value is considered **acceptable**, indicating average signal quality. "
-            "The UE may experience moderate data rates, but performance could degrade in challenging conditions."
-        )
-    elif -10 <= ue.downlink_sinr < 0:
-        explanation_text += (
-            "This SINR value is considered **bad**, indicating poor signal quality. "
-            "The UE is likely to experience low data rates and unreliable communication."
-        )
-    else:
-        explanation_text += (
-            "This SINR value is considered **very bad**, indicating extremely poor signal quality. "
-            "The UE may struggle to maintain a connection or experience significant performance issues."
-        )
-
-    return explanation_text
 
 
 @knowledge_explainer(
-    "/net/ue/attribute/{ue_imsi}/downlink_cqi",
+    "/net/ue/attribute/downlink_cqi",
     tags=[KnowledgeTag.UE, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.DERIVED_FROM,
-            "/net/ue/attribute/{ue_imsi}/downlink_sinr",
+            "/net/ue/attribute/downlink_sinr",
         ),
         (
             KnowledgeRelationship.AFFECTS,
-            "/net/ue/attribute/{ue_imsi}/mcs_index",
+            "/net/ue/attribute/downlink_mcs_index",
         ),
         (
             KnowledgeRelationship.SET_BY_METHOD,
             "/net/ue/method/calculate_SINR_and_CQI",
         ),
+        (
+            KnowledgeRelationship.USED_BY_METHOD,
+            "/net/cell/method/select_ue_mcs",
+        ),
     ],
 )
 def ue_downlink_cqi_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list.get(params["ue_imsi"], None)
-    if not ue:
-        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
-
-    explanation_text = (
-        f"The UE's downlink CQI (Channel Quality Indicator) is {ue.downlink_cqi}. "
+    return (
+        "The downlink CQI (Channel Quality Indicator) attribute is a metric reported by the UE to indicate the perceived quality of the downlink channel. "
+        "CQI is derived from the measured SINR and is used by the network to select the most appropriate modulation and coding scheme (MCS) for data transmission. "
+        "Higher CQI values correspond to better channel conditions, allowing the network to use more efficient (higher-rate) MCS settings, which increases throughput. "
+        "Lower CQI values indicate poorer channel conditions, prompting the network to use more robust but less efficient MCS settings to maintain reliable communication. "
     )
 
-    # Explain what CQI represents
-    explanation_text += (
-        "CQI is a measure of the channel quality as perceived by the UE. "
-        "It is used by the network to determine the most suitable modulation and coding scheme (MCS) (queried via /net/ue/attribute/{ue_imsi}/downlink_mcs_index and /net/ue/attribute/{ue_imsi}/downlink_mcs_data) "
-        "to maximize data throughput while maintaining reliable communication."
-    )
 
-    # Explain the relationship with downlink SINR
-    explanation_text += (
-        " The CQI value is derived from the UE's downlink SINR (Signal-to-Interference-plus-Noise Ratio), "
-        "which reflects the signal quality. Higher SINR typically results in higher CQI values, "
-        "enabling the use of more efficient MCS for data transmission."
-    )
-
-    # Explain the relationship with MCS index
-    explanation_text += (
-        " The CQI value directly influences the selection of the MCS index, "
-        "which determines the modulation order and coding rate used for data transmission. "
-        "Higher CQI values allow for higher MCS indices, enabling faster data rates."
-    )
-
-    # Add interpretation of CQI values
-    if ue.downlink_cqi >= 10:
-        explanation_text += " This CQI value indicates excellent channel conditions, allowing for high data rates."
-    elif 7 <= ue.downlink_cqi < 10:
-        explanation_text += " This CQI value indicates good channel conditions, supporting moderate to high data rates."
-    elif 4 <= ue.downlink_cqi < 7:
-        explanation_text += " This CQI value indicates average channel conditions, supporting moderate data rates."
-    else:
-        explanation_text += " This CQI value indicates poor channel conditions, resulting in low data rates."
-
-    return explanation_text
-
-
-# ue.downlink_mcs_index = -1
 @knowledge_explainer(
-    "/net/ue/attribute/{ue_imsi}/downlink_mcs_index",
+    "/net/ue/attribute/downlink_mcs_index",
     tags=[KnowledgeTag.UE, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.DERIVED_FROM,
-            "/net/ue/attribute/{ue_imsi}/downlink_cqi",
+            "/net/ue/attribute/downlink_cqi",
         ),
         (
             KnowledgeRelationship.ASSOCIATED_WITH,
-            "/net/ue/attribute/{ue_imsi}/downlink_mcs_data",
+            "/net/ue/attribute/downlink_mcs_data",
         ),
         (
             KnowledgeRelationship.SET_BY_METHOD,
-            "/net/cells/{cell_id}/method/select_ue_mcs",
+            "/net/cell/method/select_ue_mcs",
         ),
     ],
 )
 def ue_downlink_mcs_index_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list.get(params["ue_imsi"], None)
-    if not ue:
-        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
-
-    explanation_text = f"The UE's downlink MCS (Modulation and Coding Scheme) index is {ue.downlink_mcs_index}. "
-
-    # Explain what MCS index represents
-    explanation_text += (
-        "The MCS index determines the modulation order and coding rate used for data transmission. "
-        "It directly impacts the data rate and reliability of the communication link. "
-        "Higher MCS indices correspond to higher data rates but require better channel conditions."
+    return (
+        "The downlink MCS (Modulation and Coding Scheme) index attribute specifies which modulation and coding scheme is currently assigned to the UE for downlink data transmission. "
+        "The MCS index determines both the modulation order (e.g., QPSK, 16QAM, 64QAM) and the coding rate, directly impacting the data rate and reliability of the communication link. "
+        "Higher MCS indices correspond to higher data rates but require better channel conditions, as indicated by the UE's CQI. "
+        "If the MCS index is set to -1, it typically means that the UE is not currently assigned a valid MCS, possibly due to poor channel conditions or lack of resource allocation."
     )
 
-    # Explain the relationship with downlink CQI
-    explanation_text += (
-        " The MCS index is derived from the UE's downlink CQI (Channel Quality Indicator, queried via /net/ue/attribute/{ue_imsi}/downlink_cqi), "
-        "which reflects the channel quality. Higher CQI values allow for higher MCS indices, "
-        "enabling faster data rates."
-    )
 
-    # Explain the relationship with downlink MCS data
-    explanation_text += (
-        " The MCS index is associated with specific modulation and coding parameters, "
-        "which are stored in the downlink MCS data attribute (queried via /net/ue/attribute/{ue_imsi}/downlink_mcs_data). These parameters include the modulation order, "
-        "target code rate, and spectral efficiency."
-    )
-
-    # Add interpretation of MCS index values
-    if ue.downlink_mcs_index == -1:
-        explanation_text += (
-            " This MCS index indicates that the UE is not currently assigned a valid MCS, "
-            "possibly due to poor channel conditions or lack of resource allocation."
-        )
-    else:
-        mcs_data = ue.downlink_mcs_data
-        explanation_text += (
-            f" For this MCS index, the modulation order is {mcs_data['modulation_order']}, "
-            f"the target code rate is {mcs_data['target_code_rate']}, and the spectral efficiency is {mcs_data['spectral_efficiency']}."
-        )
-
-    return explanation_text
-
-
-# ue.downlink_mcs_data = None
 @knowledge_explainer(
-    "/net/ue/attribute/{ue_imsi}/downlink_mcs_data",
+    "/net/ue/attribute/downlink_mcs_data",
     tags=[KnowledgeTag.UE, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.ASSOCIATED_WITH,
-            "/net/ue/attribute/{ue_imsi}/downlink_mcs_index",
+            "/net/ue/attribute/downlink_mcs_index",
         ),
         (
             KnowledgeRelationship.SET_BY_METHOD,
-            "/net/cells/{cell_id}/method/select_ue_mcs",
+            "/net/cell/method/select_ue_mcs",
         ),
         (
             KnowledgeRelationship.DERIVED_FROM,
-            "/net/ue/attribute/{ue_imsi}/downlink_cqi",
+            "/net/ue/attribute/downlink_cqi",
+        ),
+        (
+            KnowledgeRelationship.USED_BY_METHOD,
+            "/net/cell/method/estimate_ue_throughput_and_latency",
         ),
     ],
 )
 def ue_downlink_mcs_data_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list.get(params["ue_imsi"], None)
-    if not ue:
-        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
-
-    if ue.downlink_mcs_data is None:
-        return (
-            "The UE's downlink MCS (Modulation and Coding Scheme) data is not available. "
-            "This may be due to poor channel conditions or the UE not being assigned a valid MCS."
-        )
-
-    mcs_data = ue.downlink_mcs_data
-    explanation_text = (
-        f"The UE's downlink MCS data includes the following parameters: "
-        f"modulation order: {mcs_data['modulation_order']}, "
-        f"target code rate: {mcs_data['target_code_rate']}, "
-        f"and spectral efficiency: {mcs_data['spectral_efficiency']}."
+    return (
+        "The downlink MCS (Modulation and Coding Scheme) data attribute contains detailed parameters associated with the currently assigned MCS index. "
+        "These parameters typically include the modulation order (number of bits per symbol), the target code rate (fraction of useful data in the transmitted bits), and the spectral efficiency (data rate per unit bandwidth). "
+        "Higher modulation orders and code rates enable higher data rates but require better channel conditions. "
+        "The MCS data is selected based on the UE's reported CQI and is essential for determining the actual throughput achievable by the UE."
     )
-
-    # Explain what each parameter represents
-    explanation_text += (
-        " The modulation order determines the number of bits transmitted per symbol, "
-        "with higher orders enabling higher data rates but requiring better channel conditions. "
-        "The target code rate specifies the fraction of useful data in the transmitted bits, "
-        "with higher rates improving efficiency but reducing error correction capability. "
-        "Spectral efficiency represents the data rate achieved per unit of bandwidth, "
-        "indicating how efficiently the spectrum is utilized."
-    )
-
-    # Explain the relationship with MCS index
-    explanation_text += (
-        " This MCS data is associated with the UE's downlink MCS index (queried via /net/ue/attribute/{ue_imsi}/downlink_mcs_index), "
-        "which is selected based on the UE's downlink CQI (Channel Quality Indicator) (queried via /net/ue/attribute/{ue_imsi}/downlink_cqi) "
-        "and the network's modulation and coding scheme table."
-    )
-
-    return explanation_text
 
 
 # skip uplink direction for now
@@ -586,45 +457,24 @@ def ue_downlink_mcs_data_explainer(sim, knowledge_router, query_key, params):
 # skip ue.serving_cell_history = []
 
 
-# ue.current_cell = None
 @knowledge_explainer(
-    "/net/ue/attribute/{ue_imsi}/current_cell",
+    "/net/ue/attribute/current_cell",
     tags=[KnowledgeTag.UE],
     related=[
         (
             KnowledgeRelationship.SET_BY_METHOD,
             "/net/ue/method/cell_selection_and_camping",
-        ),
-        (
-            KnowledgeRelationship.ASSOCIATED_WITH,
-            "/net/cell/{cell_id}",
-        ),
+        )
     ],
 )
 def ue_current_cell_explainer(sim, knowledge_router, query_key, params):
-    ue = sim.ue_list.get(params["ue_imsi"], None)
-    if not ue:
-        return f"UE {params['ue_imsi']} not found. Note that ue_imsi is case-sensitive."
-
-    if ue.current_cell is None:
-        return "The UE is not currently connected to any cell."
-
-    explanation_text = (
-        f"The UE is currently connected to cell {ue.current_cell.cell_id}. "
+    return (
+        "The `current_cell` attribute indicates which cell the UE (User Equipment) is currently connected to in the network. "
+        "The `current_cell` can change over time due to handover procedures, "
+        "ensuring the UE maintains optimal connectivity as it moves or as radio conditions change. "
     )
 
-    explanation_text += (
-        " During the power up procedure (queried via /net/ue/method/power_up), the UE scans the cells and selects the cell with the highest received power, "
-        "adjusted by the cell's individual offset (CIO) and frequency priority."
-        "This process is part of the cell selection and camping procedure queried via /net/ue/method/cell_selection_and_camping."
-    )
 
-    explanation_text += " The UE's current cell can also be adjusted by handover controls from the network."
-
-    return explanation_text
-
-
-# ue.power_up()
 @knowledge_explainer(
     "/net/ue/method/power_up",
     tags=[KnowledgeTag.UE],
@@ -670,7 +520,7 @@ def ue_power_up_explainer(sim, knowledge_router, query_key, params):
     related=[
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/downlink_received_power_dBm_dict",
+            "/net/ue/attribute/downlink_received_power_dBm_dict",
         ),
         (
             KnowledgeRelationship.CALL_METHOD,
@@ -696,7 +546,7 @@ def ue_monitor_signal_strength_explainer(sim, knowledge_router, query_key, param
         "and meeting the minimum quality requirements are considered.\n\n"
         "3. **SINR and CQI Calculation**: calls another method `/net/ue/method/calculate_SINR_and_CQi` where "
         "the UE calculates the Signal-to-Interference-plus-Noise Ratio (SINR) "
-        "and derives the Channel Quality Indicator (CQI) for the current serving cell (/net/ue/attribute/{ue_imsi}/current_cell) if applicable."
+        "and derives the Channel Quality Indicator (CQI) for the current serving cell (/net/ue/attribute/current_cell) if applicable."
     )
 
     explanation_text += (
@@ -713,11 +563,11 @@ def ue_monitor_signal_strength_explainer(sim, knowledge_router, query_key, param
     related=[
         (
             KnowledgeRelationship.DEPENDS_ON,
-            "/net/ue/attribute/{ue_imsi}/downlink_received_power_dBm_dict",
+            "/net/ue/attribute/downlink_received_power_dBm_dict",
         ),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/current_cell",
+            "/net/ue/attribute/current_cell",
         ),
     ],
 )
@@ -745,11 +595,11 @@ def ue_cell_selection_and_camping_explainer(sim, knowledge_router, query_key, pa
     related=[
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/slice_type",
+            "/net/ue/attribute/slice_type",
         ),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/qos_profile",
+            "/net/ue/attribute/qos_profile",
         ),
         (
             KnowledgeRelationship.CALL_METHOD,
@@ -781,7 +631,7 @@ def ue_authenticate_and_register_explainer(sim, knowledge_router, query_key, par
     related=[
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/rrc_measurement_event_monitors",
+            "/net/ue/attribute/rrc_measurement_event_monitors",
         ),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
@@ -815,11 +665,11 @@ def ue_setup_rrc_measurement_event_monitors_explainer(
     related=[
         (
             KnowledgeRelationship.USES_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/rrc_measurement_event_monitors",
+            "/net/ue/attribute/rrc_measurement_event_monitors",
         ),
         (
             KnowledgeRelationship.USES_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/downlink_received_power_dBm_dict",
+            "/net/ue/attribute/downlink_received_power_dBm_dict",
         ),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
@@ -856,7 +706,7 @@ def ue_check_rrc_meas_events_to_monitor_explainer(
         ),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/downlink_bitrate",
+            "/net/ue/attribute/downlink_bitrate",
         ),
     ],
 )
@@ -874,7 +724,7 @@ def ue_set_downlink_bitrate_explainer(sim, knowledge_router, query_key, params):
         (KnowledgeRelationship.CALLED_BY_METHOD, "/net/cell/method/select_ue_mcs"),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/downlink_mcs_index",
+            "/net/ue/attribute/downlink_mcs_index",
         ),
     ],
 )
@@ -892,7 +742,7 @@ def ue_set_downlink_mcs_index_explainer(sim, knowledge_router, query_key, params
         (KnowledgeRelationship.CALLED_BY_METHOD, "/net/cell/method/select_ue_mcs"),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/downlink_mcs_data",
+            "/net/ue/attribute/downlink_mcs_data",
         ),
     ],
 )
@@ -911,7 +761,7 @@ def ue_set_downlink_mcs_data_explainer(sim, knowledge_router, query_key, params)
     related=[
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/downlink_sinr",
+            "/net/ue/attribute/downlink_sinr",
         ),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
@@ -934,7 +784,7 @@ def ue_set_downlink_sinr_explainer(sim, knowledge_router, query_key, params):
     related=[
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/downlink_cqi",
+            "/net/ue/attribute/downlink_cqi",
         ),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
@@ -957,11 +807,11 @@ def ue_set_downlink_cqi_explainer(sim, knowledge_router, query_key, params):
     tags=[KnowledgeTag.UE, KnowledgeTag.MOBILITY, KnowledgeTag.CODE],
     related=[
         # This method updates position_x and position_y, so we relate to those attributes
-        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/{ue_imsi}/position_x"),
-        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/{ue_imsi}/position_y"),
-        (KnowledgeRelationship.USES_ATTRIBUTE, "/net/ue/attribute/{ue_imsi}/target_x"),
-        (KnowledgeRelationship.USES_ATTRIBUTE, "/net/ue/attribute/{ue_imsi}/target_y"),
-        (KnowledgeRelationship.USES_ATTRIBUTE, "/net/ue/attribute/{ue_imsi}/speed_mps"),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/position_x"),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/position_y"),
+        (KnowledgeRelationship.USES_ATTRIBUTE, "/net/ue/attribute/target_x"),
+        (KnowledgeRelationship.USES_ATTRIBUTE, "/net/ue/attribute/target_y"),
+        (KnowledgeRelationship.USES_ATTRIBUTE, "/net/ue/attribute/speed_mps"),
     ],
 )
 def ue_move_towards_target_explainer(sim, knowledge_router, query_key, params):
@@ -986,55 +836,55 @@ def ue_move_towards_target_explainer(sim, knowledge_router, query_key, params):
         (KnowledgeRelationship.CALL_METHOD, "/net/ue/method/set_current_cell"),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/current_cell",
+            "/net/ue/attribute/current_cell",
         ),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/serving_cell_history",
+            "/net/ue/attribute/serving_cell_history",
         ),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/downlink_received_power_dBm_dict",
+            "/net/ue/attribute/downlink_received_power_dBm_dict",
         ),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/downlink_sinr",
+            "/net/ue/attribute/downlink_sinr",
         ),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/downlink_cqi",
+            "/net/ue/attribute/downlink_cqi",
         ),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/downlink_mcs_index",
+            "/net/ue/attribute/downlink_mcs_index",
         ),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/downlink_mcs_data",
+            "/net/ue/attribute/downlink_mcs_data",
         ),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/downlink_bitrate",
+            "/net/ue/attribute/downlink_bitrate",
         ),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/downlink_latency",
+            "/net/ue/attribute/downlink_latency",
         ),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/uplink_bitrate",
+            "/net/ue/attribute/uplink_bitrate",
         ),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/uplink_latency",
+            "/net/ue/attribute/uplink_latency",
         ),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/uplink_transmit_power_dBm",
+            "/net/ue/attribute/uplink_transmit_power_dBm",
         ),
         (
             KnowledgeRelationship.USES_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/rrc_measurement_event_monitors",
+            "/net/ue/attribute/rrc_measurement_event_monitors",
         ),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
@@ -1060,11 +910,11 @@ def ue_execute_handover_explainer(sim, knowledge_router, query_key, params):
     related=[
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/current_cell",
+            "/net/ue/attribute/current_cell",
         ),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/serving_cell_history",
+            "/net/ue/attribute/serving_cell_history",
         ),
         (KnowledgeRelationship.CALLED_BY_METHOD, "/net/ue/method/execute_handover"),
         (
@@ -1095,7 +945,7 @@ def ue_set_current_cell_explainer(sim, knowledge_router, query_key, params):
     ],
     related=[
         (KnowledgeRelationship.CALL_METHOD, "/net/ue/method/set_current_cell"),
-        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/{ue_imsi}/connected"),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/connected"),
         (KnowledgeRelationship.CALLED_BY_METHOD, "/net/ue/method/step"),
     ],
 )
@@ -1126,11 +976,11 @@ def ue_deregister_explainer(sim, knowledge_router, query_key, params):
         ),
         (
             KnowledgeRelationship.USES_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/downlink_received_power_dBm_dict",
+            "/net/ue/attribute/downlink_received_power_dBm_dict",
         ),
         (
             KnowledgeRelationship.USES_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/current_cell",
+            "/net/ue/attribute/current_cell",
         ),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
@@ -1172,7 +1022,7 @@ def ue_calculate_sinr_and_cqi_explainer(sim, knowledge_router, query_key, params
         (KnowledgeRelationship.CALL_METHOD, "/net/ue/method/deregister"),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/{ue_imsi}/time_remaining",
+            "/net/ue/attribute/time_remaining",
         ),
     ],
 )
@@ -1197,8 +1047,12 @@ def ue_knowledge_getter(sim, knowledge_router, query_key, params):
     return json.dumps(
         {
             "description": "UE-related knowledge base",
-            "available_queries": [
+            "get_knowledge_value": [
                 "/net/ue/attribute/{ue_imsi}/{attribute_name}",
+                "/net/ue/method/{method_name}",
+            ],
+            "explain_knowledge_value": [
+                "/net/ue/attribute/{attribute_name}",
                 "/net/ue/method/{method_name}",
             ],
             "supported_attributes": SUPPORTED_UE_ATTRIBUTES,
@@ -1216,11 +1070,12 @@ def ue_knowledge_getter(sim, knowledge_router, query_key, params):
 def ue_knowledge_explainer(sim, knowledge_router, query_key, params):
     return f"""Welcome to the UE knowledge base!
 This knowledge base provides access to the knowledge of all the connected UE.
-You can retrieve information about UE attributes and methods using the following query keys:
-* `/net/ue/attribute/{{ue_imsi}}/{{attribute_name}}`: Retrieve a specific attribute of a UE.
-* `/net/ue/method/{{method_name}}`: Access a specific method of the UE class.
-For example, you can query `/net/ue/attribute/{{ue_imsi}}/position_x` to get the x-coordinate of a UE.
-or `/net/ue/method/power_up` to get the source code or explanation of the `power_up` method.
+You can retrieve UE live attribute value or method source code:
+    * `/net/ue/attribute/{{ue_imsi}}/{{attribute_name}}`: Retrieve a specific attribute of a UE.
+    * `/net/ue/method/{{method_name}}`: Access a specific method of the UE class.
+Or, you can get the explanation of a specific attribute or method logic:
+    * `/net/ue/attribute/{{attribute_name}}`: Get the explanation of a specific attribute.
+    * `/net/ue/method/{{method_name}}`: Get the explanation of a specific method.
 
 supported attributes include:
 {", ".join(SUPPORTED_UE_ATTRIBUTES)}
