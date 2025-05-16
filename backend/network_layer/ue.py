@@ -77,12 +77,18 @@ class UE:
 
     def set_downlink_bitrate(self, downlink_bitrate):
         self.downlink_bitrate = downlink_bitrate
-    
+
     def set_downlink_mcs_index(self, downlink_mcs_index):
         self.downlink_mcs_index = downlink_mcs_index
-    
+
     def set_downlink_mcs_data(self, downlink_mcs_data):
         self.downlink_mcs_data = downlink_mcs_data
+
+    def set_downlink_sinr(self, downlink_sinr):
+        self.downlink_sinr = downlink_sinr
+
+    def set_downlink_cqi(self, downlink_cqi):
+        self.downlink_cqi = downlink_cqi
 
     def cell_selection_and_camping(self):
         # Sort SSBs by received power
@@ -223,8 +229,8 @@ class UE:
         # monitors the downlink signal strength from the cells
 
         self.downlink_received_power_dBm_dict = {}
-        self.downlink_sinr = 0
-        self.downlink_cqi = 0
+        self.set_downlink_sinr(0)
+        self.set_downlink_cqi(0)
 
         pass_loss_model = settings.CHANNEL_PASS_LOSS_MODEL_MAP[
             settings.CHANNEL_PASS_LOSS_MODEL_URBAN_MACRO_NLOS
@@ -305,10 +311,10 @@ class UE:
         #     f"UE {self.ue_imsi}: Current cell received power: {current_cell_received_power} (dBm) = {current_cell_power_w} (W):"
         # )
 
-        self.downlink_sinr = 10 * np.log10(
-            current_cell_power_w / (interference_power_w + noise_power_w)
+        self.set_downlink_sinr(
+            10 * np.log10(current_cell_power_w / (interference_power_w + noise_power_w))
         )
-        self.downlink_cqi = sinr_to_cqi(self.downlink_sinr)
+        self.set_downlink_cqi(sinr_to_cqi(self.downlink_sinr))
         # print(
         #     f"UE {self.ue_imsi}: Downlink SINR: {self.downlink_sinr:.2f} dB, CQI: {self.downlink_cqi}"
         # )
@@ -325,7 +331,7 @@ class UE:
                     f"UE {self.ue_imsi}: RRC measurement event {rrc_meas_event_trigger.event_id} triggered."
                 )
                 event_report = rrc_meas_event_trigger.gen_event_report()
-                print(f"{self} Reporting event: {event_report}")
+                # print(f"{self} Reporting event: {event_report}")
                 self.current_bs.receive_ue_rrc_meas_events(event_report)
 
     def step(self, delta_time):

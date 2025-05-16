@@ -42,6 +42,9 @@ SUPPORTED_UE_METHODS = [
     "set_downlink_bitrate",
     "set_downlink_mcs_index",
     "set_downlink_mcs_data",
+    "set_downlink_sinr",
+    "set_downlink_cqi",
+    "move_towards_target",
 ]
 
 
@@ -177,7 +180,10 @@ def ue_time_remaining_explainer(sim, knowledge_router, query_key, params):
     "/net/ue/attribute/{ue_imsi}/slice_type",
     tags=[KnowledgeTag.UE, KnowledgeTag.SIMULATION],
     related=[
-        (KnowledgeRelationship.AFFECTS, "/net/ue/attribute/{ue_imsi}/qos_profile")
+        (
+            KnowledgeRelationship.ASSOCIATED_WITH,
+            "/net/ue/attribute/{ue_imsi}/qos_profile",
+        )
     ],
 )
 def ue_slice_type_explainer(sim, knowledge_router, query_key, params):
@@ -204,7 +210,10 @@ def ue_slice_type_explainer(sim, knowledge_router, query_key, params):
     "/net/ue/attribute/{ue_imsi}/qos_profile",
     tags=[KnowledgeTag.UE, KnowledgeTag.SIMULATION],
     related=[
-        (KnowledgeRelationship.DEPENDS_ON, "/net/ue/attribute/{ue_imsi}/slice_type")
+        (
+            KnowledgeRelationship.ASSOCIATED_WITH,
+            "/net/ue/attribute/{ue_imsi}/slice_type",
+        )
     ],
 )
 def ue_qos_profile_explainer(sim, knowledge_router, query_key, params):
@@ -252,12 +261,8 @@ def ue_connected_explainer(sim, knowledge_router, query_key, params):
     tags=[KnowledgeTag.UE, KnowledgeTag.QoS],
     related=[
         (
-            KnowledgeRelationship.CONSTRAINED_BY,
-            "/net/ue/attribute/{ue_imsi}/qos_profile",
-        ),
-        (
-            KnowledgeRelationship.DEPENDS_ON,
-            "/net/ue/attribute/{ue_imsi}/downlink_mcs_index",
+            KnowledgeRelationship.SET_BY_METHOD,
+            "/net/ue/method/set_downlink_bitrate",
         ),
     ],
 )
@@ -664,6 +669,14 @@ def ue_power_up_explainer(sim, knowledge_router, query_key, params):
             KnowledgeRelationship.CALL_METHOD,
             "/net/ue/method/calculate_SINR_and_CQI",
         ),
+        (
+            KnowledgeRelationship.CALL_METHOD,
+            "/net/ue/method/set_downlink_sinr",
+        ),
+        (
+            KnowledgeRelationship.CALL_METHOD,
+            "/net/ue/method/set_downlink_cqi",
+        ),
     ],
 )
 def ue_monitor_signal_strength_explainer(sim, knowledge_router, query_key, params):
@@ -756,6 +769,77 @@ def ue_authenticate_and_register_explainer(sim, knowledge_router, query_key, par
 
 
 @knowledge_explainer(
+    "/net/ue/method/setup_rrc_measurement_event_monitors",
+    tags=[KnowledgeTag.UE, KnowledgeTag.CODE, KnowledgeTag.SIMULATION],
+    related=[
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/rrc_measurement_event_monitors",
+        ),
+        (
+            KnowledgeRelationship.CALLED_BY_METHOD,
+            "/net/ue/method/authenticate_and_register",
+        ),
+    ],
+)
+def ue_setup_rrc_measurement_event_monitors_explainer(
+    sim, knowledge_router, query_key, params
+):
+    return (
+        "The `setup_rrc_measurement_event_monitors` method initializes the UE's monitoring of RRC (Radio Resource Control) measurement events. "
+        "These events are used to track radio conditions and trigger mobility procedures such as handover.\n\n"
+        "Detailed behavior:\n"
+        "1. **Input**: The method takes a list of event configuration dictionaries, each specifying an event type (e.g., 'A3'), "
+        "a time-to-trigger (in simulation steps), and event-specific parameters (such as power thresholds).\n"
+        "2. **Monitor Creation**: For each event configuration, the method creates an event monitor object (e.g., `RRCMeasurementEventA3Monitor`) "
+        "using a factory function (such as `get_rrc_measurement_event_monitor`). Each monitor is responsible for tracking whether its event's triggering conditions are met over time.\n"
+        "3. **Assignment**: The created monitors are stored in the UE's `rrc_measurement_event_monitors` attribute, replacing any previous monitors.\n"
+        "4. **Usage**: During each simulation step, the UE calls `check_rrc_meas_events_to_monitor`, which iterates through these monitors, "
+        "checks their triggering conditions (e.g., whether a neighboring cell's signal is sufficiently stronger than the current cell), "
+        "and triggers reports or handover procedures if necessary.\n\n"
+        "This method is essential for enabling dynamic and standards-compliant mobility management in the simulation, "
+        "allowing the UE to autonomously detect when radio conditions warrant a handover or other RRC event-driven actions."
+    )
+
+
+@knowledge_explainer(
+    "/net/ue/method/check_rrc_meas_events_to_monitor",
+    tags=[KnowledgeTag.UE, KnowledgeTag.CODE, KnowledgeTag.SIMULATION],
+    related=[
+        (
+            KnowledgeRelationship.USES_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/rrc_measurement_event_monitors",
+        ),
+        (
+            KnowledgeRelationship.USES_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/downlink_received_power_dBm_dict",
+        ),
+        (
+            KnowledgeRelationship.CALLED_BY_METHOD,
+            "/net/ue/method/step",
+        ),
+        (
+            KnowledgeRelationship.CALL_METHOD,
+            "/net/base_station/method/receive_ue_rrc_meas_events",
+        ),
+    ],
+)
+def ue_check_rrc_meas_events_to_monitor_explainer(
+    sim, knowledge_router, query_key, params
+):
+    return (
+        "The `check_rrc_meas_events_to_monitor` method is responsible for evaluating all configured RRC (Radio Resource Control) measurement event monitors for the UE at each simulation step.\n\n"
+        "Detailed behavior:\n"
+        "1. **Signal Map Construction**: The method first constructs a mapping of all detected cells' IDs to their received power (with CIO adjustment) from the UE's `downlink_received_power_dBm_dict` attribute. This map represents the latest signal measurements for all visible cells.\n"
+        "2. **Event Monitor Evaluation**: For each RRC measurement event monitor in the UE's `rrc_measurement_event_monitors` list (typically created by `setup_rrc_measurement_event_monitors`), the method calls the monitor's `check` function, passing the UE instance and a copy of the signal map. Each monitor evaluates whether its specific event's triggering conditions are met (e.g., for Event A3: whether a neighbor cell's signal exceeds the serving cell's by a threshold for a required duration).\n"
+        "3. **Trigger History Update**: Each monitor maintains a trigger history buffer (of length equal to its time-to-trigger parameter). The monitor updates this buffer with the result of each check, tracking whether the event's condition has been continuously satisfied.\n"
+        "4. **Event Triggering**: If a monitor's `is_triggered` property becomes True (i.e., the event's condition has been met for the required number of consecutive steps), the method generates an event report (via the monitor's `gen_event_report` method) and sends it to the current base station by calling `self.current_bs.receive_ue_rrc_meas_events(event_report)`. This may initiate procedures such as handover.\n"
+        "5. **Reporting**: The method prints diagnostic messages to the console when an event is triggered, including the event type and the generated report.\n\n"
+        "This method is essential for enabling autonomous, standards-compliant mobility management in the simulation. By continuously monitoring radio conditions and evaluating RRC measurement events, the UE can detect when handover or other mobility actions are needed, ensuring robust connectivity as the UE moves or as network conditions change."
+    )
+
+
+@knowledge_explainer(
     "/net/ue/method/set_downlink_bitrate",
     tags=[KnowledgeTag.UE, KnowledgeTag.QoS, KnowledgeTag.CODE],
     related=[
@@ -811,6 +895,80 @@ def ue_set_downlink_mcs_data_explainer(sim, knowledge_router, query_key, params)
         "which includes parameters such as modulation order, target code rate, and spectral efficiency. "
         "This method does not compute the MCS data itself, but stores the data structure provided by the cell, "
         "enabling the UE to reference its current transmission parameters."
+    )
+
+
+@knowledge_explainer(
+    "/net/ue/method/set_downlink_sinr",
+    tags=[KnowledgeTag.UE, KnowledgeTag.QoS, KnowledgeTag.CODE],
+    related=[
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/downlink_sinr",
+        ),
+        (
+            KnowledgeRelationship.CALLED_BY_METHOD,
+            "/net/ue/method/calculate_SINR_and_CQI",
+        ),
+    ],
+)
+def ue_set_downlink_sinr_explainer(sim, knowledge_router, query_key, params):
+    return (
+        "The `set_downlink_sinr` method is a setter for the UE's downlink SINR (Signal-to-Interference-plus-Noise Ratio) attribute. "
+        "It is typically called by the `calculate_SINR_and_CQI` method after the SINR value has been computed based on the received power from the serving cell, "
+        "interference from neighboring cells, and thermal noise. "
+        "This method does not perform any calculations itself; it simply updates the UE's internal record of the current downlink SINR value. "
+    )
+
+
+@knowledge_explainer(
+    "/net/ue/method/set_downlink_cqi",
+    tags=[KnowledgeTag.UE, KnowledgeTag.QoS, KnowledgeTag.CODE],
+    related=[
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/net/ue/attribute/{ue_imsi}/downlink_cqi",
+        ),
+        (
+            KnowledgeRelationship.CALLED_BY_METHOD,
+            "/net/ue/method/calculate_SINR_and_CQI",
+        ),
+    ],
+)
+def ue_set_downlink_cqi_explainer(sim, knowledge_router, query_key, params):
+    return (
+        "The `set_downlink_cqi` method is a setter for the UE's downlink CQI (Channel Quality Indicator) attribute. "
+        "It is usually invoked by the `calculate_SINR_and_CQI` method after the CQI value has been derived from the current SINR measurement. "
+        "This method does not compute the CQI itself; it simply stores the provided CQI value in the UE's state. "
+        "The CQI value is a key input for the network's link adaptation algorithms, influencing the selection of modulation and coding schemes (MCS) "
+        "and ultimately determining the data rate and reliability of the UE's downlink connection."
+    )
+
+
+@knowledge_explainer(
+    "/net/ue/method/move_towards_target",
+    tags=[KnowledgeTag.UE, KnowledgeTag.MOBILITY, KnowledgeTag.CODE],
+    related=[
+        # This method updates position_x and position_y, so we relate to those attributes
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/{ue_imsi}/position_x"),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/{ue_imsi}/position_y"),
+        (KnowledgeRelationship.USES_ATTRIBUTE, "/net/ue/attribute/{ue_imsi}/target_x"),
+        (KnowledgeRelationship.USES_ATTRIBUTE, "/net/ue/attribute/{ue_imsi}/target_y"),
+        (KnowledgeRelationship.USES_ATTRIBUTE, "/net/ue/attribute/{ue_imsi}/speed_mps"),
+    ],
+)
+def ue_move_towards_target_explainer(sim, knowledge_router, query_key, params):
+    return (
+        "The `move_towards_target` method updates the UE's position by moving it towards its target coordinates (`target_x`, `target_y`) "
+        "based on its current speed (`speed_mps`) and the elapsed simulation time (`delta_time`).\n\n"
+        "Detailed behavior:\n"
+        "1. **Distance Calculation**: The method first calculates the straight-line (Euclidean) distance between the UE's current position (`position_x`, `position_y`) and its target position.\n"
+        "2. **Movement Determination**: It computes the maximum distance the UE can move in this simulation step as `speed_mps * delta_time`.\n"
+        "3. **Position Update**:\n"
+        "   - If the target is within reach (i.e., the distance to the target is less than or equal to the maximum move distance), the UE's position is set directly to the target coordinates.\n"
+        "   - Otherwise, the UE moves along the straight line towards the target by the maximum allowed distance, updating both `position_x` and `position_y` proportionally.\n"
+        "   - The new position is rounded to the nearest integer to reflect discrete simulation steps.\n"
+        "4. **No Movement**: If the UE is already at the target, its position remains unchanged.\n\n"
     )
 
 
