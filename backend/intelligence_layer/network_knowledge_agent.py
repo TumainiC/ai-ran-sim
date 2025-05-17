@@ -22,6 +22,7 @@ Use the tools to query the knowledge database of the simulated telecom network.
 call get_knowledge_explanation("/net") to get started.
 
 To increase efficiency, you can use the bulk query tools to query multiple keys at once.
+You should always query "/net/ue", or "/net/cell" or "/net/base_station" first to get the list of supported attributes and methods.
 """,
 )
 
