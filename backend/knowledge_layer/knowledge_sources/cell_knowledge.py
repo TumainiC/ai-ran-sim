@@ -64,20 +64,6 @@ def cell_attribute_getter(sim, knowledge_router, query_key, params):
         return f"Attribute {attribute_name} not found in Cell class. Supported attributes: {', '.join(SUPPORTED_CELL_ATTRIBUTES)}"
 
 
-@knowledge_getter(
-    key="/net/cell/method/{method_name}",
-)
-def cell_method_getter(sim, knowledge_router, query_key, params):
-    method_name = params["method_name"]
-    if hasattr(Cell, method_name):
-        method = getattr(Cell, method_name)
-        if callable(method):
-            return inspect.getsource(method)
-        else:
-            return f"{method_name} is not a method."
-    return f"Method {method_name} not found in Cell class. Supported methods: {', '.join(SUPPORTED_CELL_METHODS)}"
-
-
 def cell_knowledge_root(sim, knowledge_router, query_key, params):
     """
     Combined getter and explainer for the Cell knowledge base.
@@ -87,16 +73,14 @@ def cell_knowledge_root(sim, knowledge_router, query_key, params):
         "description": (
             "Welcome to the Cell knowledge base!\n"
             "This knowledge base provides access to the knowledge of all the simulated Cells.\n"
-            "You can retrieve Cell live attribute value or method source code in the following query format:\n"
+            "You can retrieve Cell live attribute value in the following query format:\n"
             "    * `/net/cell/attribute/{cell_id}/{attribute_name}`\n"
-            "    * `/net/cell/method/{method_name}`\n"
             "Or, you can get the explanation of a specific attribute or method logic in the following query format:\n"
             "    * `/net/cell/attribute/{attribute_name}`\n"
             "    * `/net/cell/method/{method_name}`\n"
         ),
         "get_knowledge_value": [
             "/net/cell/attribute/{cell_id}/{attribute_name}",
-            "/net/cell/method/{method_name}",
         ],
         "explain_knowledge_value": [
             "/net/cell/attribute/{attribute_name}",
@@ -104,11 +88,6 @@ def cell_knowledge_root(sim, knowledge_router, query_key, params):
         ],
         "supported_attributes": SUPPORTED_CELL_ATTRIBUTES,
         "supported_methods": SUPPORTED_CELL_METHODS,
-        "usage": (
-            "Use the above routes to retrieve either the value or the explanation of Cell knowledge. "
-            "For example, `/net/cell/attribute/{cell_id}/bandwidth_Hz` returns the bandwidth for a specific Cell, "
-            "while `/net/cell/method/allocate_prb` provides details about the PRB allocation method in the Cell."
-        ),
     }
     return json.dumps(data, indent=4)
 
@@ -446,7 +425,9 @@ def cell_connected_ue_list_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def cell_register_ue_explainer(sim, knowledge_router, query_key, params):
-    return "The `register_ue` method adds a UE to the cell's list of connected UEs and initializes its PRB allocation (downlink: 0, uplink: 0)."
+    code = inspect.getsource(getattr(Cell, "register_ue"))
+    explanation = "The `register_ue` method adds a UE to the cell's list of connected UEs and initializes its PRB allocation (downlink: 0, uplink: 0)."
+    return f"```python\n{code}\n```\n\n{explanation}"
 
 
 @knowledge_explainer(
@@ -464,7 +445,8 @@ def cell_register_ue_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def cell_allocate_prb_explainer(sim, knowledge_router, query_key, params):
-    return (
+    code = inspect.getsource(getattr(Cell, "allocate_prb"))
+    explanation = (
         "The `allocate_prb` method in the Cell class performs QoS-aware Proportional Fair Scheduling (PFS) to allocate Physical Resource Blocks (PRBs) among all connected UEs. "
         "The allocation process is as follows:\n\n"
         "1. **Reset PRB Allocation:** All UEs' downlink and uplink PRB allocations are reset to zero at the start of each allocation cycle.\n\n"
@@ -478,6 +460,8 @@ def cell_allocate_prb_explainer(sim, knowledge_router, query_key, params):
         "This approach ensures that UEs with higher QoS requirements or better channel conditions receive more resources, while still providing a minimum allocation to all UEs. "
         "The final allocation is stored in the `prb_ue_allocation_dict` attribute, which maps each UE's IMSI to its downlink and uplink PRB allocation."
     )
+
+    return f"```python\n{code}\n```\n\n{explanation}"
 
 
 @knowledge_explainer(
@@ -495,7 +479,8 @@ def cell_allocate_prb_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def cell_monitor_ue_signal_strength_explainer(sim, knowledge_router, query_key, params):
-    return (
+    code = inspect.getsource(getattr(Cell, "monitor_ue_signal_strength"))
+    explanation = (
         "The `monitor_ue_signal_strength` method in the Cell class measures and updates the uplink signal strength for each connected UE. "
         "This is a key step in simulating realistic radio conditions and is typically called at every simulation time step.\n\n"
         "The process works as follows:\n"
@@ -506,6 +491,7 @@ def cell_monitor_ue_signal_strength_explainer(sim, knowledge_router, query_key, 
         "5. The received uplink power at the cell is computed as the UE's transmit power minus the path loss.\n"
         "6. The result is stored in `ue_uplink_signal_strength_dict` under the UE's IMSI.\n\n"
     )
+    return f"```python\n{code}\n```\n\n{explanation}"
 
 
 @knowledge_explainer(
@@ -527,7 +513,8 @@ def cell_monitor_ue_signal_strength_explainer(sim, knowledge_router, query_key, 
     ],
 )
 def cell_select_ue_mcs_explainer(sim, knowledge_router, query_key, params):
-    return (
+    code = inspect.getsource(getattr(Cell, "select_ue_mcs"))
+    explanation = (
         "The `select_ue_mcs` method in the Cell class determines and assigns the most suitable Modulation and Coding Scheme (MCS) for each connected UE based on its current Channel Quality Indicator (CQI).\n\n"
         "The process works as follows:\n"
         "1. For each connected UE, the method resets the UE's `downlink_mcs_index` to -1 and `downlink_mcs_data` to None.\n"
@@ -538,6 +525,7 @@ def cell_select_ue_mcs_explainer(sim, knowledge_router, query_key, params):
         "This method ensures that each UE is assigned the most aggressive MCS it can reliably support, maximizing throughput while maintaining link reliability. "
         "The assigned MCS is then used in subsequent resource allocation and throughput estimation steps."
     )
+    return f"```python\n{code}\n```\n\n{explanation}"
 
 
 @knowledge_explainer(
@@ -553,7 +541,8 @@ def cell_select_ue_mcs_explainer(sim, knowledge_router, query_key, params):
 def cell_estimate_ue_throughput_and_latency_explainer(
     sim, knowledge_router, query_key, params
 ):
-    return (
+    code = inspect.getsource(getattr(Cell, "estimate_ue_throughput_and_latency"))
+    explanation = (
         "The `estimate_ue_throughput_and_latency` method in the Cell class calculates the downlink (and potentially uplink) throughput and latency for each connected UE, "
         "based on the PRB (Physical Resource Block) allocation and the selected Modulation and Coding Scheme (MCS) for each UE.\n\n"
         "The process works as follows:\n"
@@ -565,6 +554,7 @@ def cell_estimate_ue_throughput_and_latency_explainer(
         "6. (TODO in code) The method is also intended to estimate downlink and uplink latency, but this is not yet implemented.\n\n"
         "This method ensures that each UE's throughput reflects both its channel quality (via MCS) and its allocated radio resources (PRBs). "
     )
+    return f"```python\n{code}\n```\n\n{explanation}"
 
 
 @knowledge_explainer(
@@ -578,7 +568,9 @@ def cell_estimate_ue_throughput_and_latency_explainer(
     ],
 )
 def cell_deregister_ue_explainer(sim, knowledge_router, query_key, params):
-    return "The `deregister_ue` method removes a UE from the cell's list of connected UEs and releases its allocated PRBs."
+    code = inspect.getsource(getattr(Cell, "deregister_ue"))
+    explanation = "The `deregister_ue` method removes a UE from the cell's list of connected UEs and releases its allocated PRBs."
+    return f"```python\n{code}\n```\n\n{explanation}"
 
 
 @knowledge_explainer(
@@ -604,7 +596,8 @@ def cell_deregister_ue_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def cell_step_explainer(sim, knowledge_router, query_key, params):
-    return (
+    code = inspect.getsource(getattr(Cell, "step"))
+    explanation = (
         "The `step` method advances the simulation state of the Cell by one time step. "
         "It orchestrates the main per-timestep operations for the cell and its connected UEs. The method performs the following actions in sequence:\n\n"
         "1. **Monitor UE Signal Strength:** Calls `monitor_ue_signal_strength()` to update the uplink signal strength measurements for all connected UEs. "
@@ -618,3 +611,4 @@ def cell_step_explainer(sim, knowledge_router, query_key, params):
         "By executing these steps in order, the `step` method ensures that the cell's resource allocation, link adaptation, and performance metrics are updated each simulation tick, "
         "reflecting the latest network and radio conditions."
     )
+    return f"```python\n{code}\n```\n\n{explanation}"

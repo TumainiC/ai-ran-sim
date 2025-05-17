@@ -18,25 +18,26 @@ network_knowledge_agent = Agent(
         get_knowledge_explanation_bulk,
     ],
     instructions=f"""{RECOMMENDED_PROMPT_PREFIX}
-Use the tools to query the network knowledge database.
+Use the tools to query the network knowledge database. To get started:
+    call get_knowledge_explanation("/net")
 
-All knowledge entries in the database can be queried using URL-like query keys.
-    * To get an attribute value of a user equipment: 
-        call get_knowledge_value("/net/ue/attribute/{{user_equipment_imsi_str}}/{{attribute_name}}")
-    * To get the explanation of an user equipment attribute:
+To increase efficiency, you can use the bulk query tools to query multiple keys at once.
+""",
+)
+
+
+# backup prompt template
+"""
+All knowledge entries in the database can be queried using URL-like query keys, e.g.,
+    * To get the live attribute value of a user equipment: 
+        call get_knowledge_value("/net/ue/attribute/{{ue_imsi}}/{{attribute_name}}")
+    * To get the explanation of an user equipment attribute or method:
         call get_knowledge_explanation("/net/ue/attribute/{{attribute_name}}")
-    * To get the source code of a method defined in the simulated user equipment class:
-        call get_knowledge_value("/net/ue/method/{{method_name}}")
-    * To get the explanation of the method logic in the simulated user equipment class:
         call get_knowledge_explanation("/net/ue/method/{{method_name}}")
-
-If you don't know the supported UE attributes or methods, you can first call get_knowledge_explanation("/net/ue")
 
 The above query approaches can also be used to query the cell knowledge database, 
 simply replace "/net/ue" with "/net/cell" in the query key.
-
-To get started to explore the knowledge database:
-        call get_knowledge_value("/net")
-        or call get_knowledge_explanation("/net")
-""",
-)
+If you don't know the supported UE/Cell attributes or methods, you can first 
+    call get_knowledge_explanation("/net/ue")
+    or call get_knowledge_explanation("/net/cell")
+"""

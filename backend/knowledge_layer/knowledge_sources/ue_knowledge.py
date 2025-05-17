@@ -86,21 +86,6 @@ Supported attributes: {', '.join(SUPPORTED_UE_ATTRIBUTES)}"""
 Supported attributes: {", ".join(SUPPORTED_UE_ATTRIBUTES)}"""
 
 
-@knowledge_getter(
-    key="/net/ue/method/{method_name}",
-)
-def ue_method_getter(sim, knowledge_router, query_key, params):
-    method_name = params["method_name"]
-    if hasattr(UE, method_name):
-        method = getattr(UE, method_name)
-        if callable(method):
-            return inspect.getsource(method)
-        else:
-            return f"{method_name} is not a method. Something is wrong :)"
-    return f"""Method {method_name} not found in UE class. 
-Supported methods: {", ".join(SUPPORTED_UE_METHODS)}"""
-
-
 @knowledge_explainer(
     "/net/ue/attribute/ue_imsi",
     tags=[KnowledgeTag.UE, KnowledgeTag.ID],
@@ -1040,18 +1025,16 @@ def ue_knowledge_root(sim, knowledge_router, query_key, params):
         "description": (
             "Welcome to the User Equipment (UE) knowledge base!\n"
             "This knowledge base provides access to the knowledge of all the simulated UEs.\n"
-            "You can retrieve UE live attribute value or method source code in the following query format:\n"
+            "You can retrieve UE live attribute value in the following query format:\n"
             "    * `/net/ue/attribute/{ue_imsi}/{attribute_name}`\n"
-            "    * `/net/ue/method/{method_name}`\n"
             "Or, you can get the explanation of a specific attribute or method logic in the following query format:\n"
             "    * `/net/ue/attribute/{attribute_name}`\n"
             "    * `/net/ue/method/{method_name}`\n"
         ),
         "get_knowledge_value": [
             "/net/ue/attribute/{ue_imsi}/{attribute_name}",
-            "/net/ue/method/{method_name}",
         ],
-        "explain_knowledge_value": [
+        "get_knowledge_explanation": [
             "/net/ue/attribute/{attribute_name}",
             "/net/ue/method/{method_name}",
         ],
