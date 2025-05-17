@@ -12,10 +12,11 @@ def network_knowledge_root(sim, knowledge_router, query_key, params):
         "Welcome to the network knowledge database!\n"
         "You can query everything about the simulated User Equipments (UE), Cells and Base Stations in the simulated network.\n\n"
         "All knowledge entries can be queried using URL-like query keys. For example:\n"
-        "  • To get the live attribute value of a user equipment, a cell or a base station, call get_knowledge_value on one of the following queries:\n"
+        "  • To get the live attribute value of a user equipment, a cell, a base station or the RAN Intelligent Controller (RIC), call get_knowledge_value on one of the following queries:\n"
         '      "/net/ue/attribute/{ue_imsi}/{attribute_name}"\n'
         '      "/net/cell/attribute/{cell_id}/{attribute_name}"\n'
         '      "/net/base_station/attribute/{bs_id}/{attribute_name}"\n\n'
+        '      "/net/ric/attribute/{attribute_name}"\n\n'
         "  • To get the explanation of the UE, Cell, Base Station class attribute or method, call get_knowledge_explanation on one of the following queries:\n"
         '      "/net/ue/attribute/{attribute_name}"\n'
         '      "/net/ue/method/{method_name}"\n\n'
@@ -23,10 +24,13 @@ def network_knowledge_root(sim, knowledge_router, query_key, params):
         '      "/net/cell/method/{method_name}"\n\n'
         '      "/net/base_station/attribute/{attribute_name}"\n'
         '      "/net/base_station/method/{method_name}"\n\n'
+        '      "/net/ric/attribute/{attribute_name}"\n'
+        '      "/net/ric/method/{method_name}"\n\n'
         "If you don't know the supported attribute or method names, you can first call get_knowledge_explanation on the following queries: \n"
         '  "/net/ue"\n'
         '  "/net/cell"\n'
-        '  "/net/base_station"\n\n'
+        '  "/net/base_station"\n'
+        '  "/net/ric"\n\n'
     )
 
 

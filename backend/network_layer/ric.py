@@ -1,5 +1,6 @@
 from network_layer.xApps.loader import load_all_xapps
 
+
 class NearRTRIC:
     # Near Real-Time Ran Intelligent Controller
     def __init__(self, simulation_engine=None):
