@@ -129,7 +129,7 @@ class SimulationEngine(metaclass=utils.SingletonMeta):
                 ue_to_remove.append(ue)
 
         for ue in ue_to_remove:
-            del self.ue_list[ue.ue_imsi]
+            self.remove_UE(ue)
             print(f"UE {ue.ue_imsi} deregistered and removed from simulation.")
 
     def remove_UE(self, ue):

@@ -38,7 +38,7 @@ async def get_knowledge_value_bulk(knowledge_query_key_list: list[str]) -> str:
 
     for knowledge_query_key in knowledge_query_key_list:
         if knowledge_query_key.strip():
-            response_text += f"Query {knowledge_query_key} response: \n{knowledge_router.get_value(knowledge_query_key)}\n"
+            response_text += f"Query {knowledge_query_key} response: \n{knowledge_router.get_value(knowledge_query_key)}\n\n----------------------------\n\n"
 
     return response_text
 
@@ -55,6 +55,6 @@ async def get_knowledge_explanation_bulk(knowledge_query_key_list: list[str]) ->
 
     for knowledge_query_key in knowledge_query_key_list:
         if knowledge_query_key.strip():
-            response_text += f"Query {knowledge_query_key} explanation: \n{knowledge_router.explain_value(knowledge_query_key)}\n"
+            response_text += f"Query {knowledge_query_key} explanation: \n{knowledge_router.explain_value(knowledge_query_key)}\n\n-----------------------------\n\n"
 
     return response_text

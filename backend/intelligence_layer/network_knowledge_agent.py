@@ -19,26 +19,15 @@ network_knowledge_agent = Agent(
     ],
     instructions=f"""{RECOMMENDED_PROMPT_PREFIX}
 Use the tools to query the knowledge database of the simulated telecom network. 
-call get_knowledge_explanation("/net") to get started.
-
 To increase efficiency, you can use the bulk query tools to query multiple keys at once.
-You should always query "/net/ue", or "/net/cell" or "/net/base_station" first to get the list of supported attributes and methods.
+You should always query 
+    "/sim" (for simulation related knowledge), 
+    "/net/ue" (for simulated UE class related knowledge), or
+    "/net/cell" (for simulated Cell class related knowledge) or 
+    "/net/base_station" (for simulated BaseStation class-related knowledge) 
+first to get the list of supported attributes and methods.
+
+The knowledge explanation tools often returns a list of related knowledge keys. 
+You should explore these related knowledge keys as well to gather more information to answer the user query.
 """,
 )
-
-
-# backup prompt template
-"""
-All knowledge entries in the database can be queried using URL-like query keys, e.g.,
-    * To get the live attribute value of a user equipment: 
-        call get_knowledge_value("/net/ue/attribute/{{ue_imsi}}/{{attribute_name}}")
-    * To get the explanation of an user equipment attribute or method:
-        call get_knowledge_explanation("/net/ue/attribute/{{attribute_name}}")
-        call get_knowledge_explanation("/net/ue/method/{{method_name}}")
-
-The above query approaches can also be used to query the cell knowledge database, 
-simply replace "/net/ue" with "/net/cell" in the query key.
-If you don't know the supported UE/Cell attributes or methods, you can first 
-    call get_knowledge_explanation("/net/ue")
-    or call get_knowledge_explanation("/net/cell")
-"""

@@ -1,7 +1,3 @@
-import random
-import settings
-
-
 class CoreNetwork:
     def __init__(self, simulation_engine=None):
         self.simulation_engine = simulation_engine
