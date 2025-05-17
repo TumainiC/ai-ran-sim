@@ -1019,34 +1019,26 @@ def ue_step_explainer(sim, knowledge_router, query_key, params):
 def ue_knowledge_root(sim, knowledge_router, query_key, params):
     """
     Combined getter and explainer for the UE knowledge base.
-    Returns both a textual description and a list of supported query routes, attributes, and methods.
+    Returns a narrative textual description of supported query routes, attributes, and methods.
     """
-    data = {
-        "description": (
-            "Welcome to the User Equipment (UE) knowledge base!\n"
-            "This knowledge base provides access to the knowledge of all the simulated UEs.\n"
-            "You can retrieve UE live attribute value in the following query format:\n"
-            "    * `/net/ue/attribute/{ue_imsi}/{attribute_name}`\n"
-            "Or, you can get the explanation of a specific attribute or method logic in the following query format:\n"
-            "    * `/net/ue/attribute/{attribute_name}`\n"
-            "    * `/net/ue/method/{method_name}`\n"
-        ),
-        "get_knowledge_value": [
-            "/net/ue/attribute/{ue_imsi}/{attribute_name}",
-        ],
-        "get_knowledge_explanation": [
-            "/net/ue/attribute/{attribute_name}",
-            "/net/ue/method/{method_name}",
-        ],
-        "supported_attributes": SUPPORTED_UE_ATTRIBUTES,
-        "supported_methods": SUPPORTED_UE_METHODS,
-        "usage": (
-            "Use the above routes to retrieve either the value or the explanation of UE knowledge. "
-            "For example, `/net/ue/attribute/{ue_imsi}/downlink_bitrate` returns the downlink bitrate for a specific UE, "
-            "while `/net/ue/method/power_up` provides details about the UE power-up procedure."
-        ),
-    }
-    return json.dumps(data, indent=4)
+    text = (
+        "Welcome to the User Equipment (UE) knowledge base!\n\n"
+        "This knowledge base provides access to the knowledge of all simulated UEs in the network simulation.\n\n"
+        "You can interact with the UE knowledge base in the following ways:\n"
+        "1. **Retrieve live attribute values for a specific UE:**\n"
+        "   - Format: `/net/ue/attribute/{ue_imsi}/{attribute_name}`\n"
+        "2. **Get explanations for a specific attribute or method:**\n"
+        "   - Attribute explanation: `/net/ue/attribute/{attribute_name}`\n"
+        "   - Method explanation: `/net/ue/method/{method_name}`\n\n"
+        "Supported UE attributes include:\n"
+        f"    {', '.join(SUPPORTED_UE_ATTRIBUTES)}\n\n"
+        "Supported UE methods include:\n"
+        f"    {', '.join(SUPPORTED_UE_METHODS)}\n\n"
+        "Use the above query formats to explore live data or request explanations for any supported attribute or method.\n"
+        "For example, `/net/ue/attribute/IMSI_1/downlink_bitrate` returns the downlink bitrate for a specific UE, "
+        "while `/net/ue/method/power_up` provides details about the UE power-up procedure."
+    )
+    return text
 
 
 knowledge_getter(

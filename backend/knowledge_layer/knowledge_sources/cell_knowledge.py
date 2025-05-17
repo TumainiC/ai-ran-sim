@@ -67,29 +67,24 @@ def cell_attribute_getter(sim, knowledge_router, query_key, params):
 def cell_knowledge_root(sim, knowledge_router, query_key, params):
     """
     Combined getter and explainer for the Cell knowledge base.
-    Returns both a textual description and a list of supported query routes, attributes, and methods.
+    Returns a narrative textual description of supported query routes, attributes, and methods.
     """
-    data = {
-        "description": (
-            "Welcome to the Cell knowledge base!\n"
-            "This knowledge base provides access to the knowledge of all the simulated Cells.\n"
-            "You can retrieve Cell live attribute value in the following query format:\n"
-            "    * `/net/cell/attribute/{cell_id}/{attribute_name}`\n"
-            "Or, you can get the explanation of a specific attribute or method logic in the following query format:\n"
-            "    * `/net/cell/attribute/{attribute_name}`\n"
-            "    * `/net/cell/method/{method_name}`\n"
-        ),
-        "get_knowledge_value": [
-            "/net/cell/attribute/{cell_id}/{attribute_name}",
-        ],
-        "explain_knowledge_value": [
-            "/net/cell/attribute/{attribute_name}",
-            "/net/cell/method/{method_name}",
-        ],
-        "supported_attributes": SUPPORTED_CELL_ATTRIBUTES,
-        "supported_methods": SUPPORTED_CELL_METHODS,
-    }
-    return json.dumps(data, indent=4)
+    text = (
+        "Welcome to the Cell knowledge base!\n\n"
+        "This knowledge base provides access to the knowledge of all simulated Cells in the network simulation.\n\n"
+        "You can interact with the Cell knowledge base in the following ways:\n"
+        "1. **Retrieve live attribute values for a specific Cell:**\n"
+        "   - Format: `/net/cell/attribute/{cell_id}/{attribute_name}`\n"
+        "2. **Get explanations for a specific attribute or method:**\n"
+        "   - Attribute explanation: `/net/cell/attribute/{attribute_name}`\n"
+        "   - Method explanation: `/net/cell/method/{method_name}`\n"
+        "Supported Cell attributes include:\n"
+        f"    {', '.join(SUPPORTED_CELL_ATTRIBUTES)}\n\n"
+        "Supported Cell methods include:\n"
+        f"    {', '.join(SUPPORTED_CELL_METHODS)}\n\n"
+        "Use the above query formats to explore live data or request explanations for any supported attribute or method."
+    )
+    return text
 
 
 knowledge_getter(

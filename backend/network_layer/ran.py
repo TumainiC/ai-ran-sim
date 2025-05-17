@@ -327,10 +327,6 @@ class BaseStation:
         print(f"gNB {self.bs_id}: UE {ue.ue_imsi} deregistered and resources released.")
         return True
 
-    def save_load_history(self):
-        self.load_history.append(self.current_load)
-        if len(self.load_history) > settings.RAN_BS_LOAD_HISTORY_LENGTH:
-            self.load_history.pop(0)
 
     def to_json(self):
         return {
