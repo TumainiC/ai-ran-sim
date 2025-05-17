@@ -32,6 +32,7 @@ SUPPORTED_UE_ATTRIBUTES = [
     # "uplink_bitrate",
     # "uplink_latency",
     # "uplink_transmit_power_dBm",
+    # "serving_cell_history",
     "current_cell",
 ]
 
@@ -447,14 +448,6 @@ def ue_downlink_mcs_data_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-# skip uplink direction for now
-# skip ue.uplink_bitrate = 0
-# skip ue.uplink_latency = 0
-# skip ue.uplink_transmit_power_dBm = settings.UE_TRANSMIT_POWER
-
-# skip ue.serving_cell_history = []
-
-
 @knowledge_explainer(
     "/net/ue/attribute/current_cell",
     tags=[KnowledgeTag.UE],
@@ -474,7 +467,7 @@ def ue_current_cell_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_explainer(
-    "/net/ue/method/power_up",
+    key="/net/ue/method/power_up",
     tags=[KnowledgeTag.UE],
     related=[
         (
@@ -492,6 +485,12 @@ def ue_current_cell_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ue_power_up_explainer(sim, knowledge_router, query_key, params):
+    # Fetch the source code from the UE class
+    try:
+        method_source = inspect.getsource(getattr(UE, "power_up"))
+        code_block = f"```python\n{method_source}\n```\n"
+    except Exception:
+        code_block = "*Source code unavailable.*\n\n"
     explanation_text = (
         "The `power_up` method is responsible for initializing the UE's connection to the network. "
         "This process involves several steps:\n\n"
@@ -503,13 +502,11 @@ def ue_power_up_explainer(sim, knowledge_router, query_key, params):
         "During this step, the UE is assigned a network slice type (e.g., eMBB, URLLC, or mMTC) and a corresponding QoS profile. (method query key: /net/ue/method/authenticate_and_register).\n\n"
         "\nOnce the above steps are successfully completed, the UE is marked as connected to the network."
     )
-
     explanation_text += (
         " If any of these steps fail (e.g., no cells are detected, or authentication fails), "
         "the UE will not be added to the simulation."
     )
-
-    return explanation_text
+    return code_block + explanation_text
 
 
 @knowledge_explainer(
@@ -520,21 +517,17 @@ def ue_power_up_explainer(sim, knowledge_router, query_key, params):
             KnowledgeRelationship.SET_ATTRIBUTE,
             "/net/ue/attribute/downlink_received_power_dBm_dict",
         ),
-        (
-            KnowledgeRelationship.CALL_METHOD,
-            "/net/ue/method/calculate_SINR_and_CQI",
-        ),
-        (
-            KnowledgeRelationship.CALL_METHOD,
-            "/net/ue/method/set_downlink_sinr",
-        ),
-        (
-            KnowledgeRelationship.CALL_METHOD,
-            "/net/ue/method/set_downlink_cqi",
-        ),
+        (KnowledgeRelationship.CALL_METHOD, "/net/ue/method/calculate_SINR_and_CQI"),
+        (KnowledgeRelationship.CALL_METHOD, "/net/ue/method/set_downlink_sinr"),
+        (KnowledgeRelationship.CALL_METHOD, "/net/ue/method/set_downlink_cqi"),
     ],
 )
 def ue_monitor_signal_strength_explainer(sim, knowledge_router, query_key, params):
+    try:
+        method_source = inspect.getsource(getattr(UE, "monitor_signal_strength"))
+        code_block = f"```python\n{method_source}\n```\n"
+    except Exception:
+        code_block = "*Source code unavailable.*\n\n"
     explanation_text = (
         "The `monitor_signal_strength` method allows the UE to scan for available cells "
         "and measure their downlink signal strength. This process involves:\n\n"
@@ -542,17 +535,13 @@ def ue_monitor_signal_strength_explainer(sim, knowledge_router, query_key, param
         "based on the cell's transmit power, distance, and the path loss model.\n\n"
         "2. **Filtering Detected Cells**: Only cells with received power above the detection threshold "
         "and meeting the minimum quality requirements are considered.\n\n"
-        "3. **SINR and CQI Calculation**: calls another method `/net/ue/method/calculate_SINR_and_CQi` where "
+        "3. **SINR and CQI Calculation**: calls another method `/net/ue/method/calculate_SINR_and_CQI` where "
         "the UE calculates the Signal-to-Interference-plus-Noise Ratio (SINR) "
-        "and derives the Channel Quality Indicator (CQI) for the current serving cell (/net/ue/attribute/current_cell) if applicable."
-    )
-
-    explanation_text += (
-        " This method is critical for determining the UE's connectivity and channel quality, "
+        "and derives the Channel Quality Indicator (CQI) for the current serving cell (/net/ue/attribute/current_cell) if applicable.\n\n"
+        "This method is critical for determining the UE's connectivity and channel quality, "
         "which influence procedures such as cell selection, resource allocation and RRC event monitoring."
     )
-
-    return explanation_text
+    return code_block + explanation_text
 
 
 @knowledge_explainer(
@@ -563,64 +552,57 @@ def ue_monitor_signal_strength_explainer(sim, knowledge_router, query_key, param
             KnowledgeRelationship.DEPENDS_ON,
             "/net/ue/attribute/downlink_received_power_dBm_dict",
         ),
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/current_cell",
-        ),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/current_cell"),
     ],
 )
 def ue_cell_selection_and_camping_explainer(sim, knowledge_router, query_key, params):
+    try:
+        method_source = inspect.getsource(getattr(UE, "cell_selection_and_camping"))
+        code_block = f"```python\n{method_source}\n```\n"
+    except Exception:
+        code_block = "*Source code unavailable.*\n\n"
     explanation_text = (
         "The `cell_selection_and_camping` method enables the UE to select the most suitable cell "
         "to connect to. This process involves:\n\n"
         "1. **Cell Ranking**: The UE ranks detected cells based on their received power, "
         "frequency priority, and cell-specific offsets (CIO).\n\n"
         "2. **Cell Selection**: The UE selects the cell with the highest rank that meets the minimum quality requirements.\n\n"
-        "3. **Camping**: The UE camps on the selected cell, marking it as the current serving cell."
-    )
-
-    explanation_text += (
-        " This method ensures that the UE connects to the best available cell, "
+        "3. **Camping**: The UE camps on the selected cell, marking it as the current serving cell.\n\n"
+        "This method ensures that the UE connects to the best available cell, "
         "which is essential for reliable communication and efficient resource utilization."
     )
-
-    return explanation_text
+    return code_block + explanation_text
 
 
 @knowledge_explainer(
     key="/net/ue/method/authenticate_and_register",
     tags=[KnowledgeTag.UE],
     related=[
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/slice_type",
-        ),
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/qos_profile",
-        ),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/slice_type"),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/qos_profile"),
         (
             KnowledgeRelationship.CALL_METHOD,
-            "/net/cell/method/setup_rrc_measurement_event_monitors",
+            "/net/ue/method/setup_rrc_measurement_event_monitors",
         ),
     ],
 )
 def ue_authenticate_and_register_explainer(sim, knowledge_router, query_key, params):
+    try:
+        method_source = inspect.getsource(getattr(UE, "authenticate_and_register"))
+        code_block = f"```python\n{method_source}\n```\n"
+    except Exception:
+        code_block = "*Source code unavailable.*\n\n"
     explanation_text = (
         "The `authenticate_and_register` method allows the UE to authenticate with the network "
         "and register with its serving cell. This process involves:\n\n"
-        f"1. **Slice Type Assignment**: The UE randomly selects one of the slide types ({", ".join(NETWORK_SLICES.keys())})\n\n"
-        "2. **QoS Profile Assignment**: based on the selected slice type, the UE gets the associated QoS Profile, "
-        "defining parameters like 5QI, guaranteed uplink/donwlink bit rate (GBR) and uplink/downlink latency.\n\n"
-        "3. **Setup RRC Event Monitor**: calls method `/net/ue/method/setup_rrc_measurement_event_monitors` to set up RRC (Radio Resource Control) event monitors to track signal quality and other parameters. "
-    )
-
-    explanation_text += (
-        " This method is crucial for establishing the UE's identity and ensuring it receives "
+        f"1. **Slice Type Assignment**: The UE randomly selects one of the slice types ({', '.join(NETWORK_SLICES.keys())}).\n\n"
+        "2. **QoS Profile Assignment**: Based on the selected slice type, the UE gets the associated QoS Profile, "
+        "defining parameters like 5QI, guaranteed uplink/downlink bit rate (GBR), and uplink/downlink latency.\n\n"
+        "3. **Setup RRC Event Monitor**: Calls method `/net/ue/method/setup_rrc_measurement_event_monitors` to set up RRC (Radio Resource Control) event monitors to track signal quality and other parameters.\n\n"
+        "This method is crucial for establishing the UE's identity and ensuring it receives "
         "the appropriate network resources and quality of service."
     )
-
-    return explanation_text
+    return code_block + explanation_text
 
 
 @knowledge_explainer(
@@ -640,7 +622,14 @@ def ue_authenticate_and_register_explainer(sim, knowledge_router, query_key, par
 def ue_setup_rrc_measurement_event_monitors_explainer(
     sim, knowledge_router, query_key, params
 ):
-    return (
+    try:
+        method_source = inspect.getsource(
+            getattr(UE, "setup_rrc_measurement_event_monitors")
+        )
+        code_block = f"```python\n{method_source}\n```\n"
+    except Exception:
+        code_block = "*Source code unavailable.*\n\n"
+    explanation_text = (
         "The `setup_rrc_measurement_event_monitors` method initializes the UE's monitoring of RRC (Radio Resource Control) measurement events. "
         "These events are used to track radio conditions and trigger mobility procedures such as handover.\n\n"
         "Detailed behavior:\n"
@@ -655,6 +644,7 @@ def ue_setup_rrc_measurement_event_monitors_explainer(
         "This method is essential for enabling dynamic and standards-compliant mobility management in the simulation, "
         "allowing the UE to autonomously detect when radio conditions warrant a handover or other RRC event-driven actions."
     )
+    return code_block + explanation_text
 
 
 @knowledge_explainer(
@@ -669,10 +659,7 @@ def ue_setup_rrc_measurement_event_monitors_explainer(
             KnowledgeRelationship.USES_ATTRIBUTE,
             "/net/ue/attribute/downlink_received_power_dBm_dict",
         ),
-        (
-            KnowledgeRelationship.CALLED_BY_METHOD,
-            "/net/ue/method/step",
-        ),
+        (KnowledgeRelationship.CALLED_BY_METHOD, "/net/ue/method/step"),
         (
             KnowledgeRelationship.CALL_METHOD,
             "/net/base_station/method/receive_ue_rrc_meas_events",
@@ -682,7 +669,14 @@ def ue_setup_rrc_measurement_event_monitors_explainer(
 def ue_check_rrc_meas_events_to_monitor_explainer(
     sim, knowledge_router, query_key, params
 ):
-    return (
+    try:
+        method_source = inspect.getsource(
+            getattr(UE, "check_rrc_meas_events_to_monitor")
+        )
+        code_block = f"```python\n{method_source}\n```\n"
+    except Exception:
+        code_block = "*Source code unavailable.*\n\n"
+    explanation_text = (
         "The `check_rrc_meas_events_to_monitor` method is responsible for evaluating all configured RRC (Radio Resource Control) measurement event monitors for the UE at each simulation step.\n\n"
         "Detailed behavior:\n"
         "1. **Signal Map Construction**: The method first constructs a mapping of all detected cells' IDs to their received power (with CIO adjustment) from the UE's `downlink_received_power_dBm_dict` attribute. This map represents the latest signal measurements for all visible cells.\n"
@@ -692,6 +686,7 @@ def ue_check_rrc_meas_events_to_monitor_explainer(
         "5. **Reporting**: The method prints diagnostic messages to the console when an event is triggered, including the event type and the generated report.\n\n"
         "This method is essential for enabling autonomous, standards-compliant mobility management in the simulation. By continuously monitoring radio conditions and evaluating RRC measurement events, the UE can detect when handover or other mobility actions are needed, ensuring robust connectivity as the UE moves or as network conditions change."
     )
+    return code_block + explanation_text
 
 
 @knowledge_explainer(
@@ -702,17 +697,20 @@ def ue_check_rrc_meas_events_to_monitor_explainer(
             KnowledgeRelationship.CALLED_BY_METHOD,
             "/net/cell/method/estimate_ue_throughput_and_latency",
         ),
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/downlink_bitrate",
-        ),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/downlink_bitrate"),
     ],
 )
 def ue_set_downlink_bitrate_explainer(sim, knowledge_router, query_key, params):
-    return (
+    try:
+        method_source = inspect.getsource(getattr(UE, "set_downlink_bitrate"))
+        code_block = f"```python\n{method_source}\n```\n"
+    except Exception:
+        code_block = "*Source code unavailable.*\n\n"
+    explanation_text = (
         "The `set_downlink_bitrate` method is a setter used to update the UE's downlink bitrate attribute. "
         "This method does not perform any calculations itself; it simply assigns the provided bitrate value to the UE."
     )
+    return code_block + explanation_text
 
 
 @knowledge_explainer(
@@ -720,17 +718,20 @@ def ue_set_downlink_bitrate_explainer(sim, knowledge_router, query_key, params):
     tags=[KnowledgeTag.UE, KnowledgeTag.QoS, KnowledgeTag.CODE],
     related=[
         (KnowledgeRelationship.CALLED_BY_METHOD, "/net/cell/method/select_ue_mcs"),
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/downlink_mcs_index",
-        ),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/downlink_mcs_index"),
     ],
 )
 def ue_set_downlink_mcs_index_explainer(sim, knowledge_router, query_key, params):
-    return (
+    try:
+        method_source = inspect.getsource(getattr(UE, "set_downlink_mcs_index"))
+        code_block = f"```python\n{method_source}\n```\n"
+    except Exception:
+        code_block = "*Source code unavailable.*\n\n"
+    explanation_text = (
         "The `set_downlink_mcs_index` method is a setter for the UE's downlink MCS (Modulation and Coding Scheme) index. "
         "This method simply updates the UE's internal record of which MCS index is currently assigned."
     )
+    return code_block + explanation_text
 
 
 @knowledge_explainer(
@@ -738,29 +739,29 @@ def ue_set_downlink_mcs_index_explainer(sim, knowledge_router, query_key, params
     tags=[KnowledgeTag.UE, KnowledgeTag.QoS, KnowledgeTag.CODE],
     related=[
         (KnowledgeRelationship.CALLED_BY_METHOD, "/net/cell/method/select_ue_mcs"),
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/downlink_mcs_data",
-        ),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/downlink_mcs_data"),
     ],
 )
 def ue_set_downlink_mcs_data_explainer(sim, knowledge_router, query_key, params):
-    return (
+    try:
+        method_source = inspect.getsource(getattr(UE, "set_downlink_mcs_data"))
+        code_block = f"```python\n{method_source}\n```\n"
+    except Exception:
+        code_block = "*Source code unavailable.*\n\n"
+    explanation_text = (
         "The `set_downlink_mcs_data` method is a setter for the UE's downlink MCS data, "
         "which includes parameters such as modulation order, target code rate, and spectral efficiency. "
         "This method does not compute the MCS data itself, but stores the data structure provided by the cell, "
         "enabling the UE to reference its current transmission parameters."
     )
+    return code_block + explanation_text
 
 
 @knowledge_explainer(
     "/net/ue/method/set_downlink_sinr",
     tags=[KnowledgeTag.UE, KnowledgeTag.QoS, KnowledgeTag.CODE],
     related=[
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/downlink_sinr",
-        ),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/downlink_sinr"),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
             "/net/ue/method/calculate_SINR_and_CQI",
@@ -768,22 +769,25 @@ def ue_set_downlink_mcs_data_explainer(sim, knowledge_router, query_key, params)
     ],
 )
 def ue_set_downlink_sinr_explainer(sim, knowledge_router, query_key, params):
-    return (
+    try:
+        method_source = inspect.getsource(getattr(UE, "set_downlink_sinr"))
+        code_block = f"```python\n{method_source}\n```\n"
+    except Exception:
+        code_block = "*Source code unavailable.*\n\n"
+    explanation_text = (
         "The `set_downlink_sinr` method is a setter for the UE's downlink SINR (Signal-to-Interference-plus-Noise Ratio) attribute. "
         "It is typically called by the `calculate_SINR_and_CQI` method after the SINR value has been computed based on the received power from the serving cell, "
         "interference from neighboring cells, and thermal noise. "
-        "This method does not perform any calculations itself; it simply updates the UE's internal record of the current downlink SINR value. "
+        "This method does not perform any calculations itself; it simply updates the UE's internal record of the current downlink SINR value."
     )
+    return code_block + explanation_text
 
 
 @knowledge_explainer(
     "/net/ue/method/set_downlink_cqi",
     tags=[KnowledgeTag.UE, KnowledgeTag.QoS, KnowledgeTag.CODE],
     related=[
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/downlink_cqi",
-        ),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/downlink_cqi"),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
             "/net/ue/method/calculate_SINR_and_CQI",
@@ -791,20 +795,25 @@ def ue_set_downlink_sinr_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ue_set_downlink_cqi_explainer(sim, knowledge_router, query_key, params):
-    return (
+    try:
+        method_source = inspect.getsource(getattr(UE, "set_downlink_cqi"))
+        code_block = f"```python\n{method_source}\n```\n"
+    except Exception:
+        code_block = "*Source code unavailable.*\n\n"
+    explanation_text = (
         "The `set_downlink_cqi` method is a setter for the UE's downlink CQI (Channel Quality Indicator) attribute. "
         "It is usually invoked by the `calculate_SINR_and_CQI` method after the CQI value has been derived from the current SINR measurement. "
         "This method does not compute the CQI itself; it simply stores the provided CQI value in the UE's state. "
         "The CQI value is a key input for the network's link adaptation algorithms, influencing the selection of modulation and coding schemes (MCS) "
         "and ultimately determining the data rate and reliability of the UE's downlink connection."
     )
+    return code_block + explanation_text
 
 
 @knowledge_explainer(
     "/net/ue/method/move_towards_target",
     tags=[KnowledgeTag.UE, KnowledgeTag.MOBILITY, KnowledgeTag.CODE],
     related=[
-        # This method updates position_x and position_y, so we relate to those attributes
         (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/position_x"),
         (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/position_y"),
         (KnowledgeRelationship.USES_ATTRIBUTE, "/net/ue/attribute/target_x"),
@@ -813,7 +822,12 @@ def ue_set_downlink_cqi_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ue_move_towards_target_explainer(sim, knowledge_router, query_key, params):
-    return (
+    try:
+        method_source = inspect.getsource(getattr(UE, "move_towards_target"))
+        code_block = f"```python\n{method_source}\n```\n"
+    except Exception:
+        code_block = "*Source code unavailable.*\n\n"
+    explanation_text = (
         "The `move_towards_target` method updates the UE's position by moving it towards its target coordinates (`target_x`, `target_y`) "
         "based on its current speed (`speed_mps`) and the elapsed simulation time (`delta_time`).\n\n"
         "Detailed behavior:\n"
@@ -823,8 +837,9 @@ def ue_move_towards_target_explainer(sim, knowledge_router, query_key, params):
         "   - If the target is within reach (i.e., the distance to the target is less than or equal to the maximum move distance), the UE's position is set directly to the target coordinates.\n"
         "   - Otherwise, the UE moves along the straight line towards the target by the maximum allowed distance, updating both `position_x` and `position_y` proportionally.\n"
         "   - The new position is rounded to the nearest integer to reflect discrete simulation steps.\n"
-        "4. **No Movement**: If the UE is already at the target, its position remains unchanged.\n\n"
+        "4. **No Movement**: If the UE is already at the target, its position remains unchanged."
     )
+    return code_block + explanation_text
 
 
 @knowledge_explainer(
@@ -832,50 +847,20 @@ def ue_move_towards_target_explainer(sim, knowledge_router, query_key, params):
     tags=[KnowledgeTag.UE, KnowledgeTag.MOBILITY, KnowledgeTag.CODE],
     related=[
         (KnowledgeRelationship.CALL_METHOD, "/net/ue/method/set_current_cell"),
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/current_cell",
-        ),
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/serving_cell_history",
-        ),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/current_cell"),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/serving_cell_history"),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
             "/net/ue/attribute/downlink_received_power_dBm_dict",
         ),
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/downlink_sinr",
-        ),
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/downlink_cqi",
-        ),
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/downlink_mcs_index",
-        ),
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/downlink_mcs_data",
-        ),
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/downlink_bitrate",
-        ),
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/downlink_latency",
-        ),
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/uplink_bitrate",
-        ),
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/uplink_latency",
-        ),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/downlink_sinr"),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/downlink_cqi"),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/downlink_mcs_index"),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/downlink_mcs_data"),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/downlink_bitrate"),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/downlink_latency"),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/uplink_bitrate"),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/uplink_latency"),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
             "/net/ue/attribute/uplink_transmit_power_dBm",
@@ -891,29 +876,29 @@ def ue_move_towards_target_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ue_execute_handover_explainer(sim, knowledge_router, query_key, params):
-    return (
+    try:
+        method_source = inspect.getsource(getattr(UE, "execute_handover"))
+        code_block = f"```python\n{method_source}\n```\n"
+    except Exception:
+        code_block = "*Source code unavailable.*\n\n"
+    explanation_text = (
         "The `execute_handover` method enables the UE (User Equipment) to switch its connection from the current serving cell to a new target cell. "
         "This is a critical mobility management procedure in cellular networks, ensuring seamless connectivity as the UE moves or as radio conditions change.\n\n"
         "**Detailed behavior:**\n"
         "1. **Reset Radio State:** The method clears the UE's downlink received power measurements (`downlink_received_power_dBm_dict`), resets the downlink SINR (`downlink_sinr`), CQI (`downlink_cqi`), MCS index (`downlink_mcs_index`), MCS data (`downlink_mcs_data`), downlink bitrate (`downlink_bitrate`), and downlink latency (`downlink_latency`). "
         "It also resets uplink bitrate (`uplink_bitrate`), uplink latency (`uplink_latency`), and uplink transmit power (`uplink_transmit_power_dBm`). This ensures that all radio parameters are re-initialized for the new cell context.\n"
         "2. **Update Serving Cell:** The method calls `set_current_cell(target_cell)`, which updates the UE's `current_cell` attribute to the new cell and appends the cell's ID to the `serving_cell_history` list. This maintains a record of the UE's cell association over time.\n"
-        "3. **Reset RRC Event Monitors:** For each configured RRC (Radio Resource Control) measurement event monitor in `rrc_measurement_event_monitors`, the method calls `reset_trigger_history()`. This clears any event trigger history, ensuring that mobility event detection (such as handover triggers) starts fresh in the new cell context.\n"
+        "3. **Reset RRC Event Monitors:** For each configured RRC (Radio Resource Control) measurement event monitor in `rrc_measurement_event_monitors`, the method calls `reset_trigger_history()`. This clears any event trigger history, ensuring that mobility event detection (such as handover triggers) starts fresh in the new cell context."
     )
+    return code_block + explanation_text
 
 
 @knowledge_explainer(
     "/net/ue/method/set_current_cell",
     tags=[KnowledgeTag.UE, KnowledgeTag.MOBILITY, KnowledgeTag.CODE],
     related=[
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/current_cell",
-        ),
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/serving_cell_history",
-        ),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/current_cell"),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/serving_cell_history"),
         (KnowledgeRelationship.CALLED_BY_METHOD, "/net/ue/method/execute_handover"),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
@@ -922,7 +907,12 @@ def ue_execute_handover_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ue_set_current_cell_explainer(sim, knowledge_router, query_key, params):
-    return (
+    try:
+        method_source = inspect.getsource(getattr(UE, "set_current_cell"))
+        code_block = f"```python\n{method_source}\n```\n"
+    except Exception:
+        code_block = "*Source code unavailable.*\n\n"
+    explanation_text = (
         "The `set_current_cell` method updates the UE's association with a specific cell. "
         "It sets the `current_cell` attribute to the provided cell object and maintains a history of all serving cells in the `serving_cell_history` list.\n\n"
         "**Detailed behavior:**\n"
@@ -931,6 +921,7 @@ def ue_set_current_cell_explainer(sim, knowledge_router, query_key, params):
         "3. The `serving_cell_history` list is truncated to a maximum length (as defined by `UE_SERVING_CELL_HISTORY_LENGTH` in settings) to keep only the most recent associations.\n\n"
         "This method is called during cell selection, handover, and deregistration procedures to accurately track the UE's mobility and cell association history."
     )
+    return code_block + explanation_text
 
 
 @knowledge_explainer(
@@ -948,7 +939,12 @@ def ue_set_current_cell_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ue_deregister_explainer(sim, knowledge_router, query_key, params):
-    return (
+    try:
+        method_source = inspect.getsource(getattr(UE, "deregister"))
+        code_block = f"```python\n{method_source}\n```\n"
+    except Exception:
+        code_block = "*Source code unavailable.*\n\n"
+    explanation_text = (
         "The `deregister` method removes the UE from the network and marks it as disconnected. "
         "This is typically called when the UE's simulation time expires or when it leaves the network.\n\n"
         "**Detailed behavior:**\n"
@@ -958,28 +954,20 @@ def ue_deregister_explainer(sim, knowledge_router, query_key, params):
         "4. The `connected` attribute is set to `False`, indicating the UE is no longer part of the network.\n\n"
         "This method ensures a clean removal of the UE from the simulation, releasing all network resources and updating the UE's state."
     )
+    return code_block + explanation_text
 
 
 @knowledge_explainer(
     "/net/ue/method/calculate_SINR_and_CQI",
     tags=[KnowledgeTag.UE, KnowledgeTag.QoS, KnowledgeTag.CODE],
     related=[
-        (
-            KnowledgeRelationship.CALL_METHOD,
-            "/net/ue/method/set_downlink_sinr",
-        ),
-        (
-            KnowledgeRelationship.CALL_METHOD,
-            "/net/ue/method/set_downlink_cqi",
-        ),
+        (KnowledgeRelationship.CALL_METHOD, "/net/ue/method/set_downlink_sinr"),
+        (KnowledgeRelationship.CALL_METHOD, "/net/ue/method/set_downlink_cqi"),
         (
             KnowledgeRelationship.USES_ATTRIBUTE,
             "/net/ue/attribute/downlink_received_power_dBm_dict",
         ),
-        (
-            KnowledgeRelationship.USES_ATTRIBUTE,
-            "/net/ue/attribute/current_cell",
-        ),
+        (KnowledgeRelationship.USES_ATTRIBUTE, "/net/ue/attribute/current_cell"),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
             "/net/ue/method/monitor_signal_strength",
@@ -987,7 +975,12 @@ def ue_deregister_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ue_calculate_sinr_and_cqi_explainer(sim, knowledge_router, query_key, params):
-    return (
+    try:
+        method_source = inspect.getsource(getattr(UE, "calculate_SINR_and_CQI"))
+        code_block = f"```python\n{method_source}\n```\n"
+    except Exception:
+        code_block = "*Source code unavailable.*\n\n"
+    explanation_text = (
         "The `calculate_SINR_and_CQI` method computes the UE's downlink SINR (Signal-to-Interference-plus-Noise Ratio) and CQI (Channel Quality Indicator) "
         "based on the latest received power measurements from all detected cells.\n\n"
         "**Detailed behavior:**\n"
@@ -1001,15 +994,12 @@ def ue_calculate_sinr_and_cqi_explainer(sim, knowledge_router, query_key, params
         "8. The method updates the UE's `downlink_sinr` and `downlink_cqi` attributes accordingly.\n\n"
         "This method is essential for link adaptation, resource allocation, and mobility decisions, as SINR and CQI directly impact data rates and handover triggers."
     )
+    return code_block + explanation_text
 
 
 @knowledge_explainer(
     "/net/ue/method/step",
-    tags=[
-        KnowledgeTag.UE,
-        KnowledgeTag.SIMULATION,
-        KnowledgeTag.CODE,
-    ],
+    tags=[KnowledgeTag.UE, KnowledgeTag.SIMULATION, KnowledgeTag.CODE],
     related=[
         (KnowledgeRelationship.CALL_METHOD, "/net/ue/method/move_towards_target"),
         (KnowledgeRelationship.CALL_METHOD, "/net/ue/method/monitor_signal_strength"),
@@ -1018,14 +1008,16 @@ def ue_calculate_sinr_and_cqi_explainer(sim, knowledge_router, query_key, params
             "/net/ue/method/check_rrc_meas_events_to_monitor",
         ),
         (KnowledgeRelationship.CALL_METHOD, "/net/ue/method/deregister"),
-        (
-            KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/time_remaining",
-        ),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/time_remaining"),
     ],
 )
 def ue_step_explainer(sim, knowledge_router, query_key, params):
-    return (
+    try:
+        method_source = inspect.getsource(getattr(UE, "step"))
+        code_block = f"```python\n{method_source}\n```\n"
+    except Exception:
+        code_block = "*Source code unavailable.*\n\n"
+    explanation_text = (
         "The `step` method advances the UE's state by one simulation time step. "
         "It orchestrates mobility, radio measurements, event monitoring, and lifecycle management for the UE.\n\n"
         "**Detailed behavior:**\n"
@@ -1036,47 +1028,50 @@ def ue_step_explainer(sim, knowledge_router, query_key, params):
         "5. If `time_remaining` reaches zero or below, calls `deregister()` to remove the UE from the network and simulation.\n\n"
         "This method is typically called once per simulation tick, ensuring the UE's mobility, connectivity, and lifecycle are accurately modeled."
     )
+    return code_block + explanation_text
 
 
-@knowledge_getter(
+def ue_knowledge_root(sim, knowledge_router, query_key, params):
+    """
+    Combined getter and explainer for the UE knowledge base.
+    Returns both a textual description and a list of supported query routes, attributes, and methods.
+    """
+    data = {
+        "description": (
+            "Welcome to the User Equipment (UE) knowledge base!\n"
+            "This knowledge base provides access to the knowledge of all the simulated UEs.\n"
+            "You can retrieve UE live attribute value or method source code in the following query format:\n"
+            "    * `/net/ue/attribute/{ue_imsi}/{attribute_name}`\n"
+            "    * `/net/ue/method/{method_name}`\n"
+            "Or, you can get the explanation of a specific attribute or method logic in the following query format:\n"
+            "    * `/net/ue/attribute/{attribute_name}`\n"
+            "    * `/net/ue/method/{method_name}`\n"
+        ),
+        "get_knowledge_value": [
+            "/net/ue/attribute/{ue_imsi}/{attribute_name}",
+            "/net/ue/method/{method_name}",
+        ],
+        "explain_knowledge_value": [
+            "/net/ue/attribute/{attribute_name}",
+            "/net/ue/method/{method_name}",
+        ],
+        "supported_attributes": SUPPORTED_UE_ATTRIBUTES,
+        "supported_methods": SUPPORTED_UE_METHODS,
+        "usage": (
+            "Use the above routes to retrieve either the value or the explanation of UE knowledge. "
+            "For example, `/net/ue/attribute/{ue_imsi}/downlink_bitrate` returns the downlink bitrate for a specific UE, "
+            "while `/net/ue/method/power_up` provides details about the UE power-up procedure."
+        ),
+    }
+    return json.dumps(data, indent=4)
+
+
+knowledge_getter(
     key="/net/ue",
-)
-def ue_knowledge_getter(sim, knowledge_router, query_key, params):
-    return json.dumps(
-        {
-            "description": "UE-related knowledge base",
-            "get_knowledge_value": [
-                "/net/ue/attribute/{ue_imsi}/{attribute_name}",
-                "/net/ue/method/{method_name}",
-            ],
-            "explain_knowledge_value": [
-                "/net/ue/attribute/{attribute_name}",
-                "/net/ue/method/{method_name}",
-            ],
-            "supported_attributes": SUPPORTED_UE_ATTRIBUTES,
-            "supported_methods": SUPPORTED_UE_METHODS,
-        },
-        indent=4,
-    )
+)(ue_knowledge_root)
 
-
-@knowledge_explainer(
+knowledge_explainer(
     key="/net/ue",
     tags=[KnowledgeTag.UE, KnowledgeTag.KNOWLEDGE_GUIDE],
     related=[],
-)
-def ue_knowledge_explainer(sim, knowledge_router, query_key, params):
-    return f"""Welcome to the UE knowledge base!
-This knowledge base provides access to the knowledge of all the connected UE.
-You can retrieve UE live attribute value or method source code in the following query format:
-    * `/net/ue/attribute/{{ue_imsi}}/{{attribute_name}}` 
-    * `/net/ue/method/{{method_name}}`
-Or, you can get the explanation of a specific attribute or method logic in the following query format:
-    * `/net/ue/attribute/{{attribute_name}}`
-    * `/net/ue/method/{{method_name}}`
-
-supported attributes include:
-{", ".join(SUPPORTED_UE_ATTRIBUTES)}
-
-supported methods include: 
-{", ".join(SUPPORTED_UE_METHODS)}"""
+)(ue_knowledge_root)

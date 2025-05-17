@@ -78,26 +78,50 @@ def cell_method_getter(sim, knowledge_router, query_key, params):
     return f"Method {method_name} not found in Cell class. Supported methods: {', '.join(SUPPORTED_CELL_METHODS)}"
 
 
-@knowledge_explainer(
+def cell_knowledge_root(sim, knowledge_router, query_key, params):
+    """
+    Combined getter and explainer for the Cell knowledge base.
+    Returns both a textual description and a list of supported query routes, attributes, and methods.
+    """
+    data = {
+        "description": (
+            "Welcome to the Cell knowledge base!\n"
+            "This knowledge base provides access to the knowledge of all the simulated Cells.\n"
+            "You can retrieve Cell live attribute value or method source code in the following query format:\n"
+            "    * `/net/cell/attribute/{cell_id}/{attribute_name}`\n"
+            "    * `/net/cell/method/{method_name}`\n"
+            "Or, you can get the explanation of a specific attribute or method logic in the following query format:\n"
+            "    * `/net/cell/attribute/{attribute_name}`\n"
+            "    * `/net/cell/method/{method_name}`\n"
+        ),
+        "get_knowledge_value": [
+            "/net/cell/attribute/{cell_id}/{attribute_name}",
+            "/net/cell/method/{method_name}",
+        ],
+        "explain_knowledge_value": [
+            "/net/cell/attribute/{attribute_name}",
+            "/net/cell/method/{method_name}",
+        ],
+        "supported_attributes": SUPPORTED_CELL_ATTRIBUTES,
+        "supported_methods": SUPPORTED_CELL_METHODS,
+        "usage": (
+            "Use the above routes to retrieve either the value or the explanation of Cell knowledge. "
+            "For example, `/net/cell/attribute/{cell_id}/bandwidth_Hz` returns the bandwidth for a specific Cell, "
+            "while `/net/cell/method/allocate_prb` provides details about the PRB allocation method in the Cell."
+        ),
+    }
+    return json.dumps(data, indent=4)
+
+
+knowledge_getter(
+    key="/net/cell",
+)(cell_knowledge_root)
+
+knowledge_explainer(
     key="/net/cell",
     tags=[KnowledgeTag.CELL, KnowledgeTag.KNOWLEDGE_GUIDE],
     related=[],
-)
-def cell_knowledge_explainer(sim, knowledge_router, query_key, params):
-    return f"""Welcome to the Cell knowledge base!
-This knowledge base provides access to the knowledge of all the cells in the simulation.
-You can retrieve the Cell's live attribute value or method source code in the following query formats:
-    * `/net/cell/attribute/{{cell_id}}/{{attribute_name}}`
-    * `/net/cell/method/{{method_name}}`
-Or, you can get the explanation of the Cell's attribute or method logic in the following query formats:
-    * `/net/cell/attribute/{{attribute_name}}`
-    * `/net/cell/method/{{method_name}}`
-Supported attributes include:
-{", ".join(SUPPORTED_CELL_ATTRIBUTES)}
-
-Supported methods include:
-{", ".join(SUPPORTED_CELL_METHODS)}
-"""
+)(cell_knowledge_root)
 
 
 @knowledge_explainer(
