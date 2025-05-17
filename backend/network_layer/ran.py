@@ -133,7 +133,7 @@ class Cell:
         self.allocate_prb()
 
         # for each UE, estimate the downlink, uplink bitrate and latency
-        self.estimate_ue_throughput_and_latency()
+        self.estimate_ue_bitrate_and_latency()
 
     def allocate_prb(self):
         # QoS-aware Proportional Fair Scheduling (PFS)
@@ -197,7 +197,7 @@ class Cell:
         #         f"Cell: {self.cell_id} allocated {allocation['downlink']} DL PRBs for UE {ue_imsi}"
         #     )
 
-    def estimate_ue_throughput_and_latency(self):
+    def estimate_ue_bitrate_and_latency(self):
         for ue in self.connected_ue_list.values():
             if ue.downlink_mcs_data is None:
                 print(

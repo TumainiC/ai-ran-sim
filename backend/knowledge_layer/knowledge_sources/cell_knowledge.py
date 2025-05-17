@@ -34,7 +34,7 @@ SUPPORTED_CELL_METHODS = [
     "monitor_ue_signal_strength",
     "select_ue_mcs",
     "allocate_prb",
-    "estimate_ue_throughput_and_latency",
+    "estimate_ue_bitrate_and_latency",
     "deregister_ue",
     "step",
     # "to_json",
@@ -228,7 +228,7 @@ def cell_qrx_level_min_explainer(sim, knowledge_router, query_key, params):
         (KnowledgeRelationship.SET_BY_METHOD, "/net/cell/method/allocate_prb"),
         (
             KnowledgeRelationship.USED_BY_METHOD,
-            "/net/cell/method/estimate_ue_throughput_and_latency",
+            "/net/cell/method/estimate_ue_bitrate_and_latency",
         ),
     ],
 )
@@ -529,7 +529,7 @@ def cell_select_ue_mcs_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_explainer(
-    "/net/cell/method/estimate_ue_throughput_and_latency",
+    "/net/cell/method/estimate_ue_bitrate_and_latency",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS, KnowledgeTag.CODE],
     related=[
         (
@@ -538,12 +538,12 @@ def cell_select_ue_mcs_explainer(sim, knowledge_router, query_key, params):
         ),
     ],
 )
-def cell_estimate_ue_throughput_and_latency_explainer(
+def cell_estimate_ue_bitrate_and_latency_explainer(
     sim, knowledge_router, query_key, params
 ):
-    code = inspect.getsource(getattr(Cell, "estimate_ue_throughput_and_latency"))
+    code = inspect.getsource(getattr(Cell, "estimate_ue_bitrate_and_latency"))
     explanation = (
-        "The `estimate_ue_throughput_and_latency` method in the Cell class calculates the downlink (and potentially uplink) throughput and latency for each connected UE, "
+        "The `estimate_ue_bitrate_and_latency` method in the Cell class calculates the downlink (and potentially uplink) throughput and latency for each connected UE, "
         "based on the PRB (Physical Resource Block) allocation and the selected Modulation and Coding Scheme (MCS) for each UE.\n\n"
         "The process works as follows:\n"
         "1. For each connected UE, the method first checks if the UE has valid downlink MCS data. If not, the UE is skipped for this estimation cycle.\n"
@@ -591,7 +591,7 @@ def cell_deregister_ue_explainer(sim, knowledge_router, query_key, params):
         ),
         (
             KnowledgeRelationship.CALL_METHOD,
-            "/net/cell/method/estimate_ue_throughput_and_latency",
+            "/net/cell/method/estimate_ue_bitrate_and_latency",
         ),
     ],
 )
@@ -606,7 +606,7 @@ def cell_step_explainer(sim, knowledge_router, query_key, params):
         "This sets the UE's `downlink_mcs_index` and `downlink_mcs_data` attributes, which are used for throughput estimation and resource allocation.\n\n"
         "3. **Allocate PRBs:** Calls `allocate_prb()` to perform QoS-aware Proportional Fair Scheduling (PFS) and allocate Physical Resource Blocks (PRBs) among all connected UEs. "
         "The allocation is based on each UE's QoS profile (e.g., Guaranteed Bit Rate) and current channel conditions (MCS).\n\n"
-        "4. **Estimate UE Throughput and Latency:** Calls `estimate_ue_throughput_and_latency()` to calculate the downlink bitrate for each UE, "
+        "4. **Estimate UE Throughput and Latency:** Calls `estimate_ue_bitrate_and_latency()` to calculate the downlink bitrate for each UE, "
         "using the allocated PRBs and selected MCS. The computed bitrate is set on the UE. (Note: latency estimation is marked as TODO in the code.)\n\n"
         "By executing these steps in order, the `step` method ensures that the cell's resource allocation, link adaptation, and performance metrics are updated each simulation tick, "
         "reflecting the latest network and radio conditions."

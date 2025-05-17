@@ -420,7 +420,7 @@ def ue_downlink_mcs_index_explainer(sim, knowledge_router, query_key, params):
         ),
         (
             KnowledgeRelationship.USED_BY_METHOD,
-            "/net/cell/method/estimate_ue_throughput_and_latency",
+            "/net/cell/method/estimate_ue_bitrate_and_latency",
         ),
     ],
 )
@@ -680,7 +680,7 @@ def ue_check_rrc_meas_events_to_monitor_explainer(
     related=[
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
-            "/net/cell/method/estimate_ue_throughput_and_latency",
+            "/net/cell/method/estimate_ue_bitrate_and_latency",
         ),
         (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ue/attribute/downlink_bitrate"),
     ],

@@ -18,8 +18,8 @@ network_knowledge_agent = Agent(
         get_knowledge_explanation_bulk,
     ],
     instructions=f"""{RECOMMENDED_PROMPT_PREFIX}
-Use the tools to query the network knowledge database. To get started:
-    call get_knowledge_explanation("/net")
+Use the tools to query the knowledge database of the simulated telecom network. 
+call get_knowledge_explanation("/net") to get started.
 
 To increase efficiency, you can use the bulk query tools to query multiple keys at once.
 """,
