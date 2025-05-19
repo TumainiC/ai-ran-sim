@@ -6,6 +6,7 @@ class KnowledgeTag(Enum):
     UE = "UE"
     BS = "BS"
     CELL = "CELL"
+    RIC = "RIC"
 
     # element attribute categories
     ID = "ID"
