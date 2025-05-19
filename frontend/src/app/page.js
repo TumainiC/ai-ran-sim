@@ -16,6 +16,7 @@ export default function Home() {
   const [streamedChatEvent, setStreamedChatEvent] = useState(null);
   const [bottomTabListIndex, setBottomTabListIndex] = useState("ue_dashboard");
   const [rightTabListIndex, setRightTabListIndex] = useState("chat_interface");
+  const [knowledgeLayerRoutes, setKnowledgeLayerRoutes] = useState({});
   const memoryRef = useRef([]);
 
   const wsMessageHandler = (event) => {
@@ -45,6 +46,7 @@ export default function Home() {
       } else if (layer === "knowledge_layer") {
         if (command === "get_routes") {
           console.log("Knowledge Layer Routes:", response);
+          setKnowledgeLayerRoutes(response);
         } else if (command === "get_value") {
           console.log("Knowledge Layer Value Response:", response);
           setKnowledgeQueryResponse(response);
@@ -223,6 +225,7 @@ export default function Home() {
           >
             <KnowledgeLayerDashboard
               sendMessage={sendMessage}
+              knowledgeLayerRoutes={knowledgeLayerRoutes}
               knowledgeQueryResponse={knowledgeQueryResponse}
             />
           </div>

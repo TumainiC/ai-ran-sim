@@ -2,6 +2,7 @@ import { useState } from "react";
 
 export default function KnowledgeLayerDashboard({
   sendMessage,
+  knowledgeLayerRoutes,
   knowledgeQueryResponse,
 }) {
   const [knowledgeQueryInput, setKnowledgeQueryInput] = useState("");
@@ -11,6 +12,68 @@ export default function KnowledgeLayerDashboard({
       return;
     }
     sendMessage("knowledge_layer", "get_routes");
+  };
+
+  const generateRouteDotGraph = () => {
+    if (!knowledgeLayerRoutes) {
+      console.error("Knowledge Layer Routes are not available");
+      return;
+    }
+
+    const explainerGraphNodes = [];
+    const explainerGraphEdges = [];
+
+    knowledgeLayerRoutes.explainer_routes.forEach((explainerRoute) => {
+      explainerGraphNodes.push(explainerRoute.pattern);
+
+      explainerRoute.related.forEach((relatedRoute) => {
+        explainerGraphEdges.push({
+          source: explainerRoute.pattern,
+          target: relatedRoute.pattern,
+          label: relatedRoute.relationship,
+        });
+      });
+    });
+
+    console.log("Explainer Graph Nodes:", explainerGraphNodes);
+    console.log("Explainer Graph Edges:", explainerGraphEdges);
+
+    // Generate DOT language string
+    let dot = "digraph KnowledgeRoutes {\n";
+    // Add nodes
+    explainerGraphNodes.forEach((node) => {
+      dot += `  "${node}";\n`;
+    });
+    // Add edges with labels
+    explainerGraphEdges.forEach((edge) => {
+      dot += `  "${edge.source}" -> "${edge.target}" [label="${edge.label}"];\n`;
+    });
+    dot += "}\n";
+
+    // Copy to clipboard
+    if (navigator.clipboard) {
+      navigator.clipboard
+        .writeText(dot)
+        .then(() => {
+          console.log("DOT graph copied to clipboard!");
+        })
+        .catch((err) => {
+          console.error("Failed to copy DOT graph:", err);
+        });
+    } else {
+      // Fallback for older browsers
+      const textarea = document.createElement("textarea");
+      textarea.value = dot;
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand("copy");
+        console.log("DOT graph copied to clipboard!");
+      } catch (err) {
+        console.error("Failed to copy DOT graph:", err);
+      }
+      document.body.removeChild(textarea);
+    }
   };
 
   const getKnowledgeValue = () => {
@@ -39,9 +102,26 @@ export default function KnowledgeLayerDashboard({
 
   return (
     <div className="flex-1">
-      <button className="btn btn-outline mb-3" onClick={getKnowledgeRoutes}>
-        Get Knowledge Routes
+      <button
+        className="btn btn-outline my-3 mr-3"
+        onClick={getKnowledgeRoutes}
+      >
+        1. Get Knowledge Routes
       </button>
+      <button
+        className="btn btn-outline my-3 mr-3"
+        onClick={generateRouteDotGraph}
+        disabled={!knowledgeLayerRoutes}
+      >
+        2. Generate Route DOT graph
+      </button>
+      <a
+        href="https://dreampuf.github.io/GraphvizOnline/"
+        target="_blank"
+        className="btn btn-outline my-3">
+        3. Open DOT Visualizer Page
+      </a>
+
       <div className="flex flex-row gap-3 items-center">
         <input
           className={"input w-[600]"}
