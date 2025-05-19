@@ -2,7 +2,7 @@ class xAppBase:
     def __init__(self, ric=None):
         self.ric = ric
         self.enabled = True
-    
+
     @property
     def xapp_id(self):
         return self.__class__.__name__
@@ -14,7 +14,7 @@ class xAppBase:
     @property
     def cell_list(self):
         return self.ric.simulation_engine.cell_list
-    
+
     @property
     def ue_list(self):
         return self.ric.simulation_engine.ue_list

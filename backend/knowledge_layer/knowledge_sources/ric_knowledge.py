@@ -34,11 +34,11 @@ def ric_attribute_getter(sim, knowledge_router, query_key, params):
             return f"{attribute_name} is a method, query it via /net/ric/method/{attribute_name} instead."
 
         if attribute_name == "xapp_list":
-            # return a list of xApp IDs instead of the full xApp objects
-            xapp_ids = [xapp_id for xapp_id in attribute.keys()]
+            # Return a list of xApp IDs instead of the full xApp objects
+            xapp_ids = list(attribute.keys())
             return json.dumps(xapp_ids)
 
-        if isinstance(attribute, dict) or isinstance(attribute, list):
+        if isinstance(attribute, (dict, list)):
             return json.dumps(attribute)
 
         return str(attribute)
@@ -53,7 +53,7 @@ def ric_knowledge_root(sim, knowledge_router, query_key, params):
     """
     text = (
         "Welcome to the Near Real-Time RAN Intelligent Controller (NearRT RIC) knowledge base!\n\n"
-        "This knowledge base provides access to the knowledge of the simulated NearRT RIC, which is responsible for orchestrating xApps and managing RAN control in the network simulation.\n\n"
+        "This knowledge base provides access to the simulated NearRT RIC, which orchestrates xApps and manages RAN control in the network simulation.\n\n"
         "You can interact with the RIC knowledge base in the following ways:\n"
         "1. **Retrieve live attribute values for the RIC:**\n"
         "   - Format: `/net/ric/attribute/{attribute_name}`\n"
@@ -104,7 +104,7 @@ def ric_id_explainer(sim, knowledge_router, query_key, params):
 def ric_xapp_list_explainer(sim, knowledge_router, query_key, params):
     return (
         "The `xapp_list` attribute is a dictionary mapping xApp IDs to their instantiated xApp objects. "
-        "Each xApp can implement a specific RAN control logic (such as handover, load balancing, etc.) and is dynamically loaded by the RIC at runtime. "
+        "Each xApp implements specific RAN control logic (such as handover, load balancing, etc.) and is dynamically loaded by the RIC at runtime. "
         "This attribute allows the RIC to manage, start, and coordinate all xApps in the simulation."
     )
 
@@ -123,10 +123,10 @@ def ric_xapp_list_explainer(sim, knowledge_router, query_key, params):
 def ric_load_xapps_explainer(sim, knowledge_router, query_key, params):
     code = inspect.getsource(getattr(NearRTRIC, "load_xApps"))
     explanation = (
-        "The `load_xApps` method is responsible for dynamically discovering and loading all available xApps from the xApps directory. "
+        "The `load_xApps` method dynamically discovers and loads all available xApps from the xApps directory. "
         "It instantiates each xApp, assigns it to the RIC, and stores it in the `xapp_list` attribute. "
         "After loading, it calls the `start` method on each xApp to initialize their operation. "
-        "This mechanism enables modular, plug-and-play RAN control logic, allowing new xApps to be added to the simulation without modifying the RIC core code. "
+        "This enables modular, plug-and-play RAN control logic, allowing new xApps to be added to the simulation without modifying the RIC core code. "
         "The method also ensures that no duplicate xApp IDs are loaded, maintaining the integrity of the xApp registry."
     )
     return f"```python\n{code}\n```\n\n{explanation}"
