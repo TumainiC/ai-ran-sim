@@ -17,7 +17,7 @@ def network_knowledge_root(sim, knowledge_router, query_key, params):
         '      "/net/cell/attribute/{cell_id}/{attribute_name}"\n'
         '      "/net/base_station/attribute/{bs_id}/{attribute_name}"\n\n'
         '      "/net/ric/attribute/{attribute_name}"\n\n'
-        "  • To get the explanation of the UE, Cell, Base Station class attribute or method, call get_knowledge_explanation on one of the following queries:\n"
+        "  • To get the explanation of the UE, Cell, Base Station and RIC class attribute or method, call get_knowledge_explanation on one of the following queries:\n"
         '      "/net/ue/attribute/{attribute_name}"\n'
         '      "/net/ue/method/{method_name}"\n\n'
         '      "/net/cell/attribute/{attribute_name}"\n'
@@ -25,7 +25,9 @@ def network_knowledge_root(sim, knowledge_router, query_key, params):
         '      "/net/base_station/attribute/{attribute_name}"\n'
         '      "/net/base_station/method/{method_name}"\n\n'
         '      "/net/ric/attribute/{attribute_name}"\n'
-        '      "/net/ric/method/{method_name}"\n\n'
+        '      "/net/ric/method/{method_name}"\n'
+        '      "/net/ric/xapps"\n'
+        '      "/net/ric/xapps/{xapp_id}"\n\n'
         "If you don't know the supported attribute or method names, you can first call get_knowledge_explanation on the following queries: \n"
         '  "/net/ue"\n'
         '  "/net/cell"\n'
