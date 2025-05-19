@@ -118,7 +118,8 @@ export default function KnowledgeLayerDashboard({
       <a
         href="https://dreampuf.github.io/GraphvizOnline/"
         target="_blank"
-        className="btn btn-outline my-3">
+        className="btn btn-outline my-3"
+      >
         3. Open DOT Visualizer Page
       </a>
 
