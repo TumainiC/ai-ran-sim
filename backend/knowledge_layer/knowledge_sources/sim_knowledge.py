@@ -154,7 +154,7 @@ def sim_cell_list_explainer(sim, knowledge_router, query_key, params):
     "/sim/attribute/ue_list",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.UE],
     related=[
-        (KnowledgeRelationship.HAS_ATTRIBUTE, "/net/ue"),
+        (KnowledgeRelationship.HAS_ATTRIBUTE, "/net/user_equipments"),
     ],
 )
 def sim_ue_list_explainer(sim, knowledge_router, query_key, params):
@@ -214,7 +214,7 @@ def sim_network_setup_explainer(sim, knowledge_router, query_key, params):
     "/sim/method/spawn_random_ue",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.UE, KnowledgeTag.CODE],
     related=[
-        (KnowledgeRelationship.CALL_METHOD, "/net/ue/method/power_up"),
+        (KnowledgeRelationship.CALL_METHOD, "/net/user_equipments/method/power_up"),
         (KnowledgeRelationship.CALL_METHOD, "/sim/method/add_ue"),
     ],
 )
@@ -266,7 +266,7 @@ def sim_spawn_UEs_explainer(sim, knowledge_router, query_key, params):
     "/sim/method/step_UEs",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.UE, KnowledgeTag.CODE],
     related=[
-        (KnowledgeRelationship.CALLED_BY_METHOD, "/net/ue/method/step"),
+        (KnowledgeRelationship.CALLED_BY_METHOD, "/net/user_equipments/method/step"),
         (KnowledgeRelationship.USES_ATTRIBUTE, "/sim/attribute/ue_list"),
         (KnowledgeRelationship.CALL_METHOD, "/sim/method/remove_UE"),
     ],

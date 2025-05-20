@@ -73,7 +73,7 @@ class KnowledgeRouter(metaclass=utils.SingletonMeta):
             params = route.match(key)
             if params is not None:
                 return route, params
-        if key.startswith("/net/ue/method/"):
+        if key.startswith("/net/user_equipments/method/"):
             raise KeyError(
                 f"Query key {key} is not recognized. Please check if the method name is supported. Currently supported UE methods are: {SUPPORTED_UE_METHODS}"
             )
@@ -81,7 +81,7 @@ class KnowledgeRouter(metaclass=utils.SingletonMeta):
             raise KeyError(
                 f"Query key {key} is not recognized. Please check if the method name is supported. Currently supported cell methods are: {SUPPORTED_CELL_METHODS}"
             )
-        if key.startswith("/net/ue/attribute/"):
+        if key.startswith("/net/user_equipments/attribute/"):
             raise KeyError(
                 f"Query key {key} is not recognized. Please check if the attribute name is supported. Currently supported UE attributes are: {SUPPORTED_UE_ATTRIBUTES}"
             )
@@ -98,7 +98,7 @@ class KnowledgeRouter(metaclass=utils.SingletonMeta):
             params = route.match(key)
             if params is not None:
                 return route, params
-        if key.startswith("/net/ue/method/"):
+        if key.startswith("/net/user_equipments/method/"):
             raise KeyError(
                 f"Query key {key} is not recognized. Please check if the method name is supported. Currently supported UE methods are: {SUPPORTED_UE_METHODS}"
             )
@@ -106,7 +106,7 @@ class KnowledgeRouter(metaclass=utils.SingletonMeta):
             raise KeyError(
                 f"Query key {key} is not recognized. Please check if the method name is supported. Currently supported cell methods are: {SUPPORTED_CELL_METHODS}"
             )
-        if key.startswith("/net/ue/attribute/"):
+        if key.startswith("/net/user_equipments/attribute/"):
             raise KeyError(
                 f"Query key {key} is not recognized. Please check if the attribute name is supported. Currently supported UE attributes are: {SUPPORTED_UE_ATTRIBUTES}"
             )

@@ -129,7 +129,7 @@ export default function KnowledgeLayerDashboard({
           type="text"
           value={knowledgeQueryInput}
           onChange={(e) => setKnowledgeQueryInput(e.target.value)}
-          placeholder="Enter your knowledge query key here, e.g., /net/ue/ue_1/attribute/downlink_cqi"
+          placeholder="Enter your knowledge query key here, e.g., /net/user_equipments/ue_1/attribute/downlink_cqi"
         />
         <button className="btn btn-outline" onClick={getKnowledgeValue}>
           Get Knowledge

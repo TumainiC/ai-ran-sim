@@ -252,7 +252,7 @@ def bs_ric_control_actions_explainer(sim, knowledge_router, query_key, params):
     related=[
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
-            "/net/ue/method/check_rrc_meas_events_to_monitor",
+            "/net/user_equipments/method/check_rrc_meas_events_to_monitor",
         ),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
@@ -282,7 +282,7 @@ def bs_receive_ue_rrc_meas_events_explainer(sim, knowledge_router, query_key, pa
         (KnowledgeRelationship.CALL_METHOD, "/net/cell/method/register_ue"),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
-            "/net/ue/method/authenticate_and_register",
+            "/net/user_equipments/method/authenticate_and_register",
         ),
     ],
 )
@@ -308,7 +308,7 @@ def bs_handle_ue_auth_and_reg_explainer(sim, knowledge_router, query_key, params
             KnowledgeRelationship.SET_ATTRIBUTE,
             "/net/base_station/attribute/ue_registry",
         ),
-        (KnowledgeRelationship.CALLED_BY_METHOD, "/net/ue/method/deregister"),
+        (KnowledgeRelationship.CALLED_BY_METHOD, "/net/user_equipments/method/deregister"),
     ],
 )
 def bs_handle_deregistration_request_explainer(
@@ -386,7 +386,7 @@ def bs_process_ric_control_actions_explainer(sim, knowledge_router, query_key, p
         (KnowledgeRelationship.CALL_METHOD, "/net/cell/method/register_ue"),
         (
             KnowledgeRelationship.CALL_METHOD,
-            "/net/ue/method/execute_handover",
+            "/net/user_equipments/method/execute_handover",
         ),
     ],
 )

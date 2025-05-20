@@ -154,7 +154,7 @@ def cell_max_ul_prb_explainer(sim, knowledge_router, query_key, params):
     "/net/cell/attribute/transmit_power_dBm",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
-        (KnowledgeRelationship.USED_BY_METHOD, "/net/ue/method/monitor_signal_strength")
+        (KnowledgeRelationship.USED_BY_METHOD, "/net/user_equipments/method/monitor_signal_strength")
     ],
 )
 def cell_transmit_power_explainer(sim, knowledge_router, query_key, params):
@@ -170,7 +170,7 @@ def cell_transmit_power_explainer(sim, knowledge_router, query_key, params):
     "/net/cell/attribute/cell_individual_offset_dBm",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
-        (KnowledgeRelationship.USED_BY_METHOD, "/net/ue/method/monitor_signal_strength")
+        (KnowledgeRelationship.USED_BY_METHOD, "/net/user_equipments/method/monitor_signal_strength")
     ],
 )
 def cell_individual_offset_explainer(sim, knowledge_router, query_key, params):
@@ -187,7 +187,7 @@ def cell_individual_offset_explainer(sim, knowledge_router, query_key, params):
     related=[
         (
             KnowledgeRelationship.USED_BY_METHOD,
-            "/net/ue/method/cell_selection_and_camping",
+            "/net/user_equipments/method/cell_selection_and_camping",
         )
     ],
 )
@@ -205,7 +205,7 @@ def cell_frequency_priority_explainer(sim, knowledge_router, query_key, params):
     related=[
         (
             KnowledgeRelationship.USED_BY_METHOD,
-            "/net/ue/method/monitor_signal_strength",
+            "/net/user_equipments/method/monitor_signal_strength",
         )
     ],
 )
@@ -325,7 +325,7 @@ def cell_current_ul_load_explainer(sim, knowledge_router, query_key, params):
         ),
         (
             KnowledgeRelationship.USED_BY_METHOD,
-            "/net/ue/method/monitor_signal_strength",
+            "/net/user_equipments/method/monitor_signal_strength",
         ),
     ],
 )
@@ -346,7 +346,7 @@ def cell_position_x_explainer(sim, knowledge_router, query_key, params):
         ),
         (
             KnowledgeRelationship.USED_BY_METHOD,
-            "/net/ue/method/monitor_signal_strength",
+            "/net/user_equipments/method/monitor_signal_strength",
         ),
     ],
 )
@@ -495,11 +495,11 @@ def cell_monitor_ue_signal_strength_explainer(sim, knowledge_router, query_key, 
     related=[
         (
             KnowledgeRelationship.CALL_METHOD,
-            "/net/ue/method/set_downlink_mcs_index",
+            "/net/user_equipments/method/set_downlink_mcs_index",
         ),
         (
             KnowledgeRelationship.CALL_METHOD,
-            "/net/ue/method/set_downlink_mcs_data",
+            "/net/user_equipments/method/set_downlink_mcs_data",
         ),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
@@ -529,7 +529,7 @@ def cell_select_ue_mcs_explainer(sim, knowledge_router, query_key, params):
     related=[
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/ue/attribute/downlink_bitrate",
+            "/net/user_equipments/attribute/downlink_bitrate",
         ),
     ],
 )
