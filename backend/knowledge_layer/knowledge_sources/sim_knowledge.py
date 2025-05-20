@@ -31,73 +31,82 @@ SUPPORTED_SIM_METHODS = [
 
 
 @knowledge_entry(
-    key="/sim/attribute/{attribute_name}",
+    key="/docs/sim_engine",
+    tags=[KnowledgeTag.SIMULATION],
+    related=[],
 )
-def sim_attribute_getter(sim, knowledge_router, query_key, params):
-    attribute_name = params["attribute_name"]
-
-    if attribute_name not in SUPPORTED_SIM_ATTRIBUTES:
-        return f"Attribute {attribute_name} not supported. Supported attributes: {', '.join(SUPPORTED_SIM_ATTRIBUTES)}"
-
-    if hasattr(sim, attribute_name):
-        attribute = getattr(sim, attribute_name)
-        if callable(attribute):
-            return f"{attribute_name} is a method, query it via /sim/method/{attribute_name} instead."
-        if (
-            attribute_name == "base_station_list"
-            or attribute_name == "cell_list"
-            or attribute_name == "ue_list"
-        ):
-            # we can only return the keys of the dict not the base station, cell or ue objects.
-            return json.dumps(list(attribute.keys()))
-        if isinstance(attribute, dict) or isinstance(attribute, list):
-            return json.dumps(attribute)
-        return str(attribute)
-    else:
-        return f"Attribute {attribute_name} not found in SimulationEngine class. Supported attributes: {', '.join(SUPPORTED_SIM_ATTRIBUTES)}"
-
-
-def sim_knowledge_root(sim, knowledge_router, query_key, params):
-    """
-    Combined getter and explainer for the SimulationEngine knowledge base.
-    Returns a narrative textual description of supported query routes, attributes, and methods.
-    """
-    text = (
-        "Welcome to the Simulation Engine knowledge base!\n\n"
+def sim_engine_docs(sim, knowledge_router, query_key, params):
+    return (
+        "📘 **Welcome to the Simulation Engine Knowledge Base**\n\n"
         "This knowledge base provides access to the core simulation engine that orchestrates the entire network simulation, "
         "including the management of base stations, cells, UEs, and simulation steps.\n\n"
-        "You can interact with the SimulationEngine knowledge base in the following ways:\n"
-        "1. **Get real-time attribute values of the simulation engine instance:**\n"
-        "   - Format: `/sim/attribute/{attribute_name}`\n"
-        "2. **Get explanations for a specific attribute or method:**\n"
-        "   - Attribute explanation: `/sim/attribute/{attribute_name}`\n"
-        "   - Method explanation: `/sim/method/{method_name}`\n"
-        "Supported SimulationEngine attributes include:\n"
-        f"    {', '.join(SUPPORTED_SIM_ATTRIBUTES)}\n\n"
-        "Supported SimulationEngine methods include:\n"
-        f"    {', '.join(SUPPORTED_SIM_METHODS)}\n\n"
-        "Use the above query formats to explore live data or request explanations for any supported attribute or method.\n"
-        "For example, you can get the list of base stations in the simulation by querying get_knowledge_value(`/sim/attribute/base_station_list`).\n"
-        "or you can get source code and explanation on the simulation step method by querying get_knowledge_explanation(`/sim/method/step`).\n\n"
+        "You can query live data and explanations for the simulation engine.\n\n"
+        "### Available Endpoints:\n"
+        "- **List all attributes of the simulation engine**: `/sim_engine`\n"
+        "- **Get a specific attribute value of the simulation engine**: `/sim_engine/attributes/{attribute_name}`\n"
+        "- **Explain what a simulation engine attribute means**: `/docs/sim_engine/attributess/{attribute_name}`\n"
+        "- **Explain what a simulation engine class method does**: `/docs/sim_engine/methods/{method_name}`\n"
+        "### Supported SimulationEngine Attributes:\n"
+        f"{', '.join(SUPPORTED_SIM_ATTRIBUTES)}\n\n"
+        "### Supported SimulationEngine Methods:\n"
+        f"{', '.join(SUPPORTED_SIM_METHODS)}\n\n"
     )
-    return text
-
-
-knowledge_entry(
-    key="/sim",
-)(sim_knowledge_root)
-
-knowledge_entry(
-    key="/sim",
-    tags=[KnowledgeTag.SIMULATION, KnowledgeTag.KNOWLEDGE_GUIDE],
-    related=[],
-)(sim_knowledge_root)
-
-# Attribute explainers
 
 
 @knowledge_entry(
-    "/sim/attribute/sim_started",
+    key="/sim_engine",
+    tags=[KnowledgeTag.SIMULATION],
+    related=[],
+)
+def get_sim_engine_attributes(sim, knowledge_router, query_key, params):
+    response = "Attributes value of the simulation engine:\n"
+    for attr in SUPPORTED_SIM_ATTRIBUTES:
+        value = getattr(sim, attr, None)
+        if value is None:
+            response += f"- {attr}: None\n"
+            continue
+        if attr == "ue_list" or attr == "base_station_list" or attr == "cell_list":
+            response += f"{attr}:\n"
+            for val in value.values():
+                response += f"  - {repr(val)}\n"
+        else:
+            response += f"- {attr}: {repr(value)}\n"
+
+    return response
+
+
+# ------------------------------------------
+#     GET /user_equipments/{ue_imsi}/attributes/{attribute_name}
+#       → Get a specific attribute value for the given UE
+# ------------------------------------------
+@knowledge_entry(
+    key="/sim_engine/attributes/{attribute_name}",
+    tags=[KnowledgeTag.SIMULATION],
+    related=[],
+)
+def get_sim_engine_attribute_value(sim, knowledge_router, query_key, params):
+    attribute_name = params["attribute_name"]
+    if attribute_name not in SUPPORTED_SIM_ATTRIBUTES:
+        return f"Attribute '{attribute_name}' is not supported by the simulation engine class."
+    value = getattr(sim, attribute_name, None)
+    response = f"Value of attribute '{attribute_name}':"
+    if value is None:
+        response += " None"
+    elif (
+        attribute_name == "ue_list"
+        or attribute_name == "base_station_list"
+        or attribute_name == "cell_list"
+    ):
+        response += "\n"
+        for val in value.values():
+            response += f"  - {repr(val)}\n"
+    else:
+        response += f" {repr(value)}"
+    return response
+
+
+@knowledge_entry(
+    "/docs/sim_engine/attributes/sim_started",
     tags=[KnowledgeTag.SIMULATION],
     related=[],
 )
@@ -110,7 +119,7 @@ def sim_started_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/sim/attribute/sim_step",
+    "/docs/sim_engine/attributes/sim_step",
     tags=[KnowledgeTag.SIMULATION],
     related=[],
 )
@@ -122,10 +131,10 @@ def sim_step_attribute_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/sim/attribute/base_station_list",
+    "/docs/sim_engine/attributes/base_station_list",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.BS],
     related=[
-        (KnowledgeRelationship.HAS_ATTRIBUTE, "/net/base_station"),
+        (KnowledgeRelationship.HAS_ATTRIBUTE, "/docs/base_station"),
     ],
 )
 def sim_base_station_list_explainer(sim, knowledge_router, query_key, params):
@@ -136,10 +145,10 @@ def sim_base_station_list_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/sim/attribute/cell_list",
+    "/docs/sim_engine/attributes/cell_list",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.CELL],
     related=[
-        (KnowledgeRelationship.HAS_ATTRIBUTE, "/net/cell"),
+        (KnowledgeRelationship.HAS_ATTRIBUTE, "/docs/cell"),
     ],
 )
 def sim_cell_list_explainer(sim, knowledge_router, query_key, params):
@@ -150,10 +159,10 @@ def sim_cell_list_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/sim/attribute/ue_list",
+    "/docs/sim_engine/attributes/ue_list",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.UE],
     related=[
-        (KnowledgeRelationship.HAS_ATTRIBUTE, "/net/user_equipments"),
+        (KnowledgeRelationship.HAS_ATTRIBUTE, "/docs/user_equipments"),
     ],
 )
 def sim_ue_list_explainer(sim, knowledge_router, query_key, params):
@@ -164,7 +173,7 @@ def sim_ue_list_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/sim/attribute/global_UE_counter",
+    "/docs/sim_engine/attributes/global_UE_counter",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.UE],
     related=[],
 )
@@ -176,7 +185,7 @@ def sim_global_UE_counter_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/sim/attribute/logs",
+    "/docs/sim_engine/attributes/logs",
     tags=[KnowledgeTag.SIMULATION],
     related=[],
 )
@@ -191,12 +200,18 @@ def sim_logs_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/sim/method/network_setup",
+    "/docs/sim_engine/methods/network_setup",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.CODE],
     related=[
-        (KnowledgeRelationship.SET_ATTRIBUTE, "/sim/attribute/core_network"),
-        (KnowledgeRelationship.CALL_METHOD, "/sim/method/add_base_station"),
-        (KnowledgeRelationship.SET_ATTRIBUTE, "/sim/attribute/nearRT_ric"),
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/docs/sim_engine/attributes/core_network",
+        ),
+        (
+            KnowledgeRelationship.CALL_METHOD,
+            "/docs/sim_engine/methods/add_base_station",
+        ),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/docs/sim_engine/attributes/nearRT_ric"),
     ],
 )
 def sim_network_setup_explainer(sim, knowledge_router, query_key, params):
@@ -210,11 +225,11 @@ def sim_network_setup_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/sim/method/spawn_random_ue",
+    "/docs/sim_engine/methods/spawn_random_ue",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.UE, KnowledgeTag.CODE],
     related=[
-        (KnowledgeRelationship.CALL_METHOD, "/net/user_equipments/method/power_up"),
-        (KnowledgeRelationship.CALL_METHOD, "/sim/method/add_ue"),
+        (KnowledgeRelationship.CALL_METHOD, "/docs/user_equipments/methods/power_up"),
+        (KnowledgeRelationship.CALL_METHOD, "/docs/sim_engine/methods/add_ue"),
     ],
 )
 def sim_spawn_random_ue_explainer(sim, knowledge_router, query_key, params):
@@ -228,11 +243,14 @@ def sim_spawn_random_ue_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/sim/method/add_ue",
+    "/docs/sim_engine/methods/add_ue",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.UE, KnowledgeTag.CODE],
     related=[
-        (KnowledgeRelationship.CALLED_BY_METHOD, "/sim/method/spawn_random_ue"),
-        (KnowledgeRelationship.SET_ATTRIBUTE, "/sim/attribute/ue_list"),
+        (
+            KnowledgeRelationship.CALLED_BY_METHOD,
+            "/docs/sim_engine/methods/spawn_random_ue",
+        ),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/docs/sim_engine/attributes/ue_list"),
     ],
 )
 def sim_add_ue_explainer(sim, knowledge_router, query_key, params):
@@ -245,11 +263,11 @@ def sim_add_ue_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/sim/method/spawn_UEs",
+    "/docs/sim_engine/methods/spawn_UEs",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.UE, KnowledgeTag.CODE],
     related=[
-        (KnowledgeRelationship.CALL_METHOD, "/sim/method/spawn_random_ue"),
-        (KnowledgeRelationship.CALLED_BY_METHOD, "/sim/method/step"),
+        (KnowledgeRelationship.CALL_METHOD, "/docs/sim_engine/methods/spawn_random_ue"),
+        (KnowledgeRelationship.CALLED_BY_METHOD, "/docs/sim_engine/methods/step"),
     ],
 )
 def sim_spawn_UEs_explainer(sim, knowledge_router, query_key, params):
@@ -262,12 +280,12 @@ def sim_spawn_UEs_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/sim/method/step_UEs",
+    "/docs/sim_engine/methods/step_UEs",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.UE, KnowledgeTag.CODE],
     related=[
-        (KnowledgeRelationship.CALLED_BY_METHOD, "/net/user_equipments/method/step"),
-        (KnowledgeRelationship.USES_ATTRIBUTE, "/sim/attribute/ue_list"),
-        (KnowledgeRelationship.CALL_METHOD, "/sim/method/remove_UE"),
+        (KnowledgeRelationship.CALLED_BY_METHOD, "/docs/user_equipments/methods/step"),
+        (KnowledgeRelationship.USES_ATTRIBUTE, "/docs/sim_engine/attributes/ue_list"),
+        (KnowledgeRelationship.CALL_METHOD, "/docs/sim_engine/methods/remove_UE"),
     ],
 )
 def sim_step_UEs_explainer(sim, knowledge_router, query_key, params):
@@ -280,11 +298,11 @@ def sim_step_UEs_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/sim/method/remove_UE",
+    "/docs/sim_engine/methods/remove_UE",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.UE, KnowledgeTag.CODE],
     related=[
-        (KnowledgeRelationship.CALLED_BY_METHOD, "/sim/method/step_UEs"),
-        (KnowledgeRelationship.SET_ATTRIBUTE, "/sim/attribute/ue_list"),
+        (KnowledgeRelationship.CALLED_BY_METHOD, "/docs/sim_engine/methods/step_UEs"),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/docs/sim_engine/attributes/ue_list"),
     ],
 )
 def sim_remove_UE_explainer(sim, knowledge_router, query_key, params):
@@ -297,12 +315,15 @@ def sim_remove_UE_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/sim/method/step_BSs",
+    "/docs/sim_engine/methods/step_BSs",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.BS, KnowledgeTag.CODE],
     related=[
-        (KnowledgeRelationship.CALLED_BY_METHOD, "/sim/method/step"),
-        (KnowledgeRelationship.USES_ATTRIBUTE, "/sim/attribute/base_station_list"),
-        (KnowledgeRelationship.CALL_METHOD, "/net/base_station/method/step"),
+        (KnowledgeRelationship.CALLED_BY_METHOD, "/docs/sim_engine/methods/step"),
+        (
+            KnowledgeRelationship.USES_ATTRIBUTE,
+            "/docs/sim_engine/attributes/base_station_list",
+        ),
+        (KnowledgeRelationship.CALL_METHOD, "/docs/base_station/methods/step"),
     ],
 )
 def sim_step_BSs_explainer(sim, knowledge_router, query_key, params):
@@ -315,13 +336,16 @@ def sim_step_BSs_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/sim/method/step",
+    "/docs/sim_engine/methods/step",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.CODE],
     related=[
-        (KnowledgeRelationship.CALLED_BY_METHOD, "/sim/method/start_simulation"),
-        (KnowledgeRelationship.CALL_METHOD, "/sim/method/spawn_UEs"),
-        (KnowledgeRelationship.CALL_METHOD, "/sim/method/step_UEs"),
-        (KnowledgeRelationship.CALL_METHOD, "/sim/method/step_BSs"),
+        (
+            KnowledgeRelationship.CALLED_BY_METHOD,
+            "/docs/sim_engine/methods/start_simulation",
+        ),
+        (KnowledgeRelationship.CALL_METHOD, "/docs/sim_engine/methods/spawn_UEs"),
+        (KnowledgeRelationship.CALL_METHOD, "/docs/sim_engine/methods/step_UEs"),
+        (KnowledgeRelationship.CALL_METHOD, "/docs/sim_engine/methods/step_BSs"),
     ],
 )
 def sim_step_explainer(sim, knowledge_router, query_key, params):
@@ -335,11 +359,14 @@ def sim_step_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/sim/method/start_simulation",
+    "/docs/sim_engine/methods/start_simulation",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.CODE],
     related=[
-        (KnowledgeRelationship.CALL_METHOD, "/sim/method/step"),
-        (KnowledgeRelationship.SET_ATTRIBUTE, "/sim/attribute/sim_started"),
+        (KnowledgeRelationship.CALL_METHOD, "/docs/sim_engine/methods/step"),
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/docs/sim_engine/attributes/sim_started",
+        ),
     ],
 )
 def sim_start_simulation_explainer(sim, knowledge_router, query_key, params):
@@ -353,10 +380,13 @@ def sim_start_simulation_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/sim/method/stop",
+    "/docs/sim_engine/methods/stop",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.CODE],
     related=[
-        (KnowledgeRelationship.SET_ATTRIBUTE, "/sim/attribute/sim_started"),
+        (
+            KnowledgeRelationship.SET_ATTRIBUTE,
+            "/docs/sim_engine/attributes/sim_started",
+        ),
     ],
 )
 def sim_stop_explainer(sim, knowledge_router, query_key, params):

@@ -21,8 +21,9 @@ non_reasoning_network_knowledge_agent = Agent(
     instructions=f"""{RECOMMENDED_PROMPT_PREFIX}
 Use the tools to query the knowledge database of the simulated telecom network. 
 To increase efficiency, you can use the bulk query tools to query multiple keys at once.
-You should always start with  
+You should always start with 
     "/docs/user_equipments" (for detailed UE knowledge base documentation) 
+    "/docs/sim_engine" (for detailed simulation engine knowledge base documentation)
 
 The knowledge tools often returns a list of related knowledge keys. 
 You should explore these related knowledge keys as well to gather more information to answer the user query wherever possible.

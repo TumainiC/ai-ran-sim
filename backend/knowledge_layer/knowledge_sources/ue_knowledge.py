@@ -407,7 +407,7 @@ def ue_downlink_sinr_explainer(sim, knowledge_router, query_key, params):
         ),
         (
             KnowledgeRelationship.USED_BY_METHOD,
-            "/cell/methods/select_ue_mcs",
+            "/docs/cell/methods/select_ue_mcs",
         ),
     ],
 )
@@ -434,7 +434,7 @@ def ue_downlink_cqi_explainer(sim, knowledge_router, query_key, params):
         ),
         (
             KnowledgeRelationship.SET_BY_METHOD,
-            "/cell/methods/select_ue_mcs",
+            "/docs/cell/methods/select_ue_mcs",
         ),
     ],
 )
@@ -457,7 +457,7 @@ def ue_downlink_mcs_index_explainer(sim, knowledge_router, query_key, params):
         ),
         (
             KnowledgeRelationship.SET_BY_METHOD,
-            "/cell/methods/select_ue_mcs",
+            "/docs/cell/methods/select_ue_mcs",
         ),
         (
             KnowledgeRelationship.DERIVED_FROM,
@@ -465,7 +465,7 @@ def ue_downlink_mcs_index_explainer(sim, knowledge_router, query_key, params):
         ),
         (
             KnowledgeRelationship.USED_BY_METHOD,
-            "/cell/methods/estimate_ue_bitrate_and_latency",
+            "/docs/cell/methods/estimate_ue_bitrate_and_latency",
         ),
     ],
 )
@@ -714,7 +714,7 @@ def ue_setup_rrc_measurement_event_monitors_explainer(
         (KnowledgeRelationship.CALLED_BY_METHOD, "/docs/user_equipments/methods/step"),
         (
             KnowledgeRelationship.CALL_METHOD,
-            "/base_station/methods/receive_ue_rrc_meas_events",
+            "/docs/base_station/methods/receive_ue_rrc_meas_events",
         ),
     ],
 )
@@ -747,7 +747,7 @@ def ue_check_rrc_meas_events_to_monitor_explainer(
     related=[
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
-            "/cell/methods/estimate_ue_bitrate_and_latency",
+            "/docs/cell/methods/estimate_ue_bitrate_and_latency",
         ),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
@@ -772,7 +772,7 @@ def ue_set_downlink_bitrate_explainer(sim, knowledge_router, query_key, params):
     "/docs/user_equipments/methods/set_downlink_mcs_index",
     tags=[KnowledgeTag.UE, KnowledgeTag.QoS, KnowledgeTag.CODE],
     related=[
-        (KnowledgeRelationship.CALLED_BY_METHOD, "/cell/methods/select_ue_mcs"),
+        (KnowledgeRelationship.CALLED_BY_METHOD, "/docs/cell/methods/select_ue_mcs"),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
             "/docs/user_equipments/attributes/downlink_mcs_index",
@@ -796,7 +796,7 @@ def ue_set_downlink_mcs_index_explainer(sim, knowledge_router, query_key, params
     "/docs/user_equipments/methods/set_downlink_mcs_data",
     tags=[KnowledgeTag.UE, KnowledgeTag.QoS, KnowledgeTag.CODE],
     related=[
-        (KnowledgeRelationship.CALLED_BY_METHOD, "/cell/methods/select_ue_mcs"),
+        (KnowledgeRelationship.CALLED_BY_METHOD, "/docs/cell/methods/select_ue_mcs"),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
             "/docs/user_equipments/attributes/downlink_mcs_data",
@@ -986,7 +986,7 @@ def ue_move_towards_target_explainer(sim, knowledge_router, query_key, params):
         ),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
-            "/base_station/methods/execute_handover",
+            "/docs/base_station/methods/execute_handover",
         ),
     ],
 )
