@@ -29,11 +29,11 @@ non_reasoning_network_knowledge_agent = Agent(
 Use the tools to query the knowledge database of the simulated telecom network. 
 To increase efficiency, you can use the bulk query tools to query multiple keys at once.
 You should always query 
-    "/sim" (for overall network simulation related knowledge), 
-    "/net/ue" (for simulated UE class related knowledge), or
-    "/net/cell" (for simulated Cell class related knowledge) or 
-    "/net/base_station" (for simulated BaseStation class related knowledge)
-    "/net/ric" (for simulated NearRT RIC class related knowledge)
+    "/sim" (for network simulation related knowledge, such as list of UEs, Cells and Base Stations), 
+    "/net/ue" (for simulated UE class and instance related knowledge), or
+    "/net/cell" (for simulated Cell class and instance related knowledge) or 
+    "/net/base_station" (for simulated BaseStation class and instance related knowledge)
+    "/net/ric" (for simulated NearRT RIC class and instance related knowledge)
 first to get the list of supported attributes and methods.
 
 The knowledge explanation tools often returns a list of related knowledge keys. 

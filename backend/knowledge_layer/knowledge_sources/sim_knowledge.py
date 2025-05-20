@@ -68,7 +68,7 @@ def sim_knowledge_root(sim, knowledge_router, query_key, params):
         "This knowledge base provides access to the core simulation engine that orchestrates the entire network simulation, "
         "including the management of base stations, cells, UEs, and simulation steps.\n\n"
         "You can interact with the SimulationEngine knowledge base in the following ways:\n"
-        "1. **Retrieve live attribute values for the simulation engine:**\n"
+        "1. **Get real-time attribute values of the simulation engine instance:**\n"
         "   - Format: `/sim/attribute/{attribute_name}`\n"
         "2. **Get explanations for a specific attribute or method:**\n"
         "   - Attribute explanation: `/sim/attribute/{attribute_name}`\n"
@@ -77,7 +77,9 @@ def sim_knowledge_root(sim, knowledge_router, query_key, params):
         f"    {', '.join(SUPPORTED_SIM_ATTRIBUTES)}\n\n"
         "Supported SimulationEngine methods include:\n"
         f"    {', '.join(SUPPORTED_SIM_METHODS)}\n\n"
-        "Use the above query formats to explore live data or request explanations for any supported attribute or method."
+        "Use the above query formats to explore live data or request explanations for any supported attribute or method.\n"
+        "For example, you can get the list of base stations in the simulation by querying get_knowledge_value(`/sim/attribute/base_station_list`).\n"
+        "or you can get source code and explanation on the simulation step method by querying get_knowledge_explanation(`/sim/method/step`).\n\n"
     )
     return text
 

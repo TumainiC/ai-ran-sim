@@ -46,6 +46,12 @@ def base_station_attribute_getter(sim, knowledge_router, query_key, params):
         attribute = getattr(bs, attribute_name)
         if callable(attribute):
             return f"{attribute_name} is a method, query it via /net/base_station/method/{attribute_name} instead."
+        if attribute_name == "cell_list":
+            cell_ids = list(attribute.keys())
+            return json.dumps(cell_ids)
+        if attribute_name == "ue_registry":
+            ue_ids = list(attribute.keys())
+            return json.dumps(ue_ids)
         if isinstance(attribute, dict) or isinstance(attribute, list):
             return json.dumps(attribute)
         return str(attribute)
