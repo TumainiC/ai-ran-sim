@@ -27,7 +27,7 @@ class Cell:
         self.ue_uplink_signal_strength_dict = {}
 
     def __repr__(self):
-        return f"CELL {self.cell_id}"
+        return f"Cell({self.cell_id}, base_station={self.base_station.bs_id}, frequency_band={self.frequency_band}, carrier_frequency_MHz={self.carrier_frequency_MHz})"
 
     @property
     def allocated_dl_prb(self):

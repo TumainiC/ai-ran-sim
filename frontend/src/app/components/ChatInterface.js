@@ -188,7 +188,7 @@ export default function ChatInterface({ sendMessage, streamedChatEvent }) {
           <time className="text-xs opacity-50">{time}</time>
         </div>
         <pre
-          className={`chat-bubble whitespace-pre-wrap ${
+          className={`chat-bubble whitespace-pre-wrap break-words ${
             isUser
               ? "chat-bubble-info"
               : isAssistant

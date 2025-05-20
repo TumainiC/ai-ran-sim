@@ -7,28 +7,18 @@ knowledge_router = KnowledgeRouter()  # get the singleton instance of KnowledgeR
 
 
 @function_tool
-async def get_knowledge_value(knowledge_query_key: str) -> str:
-    """Get the knowledge value of a specific key in the network knowledge database.
+async def get_knowledge(knowledge_query_key: str) -> str:
+    """Get the knowledge of a specific key in the network knowledge database.
 
     Args:
         knowledge_query_key (str): The key to query in the knowledge layer.
     """
-    return knowledge_router.get_value(knowledge_query_key)
+    return knowledge_router.query_knowledge(knowledge_query_key)
 
 
 @function_tool
-async def get_knowledge_explanation(knowledge_query_key: str) -> str:
-    """Get the explanation of a specific key in the network knowledge database.
-
-    Args:
-        knowledge_query_key (str): The key to query in the knowledge layer.
-    """
-    return knowledge_router.explain_value(knowledge_query_key)
-
-
-@function_tool
-async def get_knowledge_value_bulk(knowledge_query_key_list: list[str]) -> str:
-    """Get the knowledge values of a list of keys in the network knowledge database.
+async def get_knowledge_bulk(knowledge_query_key_list: list[str]) -> str:
+    """Get the knowledge of a list of keys in the network knowledge database.
 
     Args:
         knowledge_query_key_list (list[str]): The list of keys to query in the knowledge layer.
@@ -38,23 +28,6 @@ async def get_knowledge_value_bulk(knowledge_query_key_list: list[str]) -> str:
 
     for knowledge_query_key in knowledge_query_key_list:
         if knowledge_query_key.strip():
-            response_text += f"Query {knowledge_query_key} response: \n{knowledge_router.get_value(knowledge_query_key)}\n\n----------------------------\n\n"
-
-    return response_text
-
-
-@function_tool
-async def get_knowledge_explanation_bulk(knowledge_query_key_list: list[str]) -> str:
-    """Get the explanations of a list of keys in the network knowledge database.
-
-    Args:
-        knowledge_query_key_list (list[str]): The list of keys to query in the knowledge layer.
-    """
-
-    response_text = ""
-
-    for knowledge_query_key in knowledge_query_key_list:
-        if knowledge_query_key.strip():
-            response_text += f"Query {knowledge_query_key} explanation: \n{knowledge_router.explain_value(knowledge_query_key)}\n\n-----------------------------\n\n"
+            response_text += f"Query {knowledge_query_key}: \n{knowledge_router.query_knowledge(knowledge_query_key)}\n\n-----------------------------\n\n"
 
     return response_text

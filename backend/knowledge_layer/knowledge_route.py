@@ -3,20 +3,17 @@ from typing import Callable, List, Tuple, Optional
 from .tags import KnowledgeTag
 from .relationships import KnowledgeRelationship
 
-
 class KnowledgeRoute:
     def __init__(
         self,
         pattern: str,
-        getter: Optional[Callable] = None,
-        explainer: Optional[Callable] = None,
+        handler: Callable,
         tags: Optional[List[KnowledgeTag]] = None,
         related: Optional[List[Tuple[KnowledgeRelationship, str]]] = None,
     ):
         self.pattern = pattern
         self.regex, self.param_names = self._compile_pattern(pattern)
-        self.getter = getter
-        self.explainer = explainer
+        self.handler = handler
         self.tags = tags or []
         self.related = related or []
 
@@ -33,7 +30,5 @@ class KnowledgeRoute:
         return f"(?P<{name}>[^/]+)"
 
     def match(self, key: str):
-        # note that there may be no query params in the key,
-        # so the returned match.groupdict() could be a None (if no match) or a dict (can be an empty dict)
         match = self.regex.match(key)
         return match.groupdict() if match else None

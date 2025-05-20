@@ -47,11 +47,8 @@ export default function Home() {
         if (command === "get_routes") {
           console.log("Knowledge Layer Routes:", response);
           setKnowledgeLayerRoutes(response);
-        } else if (command === "get_value") {
+        } else if (command === "query_knowledge") {
           console.log("Knowledge Layer Value Response:", response);
-          setKnowledgeQueryResponse(response);
-        } else if (command === "explain_value") {
-          console.log("Knowledge Layer Explain Response:", response);
           setKnowledgeQueryResponse(response);
         }
       } else if (layer === "intelligence_layer") {

@@ -88,24 +88,13 @@ async def websocket_handler(websocket):
                         }
                     )
                 )
-            elif layer == "knowledge_layer" and command == "get_value":
+            elif layer == "knowledge_layer" and command == "query_knowledge":
                 await websocket.send(
                     json.dumps(
                         {
                             "layer": "knowledge_layer",
-                            "command": "get_value",
-                            "response": knowledge_router.get_value(data),
-                            "error": None,
-                        }
-                    )
-                )
-            elif layer == "knowledge_layer" and command == "explain_value":
-                await websocket.send(
-                    json.dumps(
-                        {
-                            "layer": "knowledge_layer",
-                            "command": "explain_value",
-                            "response": knowledge_router.explain_value(data),
+                            "command": "query_knowledge",
+                            "response": knowledge_router.query_knowledge(data),
                             "error": None,
                         }
                     )

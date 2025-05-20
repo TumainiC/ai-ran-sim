@@ -76,7 +76,7 @@ export default function KnowledgeLayerDashboard({
     }
   };
 
-  const getKnowledgeValue = () => {
+  const queryKnowledge = () => {
     if (!sendMessage) {
       console.error("WebSocket is not connected");
       return;
@@ -85,19 +85,11 @@ export default function KnowledgeLayerDashboard({
       console.error("Knowledge query input is empty");
       return;
     }
-    sendMessage("knowledge_layer", "get_value", knowledgeQueryInput.trim());
-  };
-
-  const explainKnowledgeValue = () => {
-    if (!sendMessage) {
-      console.error("WebSocket is not connected");
-      return;
-    }
-    if (!knowledgeQueryInput.trim()) {
-      console.error("Knowledge query input is empty");
-      return;
-    }
-    sendMessage("knowledge_layer", "explain_value", knowledgeQueryInput.trim());
+    sendMessage(
+      "knowledge_layer",
+      "query_knowledge",
+      knowledgeQueryInput.trim()
+    );
   };
 
   return (
@@ -131,16 +123,15 @@ export default function KnowledgeLayerDashboard({
           onChange={(e) => setKnowledgeQueryInput(e.target.value)}
           placeholder="Enter your knowledge query key here, e.g., /net/user_equipments/ue_1/attribute/downlink_cqi"
         />
-        <button className="btn btn-outline" onClick={getKnowledgeValue}>
-          Get Knowledge
-        </button>
-        <button className="btn btn-outline" onClick={explainKnowledgeValue}>
-          Explain Knowledge
+        <button className="btn btn-outline" onClick={queryKnowledge}>
+          Query Knowledge
         </button>
       </div>
       <div>
         <div className="my-4">Knowledge Layer Response</div>
-        <pre className="whitespace-pre-wrap">{knowledgeQueryResponse}</pre>
+        <pre className="whitespace-pre-wrap break-words">
+          {knowledgeQueryResponse}
+        </pre>
       </div>
     </div>
   );

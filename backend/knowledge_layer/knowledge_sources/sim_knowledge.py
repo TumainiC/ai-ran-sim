@@ -1,7 +1,6 @@
 import json
 import inspect
-from ..knowledge_getter import knowledge_getter
-from ..knowledge_explainer import knowledge_explainer
+from ..knowledge_entry import knowledge_entry
 from ..tags import KnowledgeTag
 from ..relationships import KnowledgeRelationship
 from network_layer.simulation_engine import SimulationEngine
@@ -31,7 +30,7 @@ SUPPORTED_SIM_METHODS = [
 ]
 
 
-@knowledge_getter(
+@knowledge_entry(
     key="/sim/attribute/{attribute_name}",
 )
 def sim_attribute_getter(sim, knowledge_router, query_key, params):
@@ -84,11 +83,11 @@ def sim_knowledge_root(sim, knowledge_router, query_key, params):
     return text
 
 
-knowledge_getter(
+knowledge_entry(
     key="/sim",
 )(sim_knowledge_root)
 
-knowledge_explainer(
+knowledge_entry(
     key="/sim",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.KNOWLEDGE_GUIDE],
     related=[],
@@ -97,7 +96,7 @@ knowledge_explainer(
 # Attribute explainers
 
 
-@knowledge_explainer(
+@knowledge_entry(
     "/sim/attribute/sim_started",
     tags=[KnowledgeTag.SIMULATION],
     related=[],
@@ -110,7 +109,7 @@ def sim_started_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
+@knowledge_entry(
     "/sim/attribute/sim_step",
     tags=[KnowledgeTag.SIMULATION],
     related=[],
@@ -122,7 +121,7 @@ def sim_step_attribute_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
+@knowledge_entry(
     "/sim/attribute/base_station_list",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.BS],
     related=[
@@ -136,7 +135,7 @@ def sim_base_station_list_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
+@knowledge_entry(
     "/sim/attribute/cell_list",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.CELL],
     related=[
@@ -150,7 +149,7 @@ def sim_cell_list_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
+@knowledge_entry(
     "/sim/attribute/ue_list",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.UE],
     related=[
@@ -164,7 +163,7 @@ def sim_ue_list_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
+@knowledge_entry(
     "/sim/attribute/global_UE_counter",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.UE],
     related=[],
@@ -176,7 +175,7 @@ def sim_global_UE_counter_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
+@knowledge_entry(
     "/sim/attribute/logs",
     tags=[KnowledgeTag.SIMULATION],
     related=[],
@@ -191,7 +190,7 @@ def sim_logs_explainer(sim, knowledge_router, query_key, params):
 # Method explainers
 
 
-@knowledge_explainer(
+@knowledge_entry(
     "/sim/method/network_setup",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.CODE],
     related=[
@@ -210,7 +209,7 @@ def sim_network_setup_explainer(sim, knowledge_router, query_key, params):
     return f"```python\n{code}\n```\n\n{explanation}"
 
 
-@knowledge_explainer(
+@knowledge_entry(
     "/sim/method/spawn_random_ue",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.UE, KnowledgeTag.CODE],
     related=[
@@ -228,7 +227,7 @@ def sim_spawn_random_ue_explainer(sim, knowledge_router, query_key, params):
     return f"```python\n{code}\n```\n\n{explanation}"
 
 
-@knowledge_explainer(
+@knowledge_entry(
     "/sim/method/add_ue",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.UE, KnowledgeTag.CODE],
     related=[
@@ -245,7 +244,7 @@ def sim_add_ue_explainer(sim, knowledge_router, query_key, params):
     return f"```python\n{code}\n```\n\n{explanation}"
 
 
-@knowledge_explainer(
+@knowledge_entry(
     "/sim/method/spawn_UEs",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.UE, KnowledgeTag.CODE],
     related=[
@@ -262,7 +261,7 @@ def sim_spawn_UEs_explainer(sim, knowledge_router, query_key, params):
     return f"```python\n{code}\n```\n\n{explanation}"
 
 
-@knowledge_explainer(
+@knowledge_entry(
     "/sim/method/step_UEs",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.UE, KnowledgeTag.CODE],
     related=[
@@ -280,7 +279,7 @@ def sim_step_UEs_explainer(sim, knowledge_router, query_key, params):
     return f"```python\n{code}\n```\n\n{explanation}"
 
 
-@knowledge_explainer(
+@knowledge_entry(
     "/sim/method/remove_UE",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.UE, KnowledgeTag.CODE],
     related=[
@@ -297,7 +296,7 @@ def sim_remove_UE_explainer(sim, knowledge_router, query_key, params):
     return f"```python\n{code}\n```\n\n{explanation}"
 
 
-@knowledge_explainer(
+@knowledge_entry(
     "/sim/method/step_BSs",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.BS, KnowledgeTag.CODE],
     related=[
@@ -315,7 +314,7 @@ def sim_step_BSs_explainer(sim, knowledge_router, query_key, params):
     return f"```python\n{code}\n```\n\n{explanation}"
 
 
-@knowledge_explainer(
+@knowledge_entry(
     "/sim/method/step",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.CODE],
     related=[
@@ -335,7 +334,7 @@ def sim_step_explainer(sim, knowledge_router, query_key, params):
     return f"```python\n{code}\n```\n\n{explanation}"
 
 
-@knowledge_explainer(
+@knowledge_entry(
     "/sim/method/start_simulation",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.CODE],
     related=[
@@ -353,7 +352,7 @@ def sim_start_simulation_explainer(sim, knowledge_router, query_key, params):
     return f"```python\n{code}\n```\n\n{explanation}"
 
 
-@knowledge_explainer(
+@knowledge_entry(
     "/sim/method/stop",
     tags=[KnowledgeTag.SIMULATION, KnowledgeTag.CODE],
     related=[

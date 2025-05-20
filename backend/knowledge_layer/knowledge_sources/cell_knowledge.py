@@ -1,7 +1,5 @@
 import json
 import inspect
-from ..knowledge_getter import knowledge_getter
-from ..knowledge_explainer import knowledge_explainer
 from ..tags import KnowledgeTag
 from ..relationships import KnowledgeRelationship
 from network_layer.ran import Cell
