@@ -7,6 +7,8 @@ import BaseStationDashboard from "./components/BaseStationDashboard";
 import LogDashboard from "./components/LogDashboard";
 import KnowledgeLayerDashboard from "./components/KnowledgeLayerDashboard";
 import ChatInterface from "./components/ChatInterface";
+import NetworkEngineerChat from "./components/NetworkEngineerChat";
+import UserChat from "./components/UserChat";
 
 export default function Home() {
   const [websocket, setWebsocket] = useState(null);
@@ -15,7 +17,7 @@ export default function Home() {
   const [knowledgeQueryResponse, setKnowledgeQueryResponse] = useState(null);
   const [streamedChatEvent, setStreamedChatEvent] = useState(null);
   const [bottomTabListIndex, setBottomTabListIndex] = useState("ue_dashboard");
-  const [rightTabListIndex, setRightTabListIndex] = useState("chat_interface");
+  const [rightTabListIndex, setRightTabListIndex] = useState("network_engineer_chat");
   const [knowledgeLayerRoutes, setKnowledgeLayerRoutes] = useState({});
   const memoryRef = useRef([]);
 
@@ -171,66 +173,85 @@ export default function Home() {
           <div role="tablist" className="tabs tabs-border">
             <a
               role="tab"
-              className={
-                "tab " +
-                (rightTabListIndex === "chat_interface" ? "tab-active" : "")
-              }
-              onClick={() => setRightTabListIndex("chat_interface")}
-            >
-              Talk to the Network
-            </a>
-            <a
-              role="tab"
-              className={
-                "tab " +
-                (rightTabListIndex === "knowledge_dashboard"
-                  ? "tab-active"
-                  : "")
-              }
-              onClick={() => setRightTabListIndex("knowledge_dashboard")}
-            >
-              Knowledge Dashboard
-            </a>
-            <a
-              role="tab"
-              className={
-                "tab " +
-                (rightTabListIndex === "log_dashboard" ? "tab-active" : "")
-              }
-              onClick={() => setRightTabListIndex("log_dashboard")}
-            >
-              Log Dashboard
-            </a>
-          </div>
-          <div
-            className={
-              rightTabListIndex === "chat_interface"
-                ? "flex-1 flex min-h-0"
-                : "hidden"
-            }
-          >
-            <ChatInterface
-              streamedChatEvent={streamedChatEvent}
-              setStreamedChatEvent={setStreamedChatEvent}
-              sendMessage={sendMessage}
-            />
-          </div>
-          <div
-            className={
-              rightTabListIndex === "knowledge_dashboard" ? "" : "hidden"
-            }
-          >
-            <KnowledgeLayerDashboard
-              sendMessage={sendMessage}
-              knowledgeLayerRoutes={knowledgeLayerRoutes}
-              knowledgeQueryResponse={knowledgeQueryResponse}
-            />
-          </div>
-          <div
-            className={rightTabListIndex === "log_dashboard" ? "" : "hidden"}
-          >
-            <LogDashboard simulationState={simulationState} />
-          </div>
+          className={
+            "tab " +
+            (rightTabListIndex === "network_engineer_chat" ? "tab-active" : "")
+          }
+          onClick={() => setRightTabListIndex("network_engineer_chat")}
+        >
+          Network Engineer Chat
+        </a>
+        <a
+          role="tab"
+          className={
+            "tab " +
+            (rightTabListIndex === "user_chat" ? "tab-active" : "")
+          }
+          onClick={() => setRightTabListIndex("user_chat")}
+        >
+          User Chat
+        </a>
+        <a
+          role="tab"
+          className={
+            "tab " +
+            (rightTabListIndex === "knowledge_dashboard"
+              ? "tab-active"
+              : "")
+          }
+          onClick={() => setRightTabListIndex("knowledge_dashboard")}
+        >
+          Knowledge Dashboard
+        </a>
+        <a
+          role="tab"
+          className={
+            "tab " +
+            (rightTabListIndex === "log_dashboard" ? "tab-active" : "")
+          }
+          onClick={() => setRightTabListIndex("log_dashboard")}
+        >
+          Log Dashboard
+        </a>
+      </div>
+      <div
+        className={
+          rightTabListIndex === "network_engineer_chat"
+            ? "flex-1 flex min-h-0"
+            : "hidden"
+        }
+      >
+        <NetworkEngineerChat
+          streamedChatEvent={streamedChatEvent}
+          setStreamedChatEvent={setStreamedChatEvent}
+          sendMessage={sendMessage}
+        />
+      </div>
+      <div
+        className={
+          rightTabListIndex === "user_chat" ? "flex-1 flex min-h-0" : "hidden"
+        }
+      >
+        <UserChat
+          streamedChatEvent={streamedChatEvent}
+          setStreamedChatEvent={setStreamedChatEvent}
+          sendMessage={sendMessage}
+        />
+      </div>
+      <div
+        className={rightTabListIndex === "knowledge_dashboard" ? "" : "hidden"}
+      >
+        <KnowledgeLayerDashboard
+          sendMessage={sendMessage}
+          knowledgeLayerRoutes={knowledgeLayerRoutes}
+          knowledgeQueryResponse={knowledgeQueryResponse}
+        />
+      </div>
+      <div
+        className={rightTabListIndex === "log_dashboard" ? "" : "hidden"}
+      >
+        <LogDashboard simulationState={simulationState} />
+      </div>
         </div>
       </div>
       <div className="flex flex-col gap-3">

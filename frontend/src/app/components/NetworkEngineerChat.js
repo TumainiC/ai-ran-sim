@@ -4,7 +4,7 @@ import Image from "next/image";
 import agent_icon from "../../assets/agent_icon.png";
 import tool_icon from "../../assets/tool_icon.png";
 
-export default function ChatInterface({ sendMessage, streamedChatEvent }) {
+export default function NetworkEngineerChat({ sendMessage, streamedChatEvent }) {
   const [messages, setMessages] = useState([]);
   const [chatDisabled, setChatDisabled] = useState(false);
   const [input, setInput] = useState("");
@@ -188,7 +188,7 @@ export default function ChatInterface({ sendMessage, streamedChatEvent }) {
           <time className="text-xs opacity-50">{time}</time>
         </div>
         <pre
-          className={`chat-bubble whitespace-pre-wrap break-words ${
+          className={`chat-bubble whitespace-pre-wrap ${
             isUser
               ? "chat-bubble-info"
               : isAssistant

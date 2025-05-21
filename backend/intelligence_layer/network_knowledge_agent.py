@@ -4,8 +4,8 @@ from .network_knowledge_tools import get_knowledge, get_knowledge_bulk
 from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
 
 
-REASONING_MODEL = os.getenv("OPENAI_REASONING_MODEL_NAME", "gpt-4o")
-NON_REASONING_MODEL = os.getenv("OPENAI_NON_REASONING_MODEL_NAME", "gpt-4o")
+REASONING_MODEL = os.getenv("OPENAI_REASONING_MODEL_NAME", "gpt-4.1")
+NON_REASONING_MODEL = os.getenv("OPENAI_NON_REASONING_MODEL_NAME", "gpt-4.1")
 
 print(f"Using reasoning model: {REASONING_MODEL}")
 print(f"Using non-reasoning model: {NON_REASONING_MODEL}")
