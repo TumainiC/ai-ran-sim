@@ -3,6 +3,7 @@ import inspect
 from ..tags import KnowledgeTag
 from ..relationships import KnowledgeRelationship
 from network_layer.ran import Cell
+from ..knowledge_entry import knowledge_entry
 
 SUPPORTED_CELL_ATTRIBUTES = [
     "cell_id",
@@ -39,65 +40,105 @@ SUPPORTED_CELL_METHODS = [
 ]
 
 
-@knowledge_getter(
-    key="/net/cell/attribute/{cell_id}/{attribute_name}",
-)
-def cell_attribute_getter(sim, knowledge_router, query_key, params):
-    cell = sim.cell_list.get(params["cell_id"], None)
-    if not cell:
-        return f"Cell {params['cell_id']} not found."
-    attribute_name = params["attribute_name"]
-
-    if attribute_name not in SUPPORTED_CELL_ATTRIBUTES:
-        return f"Attribute {attribute_name} not supported. Supported attributes: {', '.join(SUPPORTED_CELL_ATTRIBUTES)}"
-
-    if hasattr(cell, attribute_name):
-        attribute = getattr(cell, attribute_name)
-        if callable(attribute):
-            return f"{attribute_name} is a method, query it via /net/cell/method/{attribute_name} instead."
-        if isinstance(attribute, dict) or isinstance(attribute, list):
-            return json.dumps(attribute)
-        return str(attribute)
-    else:
-        return f"Attribute {attribute_name} not found in Cell class. Supported attributes: {', '.join(SUPPORTED_CELL_ATTRIBUTES)}"
-
-
-def cell_knowledge_root(sim, knowledge_router, query_key, params):
-    """
-    Combined getter and explainer for the Cell knowledge base.
-    Returns a narrative textual description of supported query routes, attributes, and methods.
-    """
-    text = (
-        "Welcome to the Cell knowledge base!\n\n"
-        "This knowledge base provides access to the knowledge of all simulated Cells in the network simulation.\n\n"
-        "You can interact with the Cell knowledge base in the following ways:\n"
-        "1. **Retrieve live attribute values for a specific Cell:**\n"
-        "   - Format: `/net/cell/attribute/{cell_id}/{attribute_name}`\n"
-        "2. **Get explanations for a specific attribute or method:**\n"
-        "   - Attribute explanation: `/net/cell/attribute/{attribute_name}`\n"
-        "   - Method explanation: `/net/cell/method/{method_name}`\n"
-        "Supported Cell attributes include:\n"
-        f"    {', '.join(SUPPORTED_CELL_ATTRIBUTES)}\n\n"
-        "Supported Cell methods include:\n"
-        f"    {', '.join(SUPPORTED_CELL_METHODS)}\n\n"
-        "Use the above query formats to explore live data or request explanations for any supported attribute or method."
-    )
-    return text
-
-
-knowledge_getter(
-    key="/net/cell",
-)(cell_knowledge_root)
-
-knowledge_explainer(
-    key="/net/cell",
-    tags=[KnowledgeTag.CELL, KnowledgeTag.KNOWLEDGE_GUIDE],
+@knowledge_entry(
+    key="/docs/cells",
+    tags=[KnowledgeTag.UE, KnowledgeTag.KNOWLEDGE_GUIDE],
     related=[],
-)(cell_knowledge_root)
+)
+def cell_knowledge_help(sim, knowledge_router, query_key, params):
+    return (
+        "Welcome to the Cell knowledge base!\n\n"
+        "You can query live data and explanations for Cells in the simulation.\n\n"
+        "### Available Endpoints:\n"
+        "- **List all Cells (identifiers only)**: `/cells`\n"
+        "- **Get all attributes values for a specific Cell**: `/cells/{cell_id}`\n"
+        "- **Get a specific attribute value of a specific Cell**: `/cells/{cell_id}/attributes/{attribute_name}`\n"
+        "- **Explain what an Cell attribute means**: `/docs/cells/attributes/{attribute_name}`\n"
+        "- **Explain what an Cell class method does**: `/docs/cells/methods/{method_name}`\n"
+        "### Supported Cell Attributes:\n"
+        f"{', '.join(SUPPORTED_CELL_ATTRIBUTES)}\n\n"
+        "### Supported Cell Methods:\n"
+        f"{', '.join(SUPPORTED_CELL_METHODS)}\n\n"
+    )
 
 
-@knowledge_explainer(
-    "/net/cell/attribute/cell_id",
+# ------------------------------------------
+#     GET /cells
+#       → List all Cells (representations) in the simulation
+# ------------------------------------------
+@knowledge_entry(
+    key="/cells",
+    tags=[KnowledgeTag.CELL],
+    related=[],
+)
+def get_ue_repr_list(sim, knowledge_router, query_key, params):
+    list_of_cell_repr = [repr(cell) for cell in sim.cell_list.values()]
+    return (
+        f"Currently there are {len(list_of_cell_repr)} Cells in the simulation:\n"
+        f"{"\n".join(list_of_cell_repr)}\n"
+    )
+
+
+# ------------------------------------------
+#     GET /cells/{ue_imsi}
+#       → List all attributes values for the given Cell
+# ------------------------------------------
+@knowledge_entry(
+    key="/cells/{ue_imsi}",
+    tags=[KnowledgeTag.CELL],
+    related=[],
+)
+def get_cell_attributes(sim, knowledge_router, query_key, params):
+    cell_id = params["cell_id"]
+    cell = sim.cell_list.get(cell_id)
+    if cell is None:
+        return f"Cell with ID: {cell_id} not found."
+    response = f"Attributes of Cell {cell_id}:\n"
+    for attr in SUPPORTED_CELL_ATTRIBUTES:
+        value = getattr(cell, attr, None)
+
+        if value is not None:
+            if attr == "connected_ue_list":
+                response += f"- connected_ue_list: {len(value)} UEs\n"
+                for ue in value.values():
+                    response += f"  - {repr(ue)}\n"
+                continue
+
+        response += f"- {attr}: {repr(value)}\n"
+
+    return response
+
+
+# ------------------------------------------
+#     GET /cells/{cell_id}/attributes/{attribute_name}
+#       → Get a specific attribute value for the given Cell
+# ------------------------------------------
+@knowledge_entry(
+    key="/cells/{cell_id}/attributes/{attribute_name}",
+    tags=[KnowledgeTag.CELL],
+    related=[],
+)
+def get_cell_attribute_value(sim, knowledge_router, query_key, params):
+    cell_id = params["cell_id"]
+    attribute_name = params["attribute_name"]
+    cell = sim.cell_list.get(cell_id)
+    if cell is None:
+        return f"Cell with ID: {cell_id} not found."
+    if attribute_name not in SUPPORTED_CELL_ATTRIBUTES:
+        return f"Attribute '{attribute_name}' is not supported."
+    value = getattr(cell, attribute_name, None)
+
+    if value is not None:
+        if attribute_name == "connected_ue_list":
+            return f"Connected UEs: {len(value)}\n" + "\n".join(
+                [repr(ue) for ue in value.values()]
+            )
+
+    return f"Value of {attribute_name} for Cell {cell_id}: {repr(value)}"
+
+
+@knowledge_entry(
+    "/docs/cell/attribute/cell_id",
     tags=[KnowledgeTag.CELL, KnowledgeTag.ID],
     related=[],
 )
@@ -105,8 +146,8 @@ def cell_id_explainer(sim, knowledge_router, query_key, params):
     return "The `cell_id` attribute is a unique identifier assigned to each cell in the network. "
 
 
-@knowledge_explainer(
-    "/net/cell/attribute/frequency_band",
+@knowledge_entry(
+    "/docs/cell/attribute/frequency_band",
     tags=[KnowledgeTag.CELL],
     related=[],
 )
@@ -118,8 +159,8 @@ def cell_frequency_band_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
-    "/net/cell/attribute/max_dl_prb",
+@knowledge_entry(
+    "/docs/cell/attribute/max_dl_prb",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (KnowledgeRelationship.CONSTRAINED_BY, "/net/cell/attribute/max_prb"),
@@ -134,8 +175,8 @@ def cell_max_dl_prb_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
-    "/net/cell/attribute/max_ul_prb",
+@knowledge_entry(
+    "/docs/cell/attribute/max_ul_prb",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (KnowledgeRelationship.CONSTRAINED_BY, "/net/cell/attribute/max_prb"),
@@ -148,11 +189,14 @@ def cell_max_ul_prb_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
-    "/net/cell/attribute/transmit_power_dBm",
+@knowledge_entry(
+    "/docs/cell/attribute/transmit_power_dBm",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
-        (KnowledgeRelationship.USED_BY_METHOD, "/net/user_equipments/method/monitor_signal_strength")
+        (
+            KnowledgeRelationship.USED_BY_METHOD,
+            "/net/user_equipments/method/monitor_signal_strength",
+        )
     ],
 )
 def cell_transmit_power_explainer(sim, knowledge_router, query_key, params):
@@ -164,11 +208,14 @@ def cell_transmit_power_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
-    "/net/cell/attribute/cell_individual_offset_dBm",
+@knowledge_entry(
+    "/docs/cell/attribute/cell_individual_offset_dBm",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
-        (KnowledgeRelationship.USED_BY_METHOD, "/net/user_equipments/method/monitor_signal_strength")
+        (
+            KnowledgeRelationship.USED_BY_METHOD,
+            "/net/user_equipments/method/monitor_signal_strength",
+        )
     ],
 )
 def cell_individual_offset_explainer(sim, knowledge_router, query_key, params):
@@ -179,8 +226,8 @@ def cell_individual_offset_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
-    "/net/cell/attribute/frequency_priority",
+@knowledge_entry(
+    "/docs/cell/attribute/frequency_priority",
     tags=[KnowledgeTag.CELL],
     related=[
         (
@@ -197,8 +244,8 @@ def cell_frequency_priority_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
-    "/net/cell/attribute/qrx_level_min",
+@knowledge_entry(
+    "/docs/cell/attribute/qrx_level_min",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (
@@ -214,8 +261,8 @@ def cell_qrx_level_min_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
-    "/net/cell/attribute/prb_ue_allocation_dict",
+@knowledge_entry(
+    "/docs/cell/attribute/prb_ue_allocation_dict",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (KnowledgeRelationship.SET_BY_METHOD, "/net/cell/method/allocate_prb"),
@@ -233,8 +280,8 @@ def cell_prb_ue_allocation_dict_explainer(sim, knowledge_router, query_key, para
     )
 
 
-@knowledge_explainer(
-    "/net/cell/attribute/allocated_dl_prb",
+@knowledge_entry(
+    "/docs/cell/attribute/allocated_dl_prb",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (
@@ -251,8 +298,8 @@ def cell_allocated_dl_prb_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
-    "/net/cell/attribute/allocated_ul_prb",
+@knowledge_entry(
+    "/docs/cell/attribute/allocated_ul_prb",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (
@@ -269,8 +316,8 @@ def cell_allocated_ul_prb_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
-    "/net/cell/attribute/current_dl_load",
+@knowledge_entry(
+    "/docs/cell/attribute/current_dl_load",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (
@@ -291,8 +338,8 @@ def cell_current_dl_load_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
-    "/net/cell/attribute/current_ul_load",
+@knowledge_entry(
+    "/docs/cell/attribute/current_ul_load",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (
@@ -313,8 +360,8 @@ def cell_current_ul_load_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
-    "/net/cell/attribute/position_x",
+@knowledge_entry(
+    "/docs/cell/attribute/position_x",
     tags=[KnowledgeTag.CELL, KnowledgeTag.LOCATION],
     related=[
         (
@@ -334,8 +381,8 @@ def cell_position_x_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
-    "/net/cell/attribute/position_y",
+@knowledge_entry(
+    "/docs/cell/attribute/position_y",
     tags=[KnowledgeTag.CELL, KnowledgeTag.LOCATION],
     related=[
         (
@@ -355,8 +402,8 @@ def cell_position_y_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
-    "/net/cell/attribute/carrier_frequency_MHz",
+@knowledge_entry(
+    "/docs/cell/attribute/carrier_frequency_MHz",
     tags=[KnowledgeTag.CELL],
     related=[],
 )
@@ -367,8 +414,8 @@ def cell_carrier_frequency_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
-    "/net/cell/attribute/bandwidth_Hz",
+@knowledge_entry(
+    "/docs/cell/attribute/bandwidth_Hz",
     tags=[KnowledgeTag.CELL],
     related=[],
 )
@@ -379,8 +426,8 @@ def cell_bandwidth_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
-    "/net/cell/attribute/max_prb",
+@knowledge_entry(
+    "/docs/cell/attribute/max_prb",
     tags=[KnowledgeTag.CELL],
     related=[],
 )
@@ -391,8 +438,8 @@ def cell_max_prb_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
-    "/net/cell/attribute/connected_ue_list",
+@knowledge_entry(
+    "/docs/cell/attribute/connected_ue_list",
     tags=[KnowledgeTag.CELL, KnowledgeTag.UE],
     related=[],
 )
@@ -403,8 +450,8 @@ def cell_connected_ue_list_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
-    "/net/cell/method/register_ue",
+@knowledge_entry(
+    "/docs/cell/method/register_ue",
     tags=[KnowledgeTag.CELL, KnowledgeTag.CODE],
     related=[
         (
@@ -423,8 +470,8 @@ def cell_register_ue_explainer(sim, knowledge_router, query_key, params):
     return f"```python\n{code}\n```\n\n{explanation}"
 
 
-@knowledge_explainer(
-    "/net/cell/method/allocate_prb",
+@knowledge_entry(
+    "/docs/cell/method/allocate_prb",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS, KnowledgeTag.CODE],
     related=[
         (
@@ -457,8 +504,8 @@ def cell_allocate_prb_explainer(sim, knowledge_router, query_key, params):
     return f"```python\n{code}\n```\n\n{explanation}"
 
 
-@knowledge_explainer(
-    "/net/cell/method/monitor_ue_signal_strength",
+@knowledge_entry(
+    "/docs/cell/method/monitor_ue_signal_strength",
     tags=[KnowledgeTag.CELL, KnowledgeTag.CODE, KnowledgeTag.SIMULATION],
     related=[
         (
@@ -487,8 +534,8 @@ def cell_monitor_ue_signal_strength_explainer(sim, knowledge_router, query_key, 
     return f"```python\n{code}\n```\n\n{explanation}"
 
 
-@knowledge_explainer(
-    "/net/cell/method/select_ue_mcs",
+@knowledge_entry(
+    "/docs/cell/method/select_ue_mcs",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS, KnowledgeTag.CODE],
     related=[
         (
@@ -521,8 +568,8 @@ def cell_select_ue_mcs_explainer(sim, knowledge_router, query_key, params):
     return f"```python\n{code}\n```\n\n{explanation}"
 
 
-@knowledge_explainer(
-    "/net/cell/method/estimate_ue_bitrate_and_latency",
+@knowledge_entry(
+    "/docs/cell/method/estimate_ue_bitrate_and_latency",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS, KnowledgeTag.CODE],
     related=[
         (
@@ -550,8 +597,8 @@ def cell_estimate_ue_bitrate_and_latency_explainer(
     return f"```python\n{code}\n```\n\n{explanation}"
 
 
-@knowledge_explainer(
-    "/net/cell/method/deregister_ue",
+@knowledge_entry(
+    "/docs/cell/method/deregister_ue",
     tags=[KnowledgeTag.CELL, KnowledgeTag.CODE],
     related=[
         (
@@ -566,8 +613,8 @@ def cell_deregister_ue_explainer(sim, knowledge_router, query_key, params):
     return f"```python\n{code}\n```\n\n{explanation}"
 
 
-@knowledge_explainer(
-    "/net/cell/method/step",
+@knowledge_entry(
+    "/docs/cell/method/step",
     tags=[KnowledgeTag.CELL, KnowledgeTag.SIMULATION, KnowledgeTag.CODE],
     related=[
         (
