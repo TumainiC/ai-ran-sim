@@ -115,13 +115,15 @@ class Cell:
                     max_mcs_index = mcs_index
                 else:
                     break
-            # print(
-            #     f"Cell {self.cell_id}: UE {ue.ue_imsi} selected MCS index {max_mcs_index} based on CQI {ue.downlink_cqi}"
-            # )
             ue.set_downlink_mcs_index(max_mcs_index)
-            ue.set_downlink_mcs_data(
-                settings.RAN_MCS_SPECTRAL_EFFICIENCY_TABLE.get(max_mcs_index, None).copy()
+            downlink_mcs_data = settings.RAN_MCS_SPECTRAL_EFFICIENCY_TABLE.get(
+                max_mcs_index, None
             )
+            if downlink_mcs_data is None:
+                ue.set_downlink_mcs_data(None)
+            else:
+                # copy the dictionary to avoid modifying the original data
+                ue.set_downlink_mcs_data(downlink_mcs_data.copy())
 
     def step(self, delta_time):
         self.monitor_ue_signal_strength()
@@ -287,9 +289,9 @@ class BaseStation:
         current_cell = self.cell_list.get(event["current_cell_id"], None)
         assert ue is not None, "UE cannot be None"
         assert current_cell is not None, "Current cell cannot be None"
-        assert ue.current_cell.cell_id == current_cell.cell_id, (
-            f"UE {ue.ue_imsi} (current cell: {ue.current_cell.cell_id}) is not in the current cell ({current_cell.cell_id})"
-        )
+        assert (
+            ue.current_cell.cell_id == current_cell.cell_id
+        ), f"UE {ue.ue_imsi} (current cell: {ue.current_cell.cell_id}) is not in the current cell ({current_cell.cell_id})"
         print(f"{self} received UE reported RRC measurement event:")
         print(event)
         self.ue_rrc_meas_events.append(event)
@@ -315,7 +317,7 @@ class BaseStation:
         ue.current_cell.deregister_ue(ue)
         if ue.ue_imsi in self.ue_registry:
             del self.ue_registry[ue.ue_imsi]
-        
+
         # remove rrc measurement events for the UE
         events_to_remove = []
         for event in self.ue_rrc_meas_events:
@@ -326,7 +328,6 @@ class BaseStation:
 
         print(f"gNB {self.bs_id}: UE {ue.ue_imsi} deregistered and resources released.")
         return True
-
 
     def to_json(self):
         return {
@@ -383,7 +384,9 @@ class BaseStation:
             source_cell is not None and target_cell is not None
         ), "Source or target cell cannot be None"
         assert source_cell != target_cell, "Source and target cell cannot be the same"
-        assert ue.current_cell.cell_id == source_cell.cell_id, f"UE {ue.ue_imsi} (current cell: {ue.current_cell.cell_id})is not in the source cell ({source_cell.cell_id})"
+        assert (
+            ue.current_cell.cell_id == source_cell.cell_id
+        ), f"UE {ue.ue_imsi} (current cell: {ue.current_cell.cell_id})is not in the source cell ({source_cell.cell_id})"
         assert (
             ue.ue_imsi in source_cell.connected_ue_list
         ), "UE is not connected to the source cell"
