@@ -108,7 +108,7 @@ def bs_id_explainer(sim, knowledge_router, query_key, params):
     "/net/base_station/attribute/position_x",
     tags=[KnowledgeTag.BS, KnowledgeTag.LOCATION],
     related=[
-        (KnowledgeRelationship.ASSOCIATED_WITH, "/net/cell/attribute/position_x"),
+        (KnowledgeRelationship.ASSOCIATED_WITH, "/docs/cells/attributes/position_x"),
     ],
 )
 def bs_position_x_explainer(sim, knowledge_router, query_key, params):
@@ -122,7 +122,7 @@ def bs_position_x_explainer(sim, knowledge_router, query_key, params):
     "/net/base_station/attribute/position_y",
     tags=[KnowledgeTag.BS, KnowledgeTag.LOCATION],
     related=[
-        (KnowledgeRelationship.ASSOCIATED_WITH, "/net/cell/attribute/position_y"),
+        (KnowledgeRelationship.ASSOCIATED_WITH, "/docs/cells/attributes/position_y"),
     ],
 )
 def bs_position_y_explainer(sim, knowledge_router, query_key, params):
@@ -252,7 +252,7 @@ def bs_ric_control_actions_explainer(sim, knowledge_router, query_key, params):
     related=[
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
-            "/net/user_equipments/method/check_rrc_meas_events_to_monitor",
+            "/docs/user_equipments/methods/check_rrc_meas_events_to_monitor",
         ),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
@@ -279,10 +279,10 @@ def bs_receive_ue_rrc_meas_events_explainer(sim, knowledge_router, query_key, pa
             KnowledgeRelationship.SET_ATTRIBUTE,
             "/net/base_station/attribute/ue_registry",
         ),
-        (KnowledgeRelationship.CALL_METHOD, "/net/cell/method/register_ue"),
+        (KnowledgeRelationship.CALL_METHOD, "/docs/cells/methods/register_ue"),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
-            "/net/user_equipments/method/authenticate_and_register",
+            "/docs/user_equipments/methods/authenticate_and_register",
         ),
     ],
 )
@@ -303,12 +303,12 @@ def bs_handle_ue_auth_and_reg_explainer(sim, knowledge_router, query_key, params
     "/net/base_station/method/handle_deregistration_request",
     tags=[KnowledgeTag.BS, KnowledgeTag.CODE],
     related=[
-        (KnowledgeRelationship.CALL_METHOD, "/net/cell/method/deregister_ue"),
+        (KnowledgeRelationship.CALL_METHOD, "/docs/cells/methods/deregister_ue"),
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
             "/net/base_station/attribute/ue_registry",
         ),
-        (KnowledgeRelationship.CALLED_BY_METHOD, "/net/user_equipments/method/deregister"),
+        (KnowledgeRelationship.CALLED_BY_METHOD, "/docs/user_equipments/methods/deregister"),
     ],
 )
 def bs_handle_deregistration_request_explainer(
@@ -382,11 +382,11 @@ def bs_process_ric_control_actions_explainer(sim, knowledge_router, query_key, p
             KnowledgeRelationship.SET_ATTRIBUTE,
             "/net/base_station/attribute/ue_registry",
         ),
-        (KnowledgeRelationship.CALL_METHOD, "/net/cell/method/deregister_ue"),
-        (KnowledgeRelationship.CALL_METHOD, "/net/cell/method/register_ue"),
+        (KnowledgeRelationship.CALL_METHOD, "/docs/cells/methods/deregister_ue"),
+        (KnowledgeRelationship.CALL_METHOD, "/docs/cells/methods/register_ue"),
         (
             KnowledgeRelationship.CALL_METHOD,
-            "/net/user_equipments/method/execute_handover",
+            "/docs/user_equipments/methods/execute_handover",
         ),
     ],
 )
@@ -405,7 +405,7 @@ def bs_execute_handover_explainer(sim, knowledge_router, query_key, params):
     "/net/base_station/method/step",
     tags=[KnowledgeTag.BS, KnowledgeTag.SIMULATION, KnowledgeTag.CODE],
     related=[
-        (KnowledgeRelationship.CALL_METHOD, "/net/cell/method/step"),
+        (KnowledgeRelationship.CALL_METHOD, "/docs/cells/methods/step"),
         (
             KnowledgeRelationship.CALL_METHOD,
             "/net/base_station/method/process_ric_control_actions",

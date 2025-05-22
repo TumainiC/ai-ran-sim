@@ -138,7 +138,7 @@ def get_cell_attribute_value(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/attribute/cell_id",
+    "/docs/cells/attributes/cell_id",
     tags=[KnowledgeTag.CELL, KnowledgeTag.ID],
     related=[],
 )
@@ -147,7 +147,7 @@ def cell_id_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/attribute/frequency_band",
+    "/docs/cells/attributes/frequency_band",
     tags=[KnowledgeTag.CELL],
     related=[],
 )
@@ -160,11 +160,11 @@ def cell_frequency_band_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/attribute/max_dl_prb",
+    "/docs/cells/attributes/max_dl_prb",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
-        (KnowledgeRelationship.CONSTRAINED_BY, "/net/cell/attribute/max_prb"),
-        (KnowledgeRelationship.USED_BY_METHOD, "/net/cell/method/allocate_prb"),
+        (KnowledgeRelationship.CONSTRAINED_BY, "/docs/cells/attributes/max_prb"),
+        (KnowledgeRelationship.USED_BY_METHOD, "/docs/cells/methods/allocate_prb"),
     ],
 )
 def cell_max_dl_prb_explainer(sim, knowledge_router, query_key, params):
@@ -176,10 +176,10 @@ def cell_max_dl_prb_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/attribute/max_ul_prb",
+    "/docs/cells/attributes/max_ul_prb",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
-        (KnowledgeRelationship.CONSTRAINED_BY, "/net/cell/attribute/max_prb"),
+        (KnowledgeRelationship.CONSTRAINED_BY, "/docs/cells/attributes/max_prb"),
     ],
 )
 def cell_max_ul_prb_explainer(sim, knowledge_router, query_key, params):
@@ -190,12 +190,12 @@ def cell_max_ul_prb_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/attribute/transmit_power_dBm",
+    "/docs/cells/attributes/transmit_power_dBm",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.USED_BY_METHOD,
-            "/net/user_equipments/method/monitor_signal_strength",
+            "/docs/user_equipments/methods/monitor_signal_strength",
         )
     ],
 )
@@ -209,12 +209,12 @@ def cell_transmit_power_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/attribute/cell_individual_offset_dBm",
+    "/docs/cells/attributes/cell_individual_offset_dBm",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.USED_BY_METHOD,
-            "/net/user_equipments/method/monitor_signal_strength",
+            "/docs/user_equipments/methods/monitor_signal_strength",
         )
     ],
 )
@@ -227,12 +227,12 @@ def cell_individual_offset_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/attribute/frequency_priority",
+    "/docs/cells/attributes/frequency_priority",
     tags=[KnowledgeTag.CELL],
     related=[
         (
             KnowledgeRelationship.USED_BY_METHOD,
-            "/net/user_equipments/method/cell_selection_and_camping",
+            "/docs/user_equipments/methods/cell_selection_and_camping",
         )
     ],
 )
@@ -245,12 +245,12 @@ def cell_frequency_priority_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/attribute/qrx_level_min",
+    "/docs/cells/attributes/qrx_level_min",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.USED_BY_METHOD,
-            "/net/user_equipments/method/monitor_signal_strength",
+            "/docs/user_equipments/methods/monitor_signal_strength",
         )
     ],
 )
@@ -262,13 +262,13 @@ def cell_qrx_level_min_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/attribute/prb_ue_allocation_dict",
+    "/docs/cells/attributes/prb_ue_allocation_dict",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
-        (KnowledgeRelationship.SET_BY_METHOD, "/net/cell/method/allocate_prb"),
+        (KnowledgeRelationship.SET_BY_METHOD, "/docs/cells/methods/allocate_prb"),
         (
             KnowledgeRelationship.USED_BY_METHOD,
-            "/net/cell/method/estimate_ue_bitrate_and_latency",
+            "/docs/cells/methods/estimate_ue_bitrate_and_latency",
         ),
     ],
 )
@@ -281,12 +281,12 @@ def cell_prb_ue_allocation_dict_explainer(sim, knowledge_router, query_key, para
 
 
 @knowledge_entry(
-    "/docs/cell/attribute/allocated_dl_prb",
+    "/docs/cells/attributes/allocated_dl_prb",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.DERIVED_FROM,
-            "/net/cell/attribute/prb_ue_allocation_dict",
+            "/docs/cells/attributes/prb_ue_allocation_dict",
         ),
     ],
 )
@@ -299,12 +299,12 @@ def cell_allocated_dl_prb_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/attribute/allocated_ul_prb",
+    "/docs/cells/attributes/allocated_ul_prb",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.DERIVED_FROM,
-            "/net/cell/attribute/prb_ue_allocation_dict",
+            "/docs/cells/attributes/prb_ue_allocation_dict",
         ),
     ],
 )
@@ -317,16 +317,16 @@ def cell_allocated_ul_prb_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/attribute/current_dl_load",
+    "/docs/cells/attributes/current_dl_load",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.DERIVED_FROM,
-            "/net/cell/attribute/allocated_dl_prb",
+            "/docs/cells/attributes/allocated_dl_prb",
         ),
         (
             KnowledgeRelationship.DERIVED_FROM,
-            "/net/cell/attribute/max_dl_prb",
+            "/docs/cells/attributes/max_dl_prb",
         ),
     ],
 )
@@ -339,16 +339,16 @@ def cell_current_dl_load_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/attribute/current_ul_load",
+    "/docs/cells/attributes/current_ul_load",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS],
     related=[
         (
             KnowledgeRelationship.DERIVED_FROM,
-            "/net/cell/attribute/allocated_ul_prb",
+            "/docs/cells/attributes/allocated_ul_prb",
         ),
         (
             KnowledgeRelationship.DERIVED_FROM,
-            "/net/cell/attribute/max_ul_prb",
+            "/docs/cells/attributes/max_ul_prb",
         ),
     ],
 )
@@ -361,16 +361,16 @@ def cell_current_ul_load_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/attribute/position_x",
+    "/docs/cells/attributes/position_x",
     tags=[KnowledgeTag.CELL, KnowledgeTag.LOCATION],
     related=[
         (
             KnowledgeRelationship.USED_BY_METHOD,
-            "/net/cell/method/monitor_ue_signal_strength",
+            "/docs/cells/methods/monitor_ue_signal_strength",
         ),
         (
             KnowledgeRelationship.USED_BY_METHOD,
-            "/net/user_equipments/method/monitor_signal_strength",
+            "/docs/user_equipments/methods/monitor_signal_strength",
         ),
     ],
 )
@@ -382,16 +382,16 @@ def cell_position_x_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/attribute/position_y",
+    "/docs/cells/attributes/position_y",
     tags=[KnowledgeTag.CELL, KnowledgeTag.LOCATION],
     related=[
         (
             KnowledgeRelationship.USED_BY_METHOD,
-            "/net/cell/method/monitor_ue_signal_strength",
+            "/docs/cells/methods/monitor_ue_signal_strength",
         ),
         (
             KnowledgeRelationship.USED_BY_METHOD,
-            "/net/user_equipments/method/monitor_signal_strength",
+            "/docs/user_equipments/methods/monitor_signal_strength",
         ),
     ],
 )
@@ -403,7 +403,7 @@ def cell_position_y_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/attribute/carrier_frequency_MHz",
+    "/docs/cells/attributes/carrier_frequency_MHz",
     tags=[KnowledgeTag.CELL],
     related=[],
 )
@@ -415,7 +415,7 @@ def cell_carrier_frequency_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/attribute/bandwidth_Hz",
+    "/docs/cells/attributes/bandwidth_Hz",
     tags=[KnowledgeTag.CELL],
     related=[],
 )
@@ -427,7 +427,7 @@ def cell_bandwidth_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/attribute/max_prb",
+    "/docs/cells/attributes/max_prb",
     tags=[KnowledgeTag.CELL],
     related=[],
 )
@@ -439,7 +439,7 @@ def cell_max_prb_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/attribute/connected_ue_list",
+    "/docs/cells/attributes/connected_ue_list",
     tags=[KnowledgeTag.CELL, KnowledgeTag.UE],
     related=[],
 )
@@ -451,16 +451,16 @@ def cell_connected_ue_list_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/method/register_ue",
+    "/docs/cells/methods/register_ue",
     tags=[KnowledgeTag.CELL, KnowledgeTag.CODE],
     related=[
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/cell/attribute/connected_ue_list",
+            "/docs/cells/attributes/connected_ue_list",
         ),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
-            "/net/base_station/method/handle_ue_authentication_and_registration",
+            "/docs/base_station/method/handle_ue_authentication_and_registration",
         ),
     ],
 )
@@ -471,16 +471,16 @@ def cell_register_ue_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/method/allocate_prb",
+    "/docs/cells/methods/allocate_prb",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS, KnowledgeTag.CODE],
     related=[
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/cell/attribute/prb_ue_allocation_dict",
+            "/docs/cells/attributes/prb_ue_allocation_dict",
         ),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
-            "/net/cell/method/step",
+            "/docs/cells/methods/step",
         ),
     ],
 )
@@ -505,16 +505,16 @@ def cell_allocate_prb_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/method/monitor_ue_signal_strength",
+    "/docs/cells/methods/monitor_ue_signal_strength",
     tags=[KnowledgeTag.CELL, KnowledgeTag.CODE, KnowledgeTag.SIMULATION],
     related=[
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/cell/attribute/ue_uplink_signal_strength_dict",
+            "/docs/cells/attributes/ue_uplink_signal_strength_dict",
         ),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
-            "/net/cell/method/step",
+            "/docs/cells/methods/step",
         ),
     ],
 )
@@ -535,20 +535,20 @@ def cell_monitor_ue_signal_strength_explainer(sim, knowledge_router, query_key, 
 
 
 @knowledge_entry(
-    "/docs/cell/method/select_ue_mcs",
+    "/docs/cells/methods/select_ue_mcs",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS, KnowledgeTag.CODE],
     related=[
         (
             KnowledgeRelationship.CALL_METHOD,
-            "/net/user_equipments/method/set_downlink_mcs_index",
+            "/docs/user_equipments/methods/set_downlink_mcs_index",
         ),
         (
             KnowledgeRelationship.CALL_METHOD,
-            "/net/user_equipments/method/set_downlink_mcs_data",
+            "/docs/user_equipments/methods/set_downlink_mcs_data",
         ),
         (
             KnowledgeRelationship.CALLED_BY_METHOD,
-            "/net/cell/method/step",
+            "/docs/cells/methods/step",
         ),
     ],
 )
@@ -569,12 +569,12 @@ def cell_select_ue_mcs_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/method/estimate_ue_bitrate_and_latency",
+    "/docs/cells/methods/estimate_ue_bitrate_and_latency",
     tags=[KnowledgeTag.CELL, KnowledgeTag.QoS, KnowledgeTag.CODE],
     related=[
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/user_equipments/attribute/downlink_bitrate",
+            "/docs/user_equipments/attributes/downlink_bitrate",
         ),
     ],
 )
@@ -598,12 +598,12 @@ def cell_estimate_ue_bitrate_and_latency_explainer(
 
 
 @knowledge_entry(
-    "/docs/cell/method/deregister_ue",
+    "/docs/cells/methods/deregister_ue",
     tags=[KnowledgeTag.CELL, KnowledgeTag.CODE],
     related=[
         (
             KnowledgeRelationship.SET_ATTRIBUTE,
-            "/net/cell/attribute/connected_ue_list",
+            "/docs/cells/attributes/connected_ue_list",
         ),
     ],
 )
@@ -614,24 +614,24 @@ def cell_deregister_ue_explainer(sim, knowledge_router, query_key, params):
 
 
 @knowledge_entry(
-    "/docs/cell/method/step",
+    "/docs/cells/methods/step",
     tags=[KnowledgeTag.CELL, KnowledgeTag.SIMULATION, KnowledgeTag.CODE],
     related=[
         (
             KnowledgeRelationship.CALL_METHOD,
-            "/net/cell/method/monitor_ue_signal_strength",
+            "/docs/cells/methods/monitor_ue_signal_strength",
         ),
         (
             KnowledgeRelationship.CALL_METHOD,
-            "/net/cell/method/select_ue_mcs",
+            "/docs/cells/methods/select_ue_mcs",
         ),
         (
             KnowledgeRelationship.CALL_METHOD,
-            "/net/cell/method/allocate_prb",
+            "/docs/cells/methods/allocate_prb",
         ),
         (
             KnowledgeRelationship.CALL_METHOD,
-            "/net/cell/method/estimate_ue_bitrate_and_latency",
+            "/docs/cells/methods/estimate_ue_bitrate_and_latency",
         ),
     ],
 )
