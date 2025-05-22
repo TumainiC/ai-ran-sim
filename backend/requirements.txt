@@ -3,3 +3,4 @@ websockets
 matplotlib
 openai-agents
 "openai-agents[viz]"
+pymongo

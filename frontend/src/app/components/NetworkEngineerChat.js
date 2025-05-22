@@ -132,7 +132,7 @@ export default function NetworkEngineerChat({ sendMessage, streamedChatEvent }) 
       role: "user",
       content: input,
     });
-    sendMessage("intelligence_layer", "chat", chatHistory);
+    sendMessage("intelligence_layer", "network_engineer_chat", chatHistory);
     setMessages((prev) => [
       ...prev,
       {

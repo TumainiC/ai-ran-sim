@@ -132,7 +132,7 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
       role: "user",
       content: input,
     });
-    sendMessage("intelligence_layer", "chat", chatHistory);
+    sendMessage("intelligence_layer", "user_chat", chatHistory);
     setMessages((prev) => [
       ...prev,
       {
