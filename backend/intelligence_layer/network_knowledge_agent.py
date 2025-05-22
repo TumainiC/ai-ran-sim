@@ -25,6 +25,7 @@ You should always start with
     "/docs/user_equipments" (documentation on UE-related knowledge base) 
     "/docs/sim_engine" (documentation on simulation-related knowledge base)
     "/docs/cells" (documentation on cell-related knowledge base)
+    "/docs/ric" (documentation on RIC-related knowledge base)
 
 The knowledge tools often returns a list of related knowledge keys. 
 You should explore these related knowledge keys as well to gather more information to answer the user query wherever possible.

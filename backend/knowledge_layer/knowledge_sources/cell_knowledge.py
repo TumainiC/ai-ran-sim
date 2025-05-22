@@ -42,7 +42,7 @@ SUPPORTED_CELL_METHODS = [
 
 @knowledge_entry(
     key="/docs/cells",
-    tags=[KnowledgeTag.UE, KnowledgeTag.KNOWLEDGE_GUIDE],
+    tags=[KnowledgeTag.CELL, KnowledgeTag.KNOWLEDGE_GUIDE],
     related=[],
 )
 def cell_knowledge_help(sim, knowledge_router, query_key, params):
@@ -53,8 +53,8 @@ def cell_knowledge_help(sim, knowledge_router, query_key, params):
         "- **List all Cells (identifiers only)**: `/cells`\n"
         "- **Get all attributes values for a specific Cell**: `/cells/{cell_id}`\n"
         "- **Get a specific attribute value of a specific Cell**: `/cells/{cell_id}/attributes/{attribute_name}`\n"
-        "- **Explain what an Cell attribute means**: `/docs/cells/attributes/{attribute_name}`\n"
-        "- **Explain what an Cell class method does**: `/docs/cells/methods/{method_name}`\n"
+        "- **Explain what an attribute of Cell means**: `/docs/cells/attributes/{attribute_name}`\n"
+        "- **Explain what a method in Cell class does**: `/docs/cells/methods/{method_name}`\n"
         "### Supported Cell Attributes:\n"
         f"{', '.join(SUPPORTED_CELL_ATTRIBUTES)}\n\n"
         "### Supported Cell Methods:\n"

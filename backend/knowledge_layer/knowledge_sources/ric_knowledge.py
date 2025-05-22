@@ -1,10 +1,9 @@
 import json
 import inspect
-from ..knowledge_getter import knowledge_getter
-from ..knowledge_explainer import knowledge_explainer
 from ..tags import KnowledgeTag
 from ..relationships import KnowledgeRelationship
 from network_layer.ric import NearRTRIC
+from ..knowledge_entry import knowledge_entry
 
 from network_layer.xApps.xapp_base import xAppBase
 
@@ -19,78 +18,84 @@ SUPPORTED_RIC_METHODS = [
 ]
 
 
-@knowledge_getter(
-    key="/net/ric/attribute/{attribute_name}",
+@knowledge_entry(
+    key="/docs/ric",
+    tags=[KnowledgeTag.RIC, KnowledgeTag.KNOWLEDGE_GUIDE],
+    related=[],
+)
+def ric_knowledge_help(sim, knowledge_router, query_key, params):
+    return (
+        "📘 **Welcome to the RAN Intelligent Controller (RIC) Knowledge Base**\n\n"
+        "You can query live data and explanations for RIC in the simulation.\n\n"
+        "### Available Endpoints:\n"
+        "- **Get all attributes values for the simulated RIC**: `/ric`\n"
+        "- **Get a specific attribute value of the RIC**: `/ric/attributes/{attribute_name}`\n"
+        "- **Explain what an attribute of the RIC means**: `/docs/ric/attributes/{attribute_name}`\n"
+        "- **Explain what a method in RIC class does**: `/docs/user_equipments/methods/{method_name}`\n"
+        "- **List all the activated xApps (identifiers only) in the RIC**: `/ric/xapps`\n"
+        "- **Explain what a specific xApp does**: `/ric/xapps/{xapp_name}`\n\n"
+        "### Supported RIC Attributes:\n"
+        f"{', '.join(SUPPORTED_RIC_ATTRIBUTES)}\n\n"
+        "### Supported RIC Methods:\n"
+        f"{', '.join(SUPPORTED_RIC_METHODS)}\n\n"
+    )
+
+
+# ------------------------------------------
+#     GET /ric
+#       → List all attributes values for the RIC
+# ------------------------------------------
+@knowledge_entry(
+    key="/ric",
+    tags=[KnowledgeTag.RIC],
+    related=[],
+)
+def get_ric_attributes(sim, knowledge_router, query_key, params):
+    ric = getattr(sim, "nearRT_ric", None)
+    if not ric:
+        return "RAN Intelligent Controller has not been initiated yet."
+    response = f"Attributes of RIC:\n"
+    for attr in SUPPORTED_RIC_ATTRIBUTES:
+        value = getattr(ric, attr, None)
+        if value is None:
+            response += f"- {attr}: None\n"
+            continue
+        if attr == "xapp_list":
+            response += f"- {attr}: \n"
+            for xapp_key in value.keys():
+                response += f"  - {xapp_key}\n"
+            continue
+
+        response += f"- {attr}: {repr(value)}\n"
+
+    return response
+
+
+@knowledge_entry(
+    key="/ric/attributes/{attribute_name}",
 )
 def ric_attribute_getter(sim, knowledge_router, query_key, params):
     ric = getattr(sim, "nearRT_ric", None)
     if not ric:
-        return "RIC instance not found in simulation."
+        return "RAN Intelligent Controller has not been initiated yet."
     attribute_name = params["attribute_name"]
-
     if attribute_name not in SUPPORTED_RIC_ATTRIBUTES:
-        return f"Attribute {attribute_name} not supported. Supported attributes: {', '.join(SUPPORTED_RIC_ATTRIBUTES)}"
+        return f"Attribute '{attribute_name}' is not supported. Supported attributes: {', '.join(SUPPORTED_RIC_ATTRIBUTES)}"
+    value = getattr(ric, attribute_name, None)
+    if value is None:
+        return f"Attribute '{attribute_name}' is not set or does not exist."
 
-    if hasattr(ric, attribute_name):
-        attribute = getattr(ric, attribute_name)
-        if callable(attribute):
-            return f"{attribute_name} is a method, query it via /net/ric/method/{attribute_name} instead."
+    if attribute_name == "xapp_list":
+        xapp_ids = list(value.keys())
+        return f"Value of '{attribute_name}':\n" + "\n".join(
+            f"- {xapp_id}" for xapp_id in xapp_ids
+        )
 
-        if attribute_name == "xapp_list":
-            xapp_ids = list(attribute.keys())
-            return json.dumps(xapp_ids)
-
-        if isinstance(attribute, (dict, list)):
-            return json.dumps(attribute)
-
-        return str(attribute)
-    else:
-        return f"Attribute {attribute_name} not found in RIC class. Supported attributes: {', '.join(SUPPORTED_RIC_ATTRIBUTES)}"
+    return f"Value of '{attribute_name}': {repr(value)}"
 
 
-def ric_knowledge_root(sim, knowledge_router, query_key, params):
-    ric = getattr(sim, "nearRT_ric", None)
-    if not ric or not hasattr(ric, "xapp_list"):
-        return "RIC or xApp list not found."
-    xapp_ids = list(ric.xapp_list.keys())
-    text = (
-        "Welcome to the Near Real-Time RAN Intelligent Controller (NearRT RIC) knowledge base!\n\n"
-        "This knowledge base provides access to the simulated NearRT RIC, which orchestrates xApps and manages RAN control in the network simulation.\n\n"
-        "You can interact with the RIC knowledge base in the following ways:\n"
-        "1. **Retrieve live attribute values for the RIC:**\n"
-        "   - Format: `/net/ric/attribute/{attribute_name}`\n"
-        "2. **Get explanations for a specific RIC attribute or method:**\n"
-        "   - Attribute explanation: `/net/ric/attribute/{attribute_name}`\n"
-        "   - Method explanation: `/net/ric/method/{method_name}`\n"
-        "3. **Explore loaded xApps:**\n"
-        "   - List all loaded xApps: `/net/ric/xapps`\n"
-        "   - Get source code and explanation for a specific xApp: `/net/ric/xapps/{xapp_id}`\n"
-        "Supported RIC attributes include:\n"
-        f"    {', '.join(SUPPORTED_RIC_ATTRIBUTES)}\n\n"
-        "Supported RIC methods include:\n"
-        f"    {', '.join(SUPPORTED_RIC_METHODS)}\n\n"
-        "List of loaded xApps:\n"
-        f"    {json.dumps(xapp_ids, indent=2)}\n\n"
-        "Use the above query formats to explore live data or request explanations for any supported attribute, method, or xApp."
-    )
-    return text
-
-
-knowledge_getter(
-    key="/net/ric",
-)(ric_knowledge_root)
-
-knowledge_explainer(
-    key="/net/ric",
-    tags=[KnowledgeTag.KNOWLEDGE_GUIDE],
-    related=[],
-)(ric_knowledge_root)
-
-# Attribute explainers
-
-
-@knowledge_explainer(
-    "/net/ric/attribute/ric_id",
+@knowledge_entry(
+    "/docs/ric/attributes/ric_id",
     tags=[KnowledgeTag.KNOWLEDGE_GUIDE],
     related=[],
 )
@@ -101,11 +106,11 @@ def ric_id_explainer(sim, knowledge_router, query_key, params):
     )
 
 
-@knowledge_explainer(
-    "/net/ric/attribute/xapp_list",
+@knowledge_entry(
+    "/docs/ric/attributes/xapp_list",
     tags=[KnowledgeTag.KNOWLEDGE_GUIDE, KnowledgeTag.CODE],
     related=[
-        (KnowledgeRelationship.SET_BY_METHOD, "/net/ric/method/load_xApps"),
+        (KnowledgeRelationship.SET_BY_METHOD, "/docs/ric/methods/load_xApps"),
     ],
 )
 def ric_xapp_list_explainer(sim, knowledge_router, query_key, params):
@@ -119,12 +124,15 @@ def ric_xapp_list_explainer(sim, knowledge_router, query_key, params):
 # Method explainers
 
 
-@knowledge_explainer(
-    "/net/ric/method/load_xApps",
+@knowledge_entry(
+    "/docs/ric/methodss/load_xApps",
     tags=[KnowledgeTag.KNOWLEDGE_GUIDE, KnowledgeTag.CODE],
     related=[
-        (KnowledgeRelationship.SET_ATTRIBUTE, "/net/ric/attribute/xapp_list"),
-        (KnowledgeRelationship.CALLED_BY_METHOD, "/sim/method/network_setup"),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/docs/ric/attributes/xapp_list"),
+        (
+            KnowledgeRelationship.CALLED_BY_METHOD,
+            "/docs/sim_engine/methods/network_setup",
+        ),
     ],
 )
 def ric_load_xapps_explainer(sim, knowledge_router, query_key, params):
@@ -142,6 +150,17 @@ def ric_load_xapps_explainer(sim, knowledge_router, query_key, params):
 # --- xApp knowledge routes ---
 
 
+@knowledge_entry(
+    key="/docs/ric/xapps",
+    tags=[KnowledgeTag.KNOWLEDGE_GUIDE, KnowledgeTag.RIC],
+    related=[
+        (KnowledgeRelationship.SET_BY_METHOD, "/docs/ric/methods/load_xApps"),
+        (
+            KnowledgeRelationship.CALLED_BY_METHOD,
+            "/docs/sim_engine/methods/network_setup",
+        ),
+    ],
+)
 def ric_xapps_root(sim, knowledge_router, query_key, params):
     ric = getattr(sim, "nearRT_ric", None)
     if not ric or not hasattr(ric, "xapp_list"):
@@ -156,24 +175,13 @@ def ric_xapps_root(sim, knowledge_router, query_key, params):
     )
     return (
         "xApps are modular applications loaded by the NearRT RIC to implement specific RAN control logic (e.g., handover, load balancing, etc.).\n"
-        "The following xApps are currently loaded:\n"
+        "The following xApps are currently activated:\n"
         f"{json.dumps(xapp_ids, indent=2)}\n\n"
-        "Query `/net/ric/xapps/{xapp_id}` to view the source code and explanation for a specific xApp.\n\n"
+        "Query `/ric/xapps/{xapp_id}` to view the source code and explanation for a specific xApp.\n\n"
         "## xAppBase (Base class for all xApps)\n"
         f"**Documentation:**\n{base_doc}\n\n"
         f"**Source code:**\n```python\n{base_code}\n```"
     )
-
-
-knowledge_getter(
-    key="/net/ric/xapps",
-)(ric_xapps_root)
-
-knowledge_explainer(
-    "/net/ric/xapps",
-    tags=[KnowledgeTag.KNOWLEDGE_GUIDE, KnowledgeTag.RIC],
-    related=[],
-)(ric_xapps_root)
 
 
 def ric_xapp_detail(sim, knowledge_router, query_key, params):
@@ -200,12 +208,14 @@ def ric_xapp_detail(sim, knowledge_router, query_key, params):
     )
 
 
-knowledge_getter(
-    key="/net/ric/xapps/{xapp_id}",
+knowledge_entry(
+    key="/docs/ric/xapps/{xapp_id}",
+    tags=[KnowledgeTag.RIC],
+    related=[],
 )(ric_xapp_detail)
 
-knowledge_explainer(
-    "/net/ric/xapps/{xapp_id}",
+knowledge_entry(
+    key="/ric/xapps/{xapp_id}",
     tags=[KnowledgeTag.RIC],
     related=[],
 )(ric_xapp_detail)
