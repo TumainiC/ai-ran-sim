@@ -2,13 +2,11 @@ import os
 from agents import Agent
 from .network_knowledge_tools import get_knowledge, get_knowledge_bulk
 from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
+from settings import OPENAI_NON_REASONING_MODEL_NAME, OPENAI_REASONING_MODEL_NAME
 
 
-REASONING_MODEL = os.getenv("OPENAI_REASONING_MODEL_NAME", "gpt-4.1")
-NON_REASONING_MODEL = os.getenv("OPENAI_NON_REASONING_MODEL_NAME", "gpt-4.1")
-
-print(f"Using reasoning model: {REASONING_MODEL}")
-print(f"Using non-reasoning model: {NON_REASONING_MODEL}")
+print(f"Using reasoning model: {OPENAI_REASONING_MODEL_NAME}")
+print(f"Using non-reasoning model: {OPENAI_NON_REASONING_MODEL_NAME}")
 
 
 non_reasoning_network_knowledge_agent = Agent(
@@ -33,7 +31,7 @@ You should explore these related knowledge keys as well to gather more informati
 Note that most elements in the query keys are plural (user_equipments, base_stations, cells, attributes, methods),
 except for the RIC and simulation engine, which are singular (ric, sim_engine).
 """,
-    model=NON_REASONING_MODEL,
+    model=OPENAI_NON_REASONING_MODEL_NAME,
 )
 
 
@@ -59,5 +57,5 @@ You should explore these related knowledge keys as well to gather more informati
 Note that most elements in the URL patterns are plural (user_equipments, base_stations, cells, attributes, methods),
 except for the RIC and simulation engine, which are singular (ric, sim_engine).
 """,
-    model=NON_REASONING_MODEL,
+    model=OPENAI_NON_REASONING_MODEL_NAME,
 )

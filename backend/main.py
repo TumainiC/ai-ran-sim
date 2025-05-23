@@ -1,3 +1,7 @@
+import dotenv
+
+dotenv.load_dotenv()
+
 import asyncio
 import websockets
 import json
@@ -9,9 +13,7 @@ from openai.types.responses import ResponseTextDeltaEvent, ResponseFunctionToolC
 from utils import setup_logging
 from knowledge_layer import KnowledgeRouter
 from agents import Runner
-import dotenv
 
-dotenv.load_dotenv()
 from intelligence_layer import network_chat_agent
 
 setup_logging()
@@ -89,7 +91,9 @@ async def handle_query_knowledge(websocket, simulation_engine, knowledge_router,
     await websocket.send(response.to_json())
 
 
-async def handle_user_chat(websocket, simulation_engine, knowledge_router, data):
+async def handle_network_user_chat(
+    websocket, simulation_engine, knowledge_router, data
+):
     result = await user_chat_agent_function(data)
     response = WebSocketResponse(
         layer="intelligence_layer",
@@ -214,7 +218,7 @@ COMMAND_HANDLERS = {
     ("network_layer", "get_simulation_state"): handle_get_simulation_state,
     ("knowledge_layer", "get_routes"): handle_get_routes,
     ("knowledge_layer", "query_knowledge"): handle_query_knowledge,
-    ("intelligence_layer", "network_user_chat"): handle_user_chat,
+    ("intelligence_layer", "network_user_chat"): handle_network_user_chat,
     ("intelligence_layer", "network_engineer_chat"): handle_network_engineer_chat,
 }
 
