@@ -9,6 +9,7 @@ from .network_knowledge_agent import (
     reasoning_network_knowledge_agent,
 )
 from .user_chat.model_recommender_agents import model_recommender_orchestrator
+from knowledge_layer.knowledge_sources.ue_details import get_ues
 
 @cache
 def get_config():
@@ -51,15 +52,18 @@ user_chat_agent = Agent(
     handoffs = [model_recommender_orchestrator, ue_add_agent]
 )
 
-
-async def user_chat_agent_function(data):
-    """This function receives the user request sychronously, because it may require parsing in the ui to render"""
-    
-    map = {
+map = {
         "addUE": ue_add_agent,
         "modelSuggestion": model_recommender_orchestrator,
         "other": user_chat_agent
     }
+
+async def user_chat_agent_function(data):
+    """This function receives the user request sychronously, because it may require parsing in the ui to render"""
+
+    if data["type"] == "get_ue":
+        ues = get_ues()
+        return {"ues" : ues}
 
     agent = user_chat_agent
     if data["type"] in map:

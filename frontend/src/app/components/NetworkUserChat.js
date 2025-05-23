@@ -78,7 +78,13 @@ function CuratedConfigMessage({ content, onDeploy, chatDisabled }) {
 
   const networkSliceOptions = ["eMBB", "uRLLC", "mMTC"];
   const deploymentLocationOptions = ["Edge", "cloud"];
-  const modelOptions = content.models?.map((m) => m.model_name) || [];
+
+  const uniqueModels = content.models?.filter((model, index, self) =>
+    index === self.findIndex((t) => (
+      t.id === model.id
+    ))
+  ) || [];
+  const modelOptions = uniqueModels?.map((m) => m.model_name) || [];
 
   const canSubmit = networkSlice && deploymentLocation && selectedModel && !okClicked && !chatDisabled;
 
@@ -175,7 +181,8 @@ function CuratedConfigMessage({ content, onDeploy, chatDisabled }) {
         OK
       </button>
       <div className="mt-4">
-        {content.models?.map((model, idx) => (
+        {/* {{change 2: Use uniqueModels for rendering}} */}
+        {uniqueModels?.map((model, idx) => (
           <div key={model.id || idx} className="border rounded p-2 mb-2 flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <span className="font-semibold">{`${idx + 1}. ${model.model_name}`}</span>
@@ -197,6 +204,7 @@ function CuratedConfigMessage({ content, onDeploy, chatDisabled }) {
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-700">
               <BulbIcon />
+              {/* {{change 3: Use model.rationale for the description}} */}
               <span>
                 {`${idx + 1}. ${model.model_name} -> ${model.rationale}`}
               </span>
@@ -229,6 +237,16 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
     } else {
       setSelectedButton(buttonName);
       setChatDisabled(false);
+       if (buttonName === "modelSuggestion") {
+        // Make the API call here
+        sendMessage(
+          "intelligence_layer",
+          "network_user_chat",
+          {
+            type: "get_ue",
+          }
+        );
+      }
     }
   };
 
@@ -356,6 +374,11 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
       ]);
     } else if (eventType === "message_output_item") {
       const message_output = event.message_output;
+      // Add this block to check for "ues" key and log it.
+      if (message_output && message_output.ues) {
+        console.log("ues:", message_output.ues);
+        return;
+      }
       setMessages((prevMessages) => {
         // Remove any "thinking" message before adding the new one
         const filtered = prevMessages.filter((msg) => msg.role !== "thinking");

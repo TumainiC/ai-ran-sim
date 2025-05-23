@@ -1,3 +1,4 @@
+import json
 import random
 from agents import function_tool
 
@@ -8,6 +9,12 @@ class UEDetails:
 
     def __repr__(self):
         return f"UEDetails(imsi={self.IMSI}, NETWORK_SLICE={self.NETWORK_SLICES})"
+    
+    def to_dict(self):
+        return {
+            'IMSI': self.IMSI,
+            'NETWORK_SLICES': self.NETWORK_SLICES
+        }
 
 available_ues: dict[str, UEDetails] = {}
 
@@ -56,7 +63,10 @@ def get_ues():
     """
         gets all the ue details that are saved in available ues
     """
-    return available_ues.values()
+    ues = list(available_ues.values())
+    return [ue.to_dict() for ue in ues]
+    
+    
 
 network_slices = ["eMBB", "urLLC", "mMTC"]
 for i in range(50):
