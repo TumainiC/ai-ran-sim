@@ -133,6 +133,12 @@ class UE:
         ]
 
     def authenticate_and_register(self):
+        if self.current_bs is None:
+            print(
+                f"UE {self.ue_imsi}: No base station to authenticate and register with."
+            )
+            return False
+
         # simplified one step authentication and registration implementation
         random_slice_type = random.choice(list(settings.NETWORK_SLICES.keys()))
         registration_msg = {
@@ -205,6 +211,9 @@ class UE:
             self.serving_cell_history.pop(0)
 
     def deregister(self):
+        if self.current_bs is None:
+            print(f"UE {self.ue_imsi}: No base station to deregister from.")
+            return False
         print(f"UE {self.ue_imsi}: Sending deregistration request.")
         self.current_bs.handle_deregistration_request(self)
         self.set_current_cell(None)
@@ -226,6 +235,9 @@ class UE:
                 self.position_y = round(self.position_y)
 
     def monitor_signal_strength(self):
+        if self.simulation_engine is None:
+            return False
+
         # monitors the downlink signal strength from the cells
 
         self.downlink_received_power_dBm_dict = {}
@@ -320,6 +332,12 @@ class UE:
         # )
 
     def check_rrc_meas_events_to_monitor(self):
+        if self.current_bs is None:
+            print(
+                f"UE {self.ue_imsi}: No base station to report RRC measurement events."
+            )
+            return False
+
         cell_signal_map = {
             v["cell"].cell_id: v["received_power_with_cio_dBm"]
             for v in self.downlink_received_power_dBm_dict.values()

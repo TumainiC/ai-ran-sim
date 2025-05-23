@@ -155,10 +155,6 @@ def ric_load_xapps_explainer(sim, knowledge_router, query_key, params):
     tags=[KnowledgeTag.KNOWLEDGE_GUIDE, KnowledgeTag.RIC],
     related=[
         (KnowledgeRelationship.SET_BY_METHOD, "/docs/ric/methods/load_xApps"),
-        (
-            KnowledgeRelationship.CALLED_BY_METHOD,
-            "/docs/sim_engine/methods/network_setup",
-        ),
     ],
 )
 def ric_xapps_root(sim, knowledge_router, query_key, params):

@@ -7,7 +7,7 @@ import BaseStationDashboard from "./components/BaseStationDashboard";
 import LogDashboard from "./components/LogDashboard";
 import KnowledgeLayerDashboard from "./components/KnowledgeLayerDashboard";
 import NetworkEngineerChat from "./components/NetworkEngineerChat";
-import UserChat from "./components/UserChat";
+import UserChat from "./components/NetworkUserChat";
 
 export default function Home() {
   const [websocket, setWebsocket] = useState(null);
@@ -23,7 +23,6 @@ export default function Home() {
 
   const wsMessageHandler = (event) => {
     console.log("WebSocket message received:", event);
-    debugger
     if (event.data) {
       const messageData = JSON.parse(event.data);
 
@@ -178,17 +177,17 @@ export default function Home() {
           }
           onClick={() => setRightTabListIndex("network_engineer_chat")}
         >
-          Network Engineer Chat
+          Chat as Network Engineer
         </a>
         <a
           role="tab"
           className={
             "tab " +
-            (rightTabListIndex === "user_chat" ? "tab-active" : "")
+            (rightTabListIndex === "network_user_chat" ? "tab-active" : "")
           }
-          onClick={() => setRightTabListIndex("user_chat")}
+          onClick={() => setRightTabListIndex("network_user_chat")}
         >
-          User Chat
+          Chat as Network User
         </a>
         <a
           role="tab"
@@ -227,7 +226,9 @@ export default function Home() {
         />
       </div>
       <div
-        className={rightTabListIndex === "user_chat" ? "flex-1 flex min-h-0" : "hidden"}
+        className={
+          rightTabListIndex === "network_user_chat" ? "flex-1 flex min-h-0" : "hidden"
+        }
       >
         <UserChat
           streamedChatEvent={userChatEvent}

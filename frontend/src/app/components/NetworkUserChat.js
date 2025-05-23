@@ -388,7 +388,7 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
     // Send the message using the correct signature for the backend API
     sendMessage(
       "intelligence_layer",
-      "user_chat",
+      "network_user_chat",
       chatHistory.map(({ role, content }) => ({ role, content }))
     );
     setMessages((prev) => [
