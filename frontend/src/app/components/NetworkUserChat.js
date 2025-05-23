@@ -401,6 +401,16 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
     ]);
     setInput("");
     setChatDisabled(true);
+    // Add "thinking" animation after user message (standard user messages only)
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "thinking",
+        content: "",
+        time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+        id: "__thinking__"
+      }
+    ]);
   };
 
   const handleKeyDown = (e) => {
@@ -448,12 +458,6 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
                     role: "assistant",
                     content: "Your selection will be deployed in some time",
                     time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
-                  },
-                  {
-                    role: "thinking",
-                    content: "",
-                    time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
-                    id: "__thinking__"
                   }
                 ]);
                 setChatDisabled(true);
