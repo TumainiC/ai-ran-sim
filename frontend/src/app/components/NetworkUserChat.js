@@ -1,4 +1,80 @@
 import React, { useState, useEffect, useRef } from "react";
+
+// Compact UESelector: Groups IMSIs by sorted slice group
+function groupUEsBySlices(ues) {
+  const groups = {};
+  for (const { IMSI, NETWORK_SLICES } of ues) {
+    // Sort to form a unique key for the group, e.g., "eMBB,urLLC"
+    const key = NETWORK_SLICES.slice().sort().join(", ");
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(IMSI);
+  }
+  return groups;
+}
+
+export function UESelector({ ues = [], onSelect, onOk, chatDisabled }) {
+  const [selectedIMSI, setSelectedIMSI] = useState(new Set());
+  const [warning, setWarning] = useState("");
+
+  if (!ues.length) return <div>No UEs found</div>;
+
+  const groups = groupUEsBySlices(ues);
+
+  const toggleIMSI = imsi => {
+    setWarning("");
+    const newSet = new Set(selectedIMSI);
+    if (newSet.has(imsi)) newSet.delete(imsi);
+    else newSet.add(imsi);
+    setSelectedIMSI(newSet);
+    onSelect && onSelect([...newSet]);
+  };
+
+  const handleOk = () => {
+    if (selectedIMSI.size < 1) {
+      setWarning("Please select at least one UE before proceeding.");
+      return;
+    }
+    onOk && onOk([...selectedIMSI]);
+    setWarning("");
+  };
+
+  return (
+    <div style={{ maxHeight: 400, overflowY: "auto", padding: 8 }}>
+      <div className="font-semibold mb-2">Select UEs to proceed:</div>
+      {Object.entries(groups).map(([sliceGroup, imsies]) => (
+        <div key={sliceGroup} style={{ marginBottom: 12, borderBottom: "1px solid #222" }}>
+          <div className="font-semibold text-sm py-1">{sliceGroup}</div>
+          <div className="flex flex-wrap gap-x-3 gap-y-2 pl-2">
+            {imsies.map(imsi => (
+              <label key={imsi} style={{ fontSize: 13, display: "inline-flex", alignItems: "center" }}>
+                <input
+                  type="checkbox"
+                  checked={selectedIMSI.has(imsi)}
+                  onChange={() => toggleIMSI(imsi)}
+                  style={{ marginRight: 5, accentColor: '#4ade80' }}
+                  disabled={chatDisabled}
+                />
+                <span>{imsi}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
+      <div className="flex gap-3 items-center pt-2">
+        <button
+          className="btn btn-primary btn-sm"
+          style={{ fontSize: 14, padding: '2px 18px' }}
+          disabled={chatDisabled}
+          onClick={handleOk}
+        >
+          OK
+        </button>
+        <span className="text-xs text-gray-500">{selectedIMSI.size} selected</span>
+      </div>
+      {warning && <div className="text-xs text-red-500 mt-1">{warning}</div>}
+    </div>
+  );
+}
 import dayjs from "dayjs";
 import Image from "next/image";
 import agent_icon from "../../assets/agent_icon.png";
@@ -99,6 +175,7 @@ function CuratedConfigMessage({ content, onDeploy, chatDisabled }) {
       deployment_location: deploymentLocation,
       model: selectedModel,
       model_id: selectedModelObj ? selectedModelObj.id : undefined,
+      ues: selectedUEIMSI
     };
     // Placeholder API call
     console.log("Deploying selection:", logPayload);
@@ -216,12 +293,10 @@ function CuratedConfigMessage({ content, onDeploy, chatDisabled }) {
   );
 }
 
-// UserChat is a chat interface similar to NetworkEngineerChat, but with its own user history context.
-// The sendMessage function should use a different identifier to keep histories separate.
-
 export default function UserChat({ sendMessage, streamedChatEvent }) {
   const [messages, setMessages] = useState([]);
   const [chatDisabled, setChatDisabled] = useState(false);
+  const [selectedUEIMSI, setSelectedUEIMSI] = useState([]);
   const [input, setInput] = useState("");
   const messageContainerRef = useRef(null);
   // {{change 1: Add state for button selection and warning}}
@@ -374,9 +449,16 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
       ]);
     } else if (eventType === "message_output_item") {
       const message_output = event.message_output;
-      // Add this block to check for "ues" key and log it.
       if (message_output && message_output.ues) {
-        console.log("ues:", message_output.ues);
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            role: "ue_selector",
+            content: message_output.ues,
+            time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+          }
+        ]);
+        setChatDisabled(false);
         return;
       }
       setMessages((prevMessages) => {
@@ -421,6 +503,10 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
 
   const handleSend = () => {
     if (!input.trim()) return;
+    if (messages.some(m => m.role === "ue_selector") && selectedUEIMSI.length === 0) {
+      alert("Please select at least one UE and press OK before proceeding.");
+      return;
+    }
 
     const chatHistory = [];
     for (let i = 0; i < messages.length; i++) {
@@ -484,6 +570,7 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
     const isAssistant = msg.role === "assistant";
     const isMonotone = msg.role === "monotone";
     const isCuratedConfig = msg.role === "curated_config";
+    const isUESelector = msg.role === "ue_selector";
     const time = msg.time;
 
     if (isCuratedConfig) {
@@ -545,6 +632,34 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
           </div>
           <div className="chat-bubble chat-bubble-success whitespace-pre-wrap" style={{ minWidth: 200, maxWidth: 400 }}>
             <ThinkingMessage />
+          </div>
+        </div>
+      );
+    }
+
+    if (isUESelector) {
+      return (
+        <div key={index} className="chat chat-start">
+          <div className="chat-image avatar">
+            <Image alt="Agent Icon" src={agent_icon} className="w-10 h-10 object-cover" width={40} height={40} />
+          </div>
+          <div className="chat-header">
+            Assistant
+            <time className="text-xs opacity-50">{time}</time>
+          </div>
+          <div className="chat-bubble chat-bubble-success" style={{ minWidth: 240, maxWidth: 560, padding: 0 }}>
+            <UESelector
+              ues={msg.content}
+              chatDisabled={chatDisabled}
+              onSelect={selectedIMSIs => {
+                // Optionally handle selection changes here (not mandatory for this flow)
+              }}
+              onOk={selectedIMSIs => {
+                // Save the selected IMSIs in parent state and enable chat
+                setSelectedUEIMSI(selectedIMSIs);
+                setChatDisabled(false); // Now enable chat!
+              }}
+            />
           </div>
         </div>
       );
