@@ -2,6 +2,8 @@ from functools import cache
 import json
 from agents import Agent, ModelSettings, RunConfig, Runner
 from openai.types.responses import ResponseTextDeltaEvent
+
+from intelligence_layer.user_chat.ue_chat_agent import ue_add_agent
 from .network_knowledge_agent import (
     non_reasoning_network_knowledge_agent,
     reasoning_network_knowledge_agent,
@@ -46,15 +48,23 @@ user_chat_agent = Agent(
             - For the two tasks above: Immediately transfer the conversation to an agent.
             - For all other general user queries: Handle and clarify these yourself. Do not hand off to an agent.
     """,
-    handoffs = [model_recommender_orchestrator]
+    handoffs = [model_recommender_orchestrator, ue_add_agent]
 )
 
 
 async def user_chat_agent_function(data):
     """This function receives the user request sychronously, because it may require parsing in the ui to render"""
-    print(data)
+    
+    map = {
+        "addUE": ue_add_agent,
+        "modelSuggestion": model_recommender_orchestrator,
+        "other": user_chat_agent
+    }
+
     agent = user_chat_agent
-    result =  Runner.run_streamed(agent, data , run_config=get_config())
+    if data["type"] in map:
+        agent = map[data["type"]]
+    result =  Runner.run_streamed(agent, data["chat"] , run_config=get_config())
     collected = []
     async for event in result.stream_events():
         if event.type == "raw_response_event" and isinstance(event.data, ResponseTextDeltaEvent):

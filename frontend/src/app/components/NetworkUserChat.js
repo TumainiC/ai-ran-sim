@@ -216,6 +216,40 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
   const [chatDisabled, setChatDisabled] = useState(false);
   const [input, setInput] = useState("");
   const messageContainerRef = useRef(null);
+  // {{change 1: Add state for button selection and warning}}
+  const [selectedButton, setSelectedButton] = useState(null);
+  const [showWarning, setShowWarning] = useState(false);
+  const [tempSelectedButton, setTempSelectedButton] = useState(null);
+
+  // {{change 2: Function to handle button clicks}}
+  const handleButtonClick = (buttonName) => {
+    if (selectedButton && selectedButton !== buttonName && messages.length > 0) {
+      setTempSelectedButton(buttonName);
+      setShowWarning(true);
+    } else {
+      setSelectedButton(buttonName);
+      setChatDisabled(false);
+    }
+  };
+
+  // {{change 3: Function to clear chat and reset state}}
+  const clearChat = () => {
+    setMessages([]);
+    setChatDisabled(false);
+    setShowWarning(false);
+  };
+
+  // {{change 4: Function to confirm chat deletion}}
+  const confirmClearChat = () => {
+    clearChat();
+    setSelectedButton(tempSelectedButton);
+    setTempSelectedButton(null);
+  };
+
+  const cancelClearChat = () => {
+    setShowWarning(false);
+    setTempSelectedButton(null);
+  }
 
   function checkAndHandleMessages(message_output, prevMessages) {
     // Detect curated config structure: has models, network_slice, deployment_location
@@ -384,12 +418,14 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
       role: "user",
       content: input,
     });
-    // Use a different identifier for user chat history
-    // Send the message using the correct signature for the backend API
+   
     sendMessage(
       "intelligence_layer",
       "network_user_chat",
-      chatHistory.map(({ role, content }) => ({ role, content }))
+      {
+        type: selectedButton,
+        chat: chatHistory.map(({ role, content }) => ({ role, content }))
+      }
     );
     setMessages((prev) => [
       ...prev,
@@ -549,8 +585,11 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
       <div className="p-4 border-t border-base-300 bg-base-100 flex items-center gap-2">
         <button
           onClick={() => {
-            setMessages([]);
-            setChatDisabled(false);
+            if (messages.length > 0) {
+              setShowWarning(true);
+            } else {
+              clearChat();
+            }
           }}
           className="btn btn-success h-full w-20"
           type="button"
@@ -564,15 +603,55 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
           placeholder="Send a message..."
           className="textarea textarea-bordered flex-1 resize-none"
           rows={1}
+          disabled={!selectedButton}
         />
         <button
           onClick={handleSend}
           className="btn btn-primary h-full w-20 "
-          disabled={chatDisabled}
+          disabled={chatDisabled || !selectedButton}
         >
           <span className="text-xl">SEND</span>
         </button>
       </div>
+
+      {/* Dropdown */}
+      <div className="p-4">
+        <select
+          className="select select-bordered w-full max-w-xs"
+          onChange={(e) => handleButtonClick(e.target.value)}
+          value={selectedButton || ""}
+        >
+          <option value="" disabled>
+            Select an option
+          </option>
+          <option value="modelSuggestion">Model Suggestion</option>
+          <option value="addUE">Add UE</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      {/* Warning Modal */}
+      {showWarning && (
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg">Warning!</h3>
+            <p className="py-4">
+              Are you sure, your chat history will be deleted?
+            </p>
+            <div className="modal-action">
+              <button className="btn btn-ghost" onClick={() => {
+                setShowWarning(false);
+                setTempSelectedButton(null);
+              }}>
+                Cancel
+              </button>
+              <button className="btn btn-primary" onClick={confirmClearChat}>
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

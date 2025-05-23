@@ -1,10 +1,11 @@
 from functools import cache
 from agents import function_tool
 from pymongo import MongoClient
-from typing import List, Dict, Any
+from pydantic import BaseModel, Field
+from typing import Any
 import os
 
-MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://gregorymjenson6:8zZiP1OjOJDDanT4@cluster1.fjicsdx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster1")
+MONGO_URI = os.getenv("MONGO_URI")
 DB_NAME = "cranfield_ai_services_saved"
 COLLECTION_NAME = "ai_services"
 
@@ -15,7 +16,7 @@ def get_mongo_collection():
     return db[COLLECTION_NAME]
 
 @function_tool
-def fetch_task_types() -> List[str]:
+def fetch_task_types() -> list[str]:
     """Return all unique task types in the collection."""
     print("LOG: Fetching the task types")
     collection = get_mongo_collection()
@@ -23,7 +24,7 @@ def fetch_task_types() -> List[str]:
     return task_types
 
 @function_tool
-def fetch_model_info(task_types: List[str]) -> List[Dict[str, Any]]:
+def fetch_model_info(task_types: list[str]) -> list[dict[str, Any]]:
     """
     Fetch model documents for the given task_types, with selected fields.
     """
@@ -45,10 +46,6 @@ def fetch_model_info(task_types: List[str]) -> List[Dict[str, Any]]:
         del doc['_id']
     return docs
 
-
-from pydantic import BaseModel, Field
-from typing import List, Optional
-
 class SuggestedModel(BaseModel):
     id: str = Field(description = "The Id of the model in the database")
     model_name: str =  Field(description = "The name of the model")
@@ -56,15 +53,15 @@ class SuggestedModel(BaseModel):
     rationale: str = Field(description = "detailed justification, referencing relevant readme or metadata for choosing the model")
 
 class SuggestedModelsOutput(BaseModel):
-    models: List[SuggestedModel] = Field(description = "The list of suggested models for the user")
+    models: list[SuggestedModel] = Field(description = "The list of suggested models for the user")
 
 
 class OrchestratorOutput(BaseModel):
-    models: Optional[List[SuggestedModel]]
-    network_slice: Optional[str] = Field(description= "The network slice that is suggested to the user")
-    deployment_location: Optional[str] = Field(description= "The deployment location suggested to the user")
-    questions: Optional[str] = Field(description="Clarification questions to the user, to clarify the requirement and to properly recommend attributes")
-    message: Optional[str] = Field(description="Any other message to the user, only if the recommendation is not possible")
+    models: None | list[SuggestedModel]
+    network_slice: None | str = Field(description= "The network slice that is suggested to the user")
+    deployment_location: None | str = Field(description= "The deployment location suggested to the user")
+    questions: None | str = Field(description="Clarification questions to the user, to clarify the requirement and to properly recommend attributes")
+    message: None | str = Field(description="Any other message to the user, only if the recommendation is not possible")
 
 from agents import Agent
 

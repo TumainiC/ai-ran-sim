@@ -54,7 +54,6 @@ export default function Home() {
           setKnowledgeQueryResponse(response);
         }
       } else if(layer == "intelligence_layer_user"){
-        debugger;
         setUserChatEvent(response);
       } else if (layer === "intelligence_layer") {
             setNetworkEngineerChatEvent(response);
