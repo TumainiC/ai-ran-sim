@@ -184,9 +184,9 @@ export default function Home() {
           role="tab"
           className={
             "tab " +
-            (rightTabListIndex === "user_chat" ? "tab-active" : "")
+            (rightTabListIndex === "network_user_chat" ? "tab-active" : "")
           }
-          onClick={() => setRightTabListIndex("user_chat")}
+          onClick={() => setRightTabListIndex("network_user_chat")}
         >
           Chat as Network User
         </a>
@@ -228,7 +228,7 @@ export default function Home() {
       </div>
       <div
         className={
-          rightTabListIndex === "user_chat" ? "flex-1 flex min-h-0" : "hidden"
+          rightTabListIndex === "network_user_chat" ? "flex-1 flex min-h-0" : "hidden"
         }
       >
         <UserChat
