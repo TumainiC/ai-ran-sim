@@ -6,9 +6,8 @@ import UEDashboard from "./components/UEDashboard";
 import BaseStationDashboard from "./components/BaseStationDashboard";
 import LogDashboard from "./components/LogDashboard";
 import KnowledgeLayerDashboard from "./components/KnowledgeLayerDashboard";
-import ChatInterface from "./components/ChatInterface";
 import NetworkEngineerChat from "./components/NetworkEngineerChat";
-import UserChat from "./components/UserChat";
+import UserChat from "./components/NetworkUserChat";
 
 export default function Home() {
   const [websocket, setWebsocket] = useState(null);
@@ -179,7 +178,7 @@ export default function Home() {
           }
           onClick={() => setRightTabListIndex("network_engineer_chat")}
         >
-          Network Engineer Chat
+          Chat as Network Engineer
         </a>
         <a
           role="tab"
@@ -189,7 +188,7 @@ export default function Home() {
           }
           onClick={() => setRightTabListIndex("user_chat")}
         >
-          User Chat
+          Chat as Network User
         </a>
         <a
           role="tab"
