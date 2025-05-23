@@ -113,5 +113,5 @@ dmypy.json
 
 # VS Code
 .vscode/
-
+.idea/
 # End of file

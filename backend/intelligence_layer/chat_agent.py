@@ -1,4 +1,5 @@
 from functools import cache
+import json
 from agents import Agent, ModelSettings, RunConfig, Runner
 from openai.types.responses import ResponseTextDeltaEvent
 from .network_knowledge_agent import (
@@ -60,4 +61,7 @@ async def user_chat_agent_function(data):
             print(event.data.delta, end = " ", flush=True)
             collected.append(event.data.delta)
     result = "".join(collected)
-    return result
+    try:
+        return json.loads(result)
+    except Exception:
+        return result
