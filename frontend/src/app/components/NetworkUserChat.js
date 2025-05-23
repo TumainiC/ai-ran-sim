@@ -146,7 +146,7 @@ function ThinkingMessage() {
 }
 
 // CuratedConfigMessage subcomponent
-function CuratedConfigMessage({ content, onDeploy, chatDisabled }) {
+function CuratedConfigMessage({ content, onDeploy, chatDisabled, ues }) {
   const [networkSlice, setNetworkSlice] = useState(content.network_slice || "");
   const [deploymentLocation, setDeploymentLocation] = useState(content.deployment_location || "");
   const [selectedModel, setSelectedModel] = useState("");
@@ -175,7 +175,7 @@ function CuratedConfigMessage({ content, onDeploy, chatDisabled }) {
       deployment_location: deploymentLocation,
       model: selectedModel,
       model_id: selectedModelObj ? selectedModelObj.id : undefined,
-      ues: selectedUEIMSI
+      ues: ues
     };
     // Placeholder API call
     console.log("Deploying selection:", logPayload);
@@ -596,7 +596,8 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
             <CuratedConfigMessage
               content={msg.content}
               chatDisabled={chatDisabled}
-              onDeploy={({ network_slice, deployment_location, model, model_id }) => {
+              ues={selectedUEIMSI}
+              onDeploy={({ network_slice, deployment_location, model, model_id, ues }) => {
                 // Add deployment message and disable chat, then add thinking animation
                 setMessages((prev) => [
                   ...prev,
