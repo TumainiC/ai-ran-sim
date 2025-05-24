@@ -14,7 +14,8 @@ export default function Home() {
   const [wsConnectionStatus, setWsConnectionStatus] = useState("disconnected");
   const [simulationState, setSimulationState] = useState(null);
   const [knowledgeQueryResponse, setKnowledgeQueryResponse] = useState(null);
-  const [streamedChatEvent, setStreamedChatEvent] = useState(null);
+  const [networkEngineerChatEvent, setNetworkEngineerChatEvent] = useState(null);
+  const [userChatEvent, setUserChatEvent] = useState(null);
   const [bottomTabListIndex, setBottomTabListIndex] = useState("ue_dashboard");
   const [rightTabListIndex, setRightTabListIndex] = useState("network_engineer_chat");
   const [knowledgeLayerRoutes, setKnowledgeLayerRoutes] = useState({});
@@ -52,13 +53,10 @@ export default function Home() {
           console.log("Knowledge Layer Value Response:", response);
           setKnowledgeQueryResponse(response);
         }
+      } else if(layer == "intelligence_layer_user"){
+        setUserChatEvent(response);
       } else if (layer === "intelligence_layer") {
-        if (command === "chat_event_stream") {
-          console.log("Chat Event Stream:", response);
-          setStreamedChatEvent(response);
-        } else {
-          console.error(`Unknown command from intelligence_layer: ${command}`);
-        }
+            setNetworkEngineerChatEvent(response);
       } else {
         console.error(`Unknown layer: ${layer}`);
       }
@@ -221,8 +219,8 @@ export default function Home() {
         }
       >
         <NetworkEngineerChat
-          streamedChatEvent={streamedChatEvent}
-          setStreamedChatEvent={setStreamedChatEvent}
+          streamedChatEvent={networkEngineerChatEvent}
+          setStreamedChatEvent={setNetworkEngineerChatEvent}
           sendMessage={sendMessage}
         />
       </div>
@@ -232,8 +230,8 @@ export default function Home() {
         }
       >
         <UserChat
-          streamedChatEvent={streamedChatEvent}
-          setStreamedChatEvent={setStreamedChatEvent}
+          streamedChatEvent={userChatEvent}
+          setStreamedChatEvent={setUserChatEvent}
           sendMessage={sendMessage}
         />
       </div>

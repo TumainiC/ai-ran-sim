@@ -96,7 +96,7 @@ async def handle_network_user_chat(
 ):
     result = await user_chat_agent_function(data)
     response = WebSocketResponse(
-        layer="intelligence_layer",
+        layer="intelligence_layer_user",
         command="chat_event_stream",
         response={"event_type": "message_output_item", "message_output": result},
         error=None,
