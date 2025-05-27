@@ -225,6 +225,7 @@ COMMAND_HANDLERS = {
 
 async def websocket_handler(websocket):
     simulation_engine = SimulationEngine(websocket)
+    simulation_engine.reset_network()
     simulation_engine.network_setup()
     knowledge_router = KnowledgeRouter()
     knowledge_router.import_routes(simulation_engine)

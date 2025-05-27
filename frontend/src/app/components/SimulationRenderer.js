@@ -1,12 +1,28 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 
 export default function SimulationRenderer({ simulationState }) {
-  const backgroudCanvasRef = useRef(null);
+  const backgroundCanvasRef = useRef(null);
   const bsCanvasRef = useRef(null);
   const ueCanvasRef = useRef(null);
 
+  // Add state for mouse position
+  const [mousePos, setMousePos] = useState(null);
+
+  // Mouse move handler
+  const handleMouseMove = (e) => {
+    const rect = backgroundCanvasRef.current.getBoundingClientRect();
+    const x = Math.round(((e.clientX - rect.left) / rect.width) * canvasWidth);
+    const y = Math.round(((e.clientY - rect.top) / rect.height) * canvasHeight);
+    setMousePos({ x, y });
+  };
+
+  // Mouse leave handler
+  const handleMouseLeave = () => {
+    setMousePos(null);
+  };
+
   const renderBackground = () => {
-    const canvas = backgroudCanvasRef.current;
+    const canvas = backgroundCanvasRef.current;
     const ctx = canvas.getContext("2d");
 
     // Set the background color to white
@@ -182,7 +198,7 @@ export default function SimulationRenderer({ simulationState }) {
       style={{ width: `${canvasWidth}px`, height: `${canvasHeight}px` }}
     >
       <canvas
-        ref={backgroudCanvasRef}
+        ref={backgroundCanvasRef}
         width={canvasWidth}
         height={canvasHeight}
         id="background_canvas"
@@ -201,7 +217,27 @@ export default function SimulationRenderer({ simulationState }) {
         height={canvasHeight}
         id="ue_canvas"
         style={{ position: "absolute", top: 0, left: 0 }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
       />
+      {mousePos && (
+        <div
+          style={{
+            position: "absolute",
+            left: mousePos.x ,
+            top: mousePos.y - 20,
+            background: "rgba(0, 0, 255, 0.9)",
+            border: "1px solid #ccc",
+            borderRadius: "4px",
+            padding: "2px 6px",
+            fontSize: "12px",
+            pointerEvents: "none",
+            zIndex: 100,
+          }}
+        >
+          ({mousePos.x}, {mousePos.y})
+        </div>
+      )}
     </div>
   );
 }

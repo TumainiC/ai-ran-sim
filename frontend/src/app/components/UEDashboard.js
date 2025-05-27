@@ -17,6 +17,7 @@ export default function UEDashboard({ simulationState }) {
           <thead>
             <tr>
               <th>UE IMSI</th>
+              <td>Operation Region</td>
               <td>Current Cell</td>
               <td>Position</td>
               <td>Slice / QoS</td>
@@ -30,6 +31,12 @@ export default function UEDashboard({ simulationState }) {
             {simulationState.UE_list.map((ue) => (
               <tr key={ue.ue_imsi}>
                 <th>{ue.ue_imsi}</th>
+                <td>
+                  X: {ue.operation_region["min_x"]} -{" "}
+                  {ue.operation_region["max_x"]}, Y:{" "}
+                  {ue.operation_region["min_y"]} -{" "}
+                  {ue.operation_region["max_y"]}
+                </td>
                 <td>{ue.current_cell}</td>
                 <td>
                   X: {ue.vis_position_x}, Y: {ue.vis_position_y}
