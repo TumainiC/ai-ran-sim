@@ -51,16 +51,16 @@ export function UESelector({ ues = [], onSelect, onOk, chatDisabled }) {
   };
 
   return (
-    <div style={{ maxHeight: 400, overflowY: "auto", padding: 8 }}>
-      <div className="font-semibold mb-2">Select UEs to proceed:</div>
+    <div className="bg-base-100 rounded-md p-4" style={{ maxHeight: 400, overflowY: "auto" }}>
+      <div className="font-semibold mb-2 text-base-content">Select UEs to proceed:</div>
       {/* Render groups of UEs by slice type */}
       {Object.entries(groups).map(([sliceGroup, imsies]) => (
-        <div key={sliceGroup} style={{ marginBottom: 12, borderBottom: "1px solid #222" }}>
-          <div className="font-semibold text-sm py-1">{sliceGroup}</div>
+        <div key={sliceGroup} style={{ marginBottom: 12, borderBottom: "1px solid #444" }}> {/* Changed border color */}
+          <div className="font-semibold text-sm py-1 text-base-content">{sliceGroup}</div> {/* Adjusted text color */}
           <div className="flex flex-wrap gap-x-3 gap-y-2 pl-2">
             {/* Render individual UE checkboxes */}
             {imsies.map(imsi => (
-              <label key={imsi} style={{ fontSize: 13, display: "inline-flex", alignItems: "center" }}>
+              <label key={imsi} className="text-base-content" style={{ fontSize: 13, display: "inline-flex", alignItems: "center" }}>
                 <input
                   type="checkbox"
                   checked={selectedIMSI.has(imsi)}
@@ -84,7 +84,7 @@ export function UESelector({ ues = [], onSelect, onOk, chatDisabled }) {
         >
           OK
         </button>
-        <span className="text-xs text-gray-500">{selectedIMSI.size} selected</span>
+        <span className="text-xs text-base-content">{selectedIMSI.size} selected</span>
       </div>
       {/* Display warning message if any */}
       {warning && <div className="text-xs text-red-500 mt-1">{warning}</div>}
