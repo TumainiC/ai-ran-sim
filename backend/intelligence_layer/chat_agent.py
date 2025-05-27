@@ -37,7 +37,7 @@ user_chat_agent = Agent(
     instructions= """
     You interact directly with end users of the network. Users may request various tasks. There are two specific requests to handle as follows:
 
-        1. Create new UE (User Equipment), also known as SIM
+        1. Create new subscription, which in network terms known as UE / SIM cards
             - Always hand off to a suitable agent.
             - Do not attempt to fulfill this request yourself.
 
@@ -52,23 +52,11 @@ user_chat_agent = Agent(
     handoffs = [model_recommender_orchestrator, ue_add_agent]
 )
 
-map = {
-        "addUE": ue_add_agent,
-        "modelSuggestion": model_recommender_orchestrator,
-        "other": user_chat_agent
-    }
 
 async def user_chat_agent_function(data):
     """This function receives the user request sychronously, because it may require parsing in the ui to render"""
 
-    if data["type"] == "get_ue":
-        ues = get_ues()
-        return {"ues" : ues}
-
-    agent = user_chat_agent
-    if data["type"] in map:
-        agent = map[data["type"]]
-    result =  Runner.run_streamed(agent, data["chat"] , run_config=get_config())
+    result =  Runner.run_streamed(user_chat_agent, data["chat"] , run_config=get_config())
     collected = []
     async for event in result.stream_events():
         if event.type == "raw_response_event" and isinstance(event.data, ResponseTextDeltaEvent):
