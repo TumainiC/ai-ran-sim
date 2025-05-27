@@ -27,39 +27,10 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
   // Ref for the message container to enable auto-scrolling
   const messageContainerRef = useRef(null);
 
-  // State for managing the selected chat mode button (e.g., Model Suggestion)
-  const [selectedButton, setSelectedButton] = useState(null);
   // State to control visibility of the "Clear Chat" warning modal
   const [showWarning, setShowWarning] = useState(false);
-  // State to temporarily hold the selected button when a warning is shown
-  const [tempSelectedButton, setTempSelectedButton] = useState(null);
 
-  /**
-   * Handles clicks on the mode selection buttons (Model Suggestion, Add UE, etc.).
-   * Shows a warning if there's existing chat history before switching modes.
-   * @param {string} buttonName - The name of the button clicked, representing the chat mode.
-   */
-  const handleButtonClick = (buttonName) => {
-    // If a button is already selected and there are messages, show warning
-    if (selectedButton && selectedButton !== buttonName && messages.length > 0) {
-      setTempSelectedButton(buttonName); // Store the intended button
-      setShowWarning(true); // Show the warning modal
-    } else {
-      // Otherwise, set the selected button and enable chat
-      setSelectedButton(buttonName);
-      setChatDisabled(false);
-      // If "Model Suggestion" is selected, immediately request UE data
-       if (buttonName === "modelSuggestion") {
-        sendMessage(
-          "intelligence_layer", // Target layer
-          "network_user_chat", // Target agent/module
-          {
-            type: "get_ue", // Action type
-          }
-        );
-      }
-    }
-  };
+  // handleButtonClick removed entirely
 
   /**
    * Clears the chat messages and resets the chat state.
@@ -68,31 +39,18 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
     setMessages([]); // Clear all messages
     setChatDisabled(false); // Enable chat
     setShowWarning(false); // Hide warning modal
-    setSelectedButton(null); // Reset selected button
     setSelectedUEIMSI([]); // Clear selected UEs
   };
 
   /**
    * Confirms the clear chat action after the warning is accepted.
-   * Clears the chat and switches to the temporarily selected button mode.
+   * Just clears the chat.
    */
   const confirmClearChat = () => {
     setMessages([]); // Clear messages
     setChatDisabled(false); // Enable chat
     setShowWarning(false); // Hide warning
-    setSelectedButton(tempSelectedButton); // Set the intended button
-    setTempSelectedButton(null); // Clear the temporary button
     setSelectedUEIMSI([]); // Clear selected UEs
-    // If the confirmed selection is "modelSuggestion", trigger the get_ue call
-    if (tempSelectedButton === "modelSuggestion") {
-      sendMessage(
-        "intelligence_layer",
-        "network_user_chat",
-        {
-          type: "get_ue",
-        }
-      );
-    }
   };
 
   /**
@@ -330,9 +288,7 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
       "intelligence_layer", // Target layer
       "network_user_chat", // Target agent/module
       {
-        type: selectedButton, // Include the selected button type (chat mode)
         chat: chatHistory.map(({ role, content }) => ({ role, content })) // Include formatted chat history
-        // Note: selectedUEIMSI could potentially be added here if needed by the backend agent logic for subsequent messages
       }
     );
 
@@ -555,39 +511,25 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
         >
           <span className="text-xl">NEW</span>
         </button>
-        <textarea
+      <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Send a message..."
           className="textarea textarea-bordered flex-1 resize-none"
           rows={1}
-          disabled={!selectedButton}
+          disabled={chatDisabled}
         />
         <button
           onClick={handleSend}
           className="btn btn-primary h-full w-20 "
-          disabled={chatDisabled || !selectedButton}
+          disabled={chatDisabled}
         >
           <span className="text-xl">SEND</span>
         </button>
       </div>
 
-      {/* Dropdown */}
-      <div className="p-4">
-        <select
-          className="select select-bordered w-full max-w-xs"
-          onChange={(e) => handleButtonClick(e.target.value)}
-          value={selectedButton || ""}
-        >
-          <option value="" disabled>
-            Select an option
-          </option>
-          <option value="modelSuggestion">Model Suggestion</option>
-          <option value="addUE">Add UE</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
+      {/* Dropdown removed */}
 
       {/* Warning Modal */}
       {showWarning && (
