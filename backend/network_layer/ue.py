@@ -1,5 +1,3 @@
-import random
-
 import numpy as np
 from utils import (
     dist_between,
@@ -10,12 +8,16 @@ from utils import (
 from tabulate import tabulate
 
 import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class UE:
     def __init__(
         self,
         ue_imsi="IMSI_1",
+        operation_region={"min_x": 0, "min_y": 0, "max_x": 2000, "max_y": 2000},
         position_x=0,
         position_y=0,
         target_x=0,
@@ -25,6 +27,7 @@ class UE:
         connection_time=settings.UE_DEFAULT_TIMEOUT,
     ):
         self.ue_imsi = ue_imsi
+        self.operation_region = operation_region
         self.position_x = position_x
         self.position_y = position_y
         self.target_x = target_x
@@ -54,7 +57,10 @@ class UE:
         self.serving_cell_history = []
 
     def __repr__(self):
-        return f"UE(ue_imsi={self.ue_imsi}, position=({self.position_x}, {self.position_y}), target=({self.target_x}, {self.target_y}), speed_mps={self.speed_mps}, current_cell={self.current_cell.cell_id if self.current_cell else None})"
+        return f"UE(ue_imsi={self.ue_imsi}, \
+            operation_region={self.operation_region}, \
+            position=({self.position_x}, {self.position_y}), \
+            current_cell={self.current_cell.cell_id if self.current_cell else None})"
 
     @property
     def dist_to_target(self):
@@ -74,6 +80,21 @@ class UE:
     @property
     def target_reached(self):
         return self.dist_to_target == 0
+
+    def set_target(self, target_x, target_y):
+        assert (
+            target_x >= self.operation_region["min_x"]
+            and target_x <= self.operation_region["max_x"]
+        ), f"Target X {target_x} is out of operation region bounds."
+        assert (
+            target_y >= self.operation_region["min_y"]
+            and target_y <= self.operation_region["max_y"]
+        ), f"Target Y {target_y} is out of operation region bounds."
+        self.target_x = target_x
+        self.target_y = target_y
+        logger.info(
+            f"UE {self.ue_imsi}: Target set to ({self.target_x}, {self.target_y})"
+        )
 
     def set_downlink_bitrate(self, downlink_bitrate):
         self.downlink_bitrate = downlink_bitrate
@@ -140,15 +161,7 @@ class UE:
             return False
 
         # simplified one step authentication and registration implementation
-        random_slice_type = random.choice(list(settings.NETWORK_SLICES.keys()))
-        registration_msg = {
-            "ue": self,
-            "slice_type": random_slice_type,
-            "qos_profile": settings.NETWORK_SLICES[random_slice_type].copy(),
-        }
-        ue_reg_res = self.current_bs.handle_ue_authentication_and_registration(
-            self, registration_msg
-        )
+        ue_reg_res = self.current_bs.handle_ue_authentication_and_registration(self)
         self.slice_type = ue_reg_res["slice_type"]
         self.qos_profile = ue_reg_res["qos_profile"]
         self.setup_rrc_measurement_event_monitors(ue_reg_res["rrc_meas_events"])
@@ -363,6 +376,7 @@ class UE:
     def to_json(self):
         return {
             "ue_imsi": self.ue_imsi,
+            "operation_region": self.operation_region,
             "position_x": self.position_x,
             "position_y": self.position_y,
             "vis_position_x": self.position_x * settings.REAL_LIFE_DISTANCE_MULTIPLIER,

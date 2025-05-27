@@ -296,10 +296,8 @@ class BaseStation:
         print(event)
         self.ue_rrc_meas_events.append(event)
 
-    def handle_ue_authentication_and_registration(self, ue, ue_auth_reg_msg):
-        core_response = self.core_network.handle_ue_authentication_and_registration(
-            ue, ue_auth_reg_msg
-        )
+    def handle_ue_authentication_and_registration(self, ue):
+        core_response = self.core_network.handle_ue_authentication_and_registration(ue)
         ue_reg_data = {
             "ue": ue,
             "slice_type": core_response["slice_type"],

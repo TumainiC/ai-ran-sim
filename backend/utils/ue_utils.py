@@ -1,3 +1,7 @@
+import random
+import settings
+
+
 class RRCMeasurementEventMonitorBase:
     def __init__(self, event_id, time_to_trigger_in_sim_steps):
         self.event_id = event_id
@@ -123,3 +127,26 @@ def sinr_to_cqi(sinr_db):
         if sinr_db < t:
             return i
     return 15
+
+
+def get_random_ue_operational_region(step=100):
+    # Choose min/max x/y as multiples of 100
+    min_x = random.randint(0, (settings.NETWORK_COVERAGE_WIDTH - step) // step) * step
+    min_y = random.randint(0, (settings.NETWORK_COVERAGE_HEIGHT - step) // step) * step
+
+    # max_x/min_x at least 100m apart, at most map_size
+    max_x = (
+        random.randint((min_x + step) // step, settings.NETWORK_COVERAGE_WIDTH // step)
+        * step
+    )
+    max_y = (
+        random.randint((min_y + step) // step, settings.NETWORK_COVERAGE_HEIGHT // step)
+        * step
+    )
+
+    return {
+        "min_x": min_x,
+        "min_y": min_y,
+        "max_x": max_x,
+        "max_y": max_y,
+    }

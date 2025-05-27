@@ -7,3 +7,4 @@ from .ric_config import *
 from .sim_config import *
 from .channel_config import *
 from .agent_config import *
+from .core_config import *
