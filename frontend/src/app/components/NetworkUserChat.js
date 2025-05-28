@@ -28,7 +28,7 @@ For all other general questions, feel free to ask me directly — I’m here to 
   };
   // State for managing chat messages
   const [messages, setMessages] = useState([defaultWelcomeMessage]);
-  // State to disable chat input and buttons during processing or specific interactions
+  // State to disable chat input and buttons during processing (also used to lock full session after deployment)
   const [chatDisabled, setChatDisabled] = useState(false);
   // State to store the IMSIs of UEs selected via the UESelector
   const [selectedUEIMSI, setSelectedUEIMSI] = useState([]);
@@ -36,6 +36,9 @@ For all other general questions, feel free to ask me directly — I’m here to 
   const [input, setInput] = useState("");
   // Ref for the message container to enable auto-scrolling
   const messageContainerRef = useRef(null);
+
+  // State to store the last curated configuration (for deployment with subscriptions)
+  const [lastCuratedConfig, setLastCuratedConfig] = useState(null);
 
   // State to backup the latest curated config deployment selection
   const [curatedSelection, setCuratedSelection] = useState(null);
@@ -89,6 +92,8 @@ For all other general questions, feel free to ask me directly — I’m here to 
       message_output.network_slice &&
       message_output.deployment_location
     ) {
+      // Store the latest curated config for access during UE selection/deployment
+      setLastCuratedConfig(message_output);
       // Add curated config message type
       return [
         ...prevMessages,
@@ -199,8 +204,7 @@ For all other general questions, feel free to ask me directly — I’m here to 
     } else if (eventType === "message_output_item") {
       // Handle main message outputs, including UE lists and curated configs
       const message_output = event.message_output;
-      if (message_output && message_output.ues && message_output.ues.length > 0) {
-        // If UEs list is received, add UESelector message type
+      if (message_output && message_output.isModelRecommendation && message_output.ues && message_output.ues.length > 0) {
         setMessages((prevMessages) => [
           ...prevMessages,
           {
@@ -458,15 +462,42 @@ For all other general questions, feel free to ask me directly — I’m here to 
               ues={msg.content} // Pass the UEs data to the selector
               chatDisabled={chatDisabled}
               onSelect={selectedIMSIs => {
-                // This callback is useful if we wanted live updates of selection count,
-                // but for this flow, we primarily use the onOk callback.
-                console.log("UEs selected:", selectedIMSIs); // Log selection changes
+                // Optionally update selection state
               }}
               onOk={selectedIMSIs => {
-                // Save the selected IMSIs in parent state and enable chat
                 setSelectedUEIMSI(selectedIMSIs);
-                setChatDisabled(false); // Enable chat input/send button
-                // Note: A backend call could be triggered here to inform the agent of the selection if needed.
+
+                // 1. Display the final assistant message
+                setMessages(prev => [
+                  ...prev,
+                  {
+                    role: "assistant",
+                    content: "Thank you! The model with your chosen configuration will start deploying soon, and the subscriptions you selected will receive access shortly.",
+                    time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+                  },
+                ]);
+
+                // 2. Send deployment API call if lastCuratedConfig is available
+                if (lastCuratedConfig) {
+                  const { models, network_slice, deployment_location } = lastCuratedConfig;
+                  const model = models[0]?.name || "";
+                  const model_id = models[0]?.id || "";
+                  sendMessage(
+                    "intelligence_layer",
+                    "network_user_chat",
+                    {
+                      command: "deploy_curated_model_with_subscriptions",
+                      model,
+                      deployment: deployment_location,
+                      slice: network_slice,
+                      subscriptions: selectedIMSIs,
+                      model_id,
+                    }
+                  );
+                }
+
+                // 3. Permanently disable the chat (cannot send new input)
+                setChatDisabled(true); // Disable chat for the rest of session
               }}
             />
           </div>

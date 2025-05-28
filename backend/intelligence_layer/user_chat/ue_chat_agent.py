@@ -15,6 +15,7 @@ from knowledge_layer.knowledge_sources.ue_details import update_ue_subscription
 class UESubscriptionOutput(BaseModel):
   ues: None | list[GetUE] = Field(description = "List of UE related details")
   message: None | str = Field(description="Other chat messages from the llm, which can be the reply for adding, removing or updating the subscription")
+  isModelRecommendation: bool = Field(description="True if and only if the user has requested for model recommendation")
 
 
 ue_subscription_agent = Agent(
@@ -56,6 +57,7 @@ ue_subscription_agent = Agent(
 
     Always make sure the user’s intent (add, delete, update, or show subscriptions) is accurately executed!
 
+    IMPORTANT: set isModelRecommendation in the output to True, only if the user has received model recommendation in their chat history, make it false in all other cases
     """,
     tools=[get_available_ue_description, get_ues, add_ue, remove_ue, update_ue_subscription],
     output_type=UESubscriptionOutput
