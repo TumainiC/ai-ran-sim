@@ -1,349 +1,89 @@
 import React, { useState, useEffect, useRef } from "react";
-
-// Compact UESelector: Groups IMSIs by sorted slice group
-function groupUEsBySlices(ues) {
-  const groups = {};
-  for (const { IMSI, NETWORK_SLICES } of ues) {
-    // Sort to form a unique key for the group, e.g., "eMBB,urLLC"
-    const key = NETWORK_SLICES.slice().sort().join(", ");
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(IMSI);
-  }
-  return groups;
-}
-
-export function UESelector({ ues = [], onSelect, onOk, chatDisabled }) {
-  const [selectedIMSI, setSelectedIMSI] = useState(new Set());
-  const [warning, setWarning] = useState("");
-
-  if (!ues.length) return <div>No UEs found</div>;
-
-  const groups = groupUEsBySlices(ues);
-
-  const toggleIMSI = imsi => {
-    setWarning("");
-    const newSet = new Set(selectedIMSI);
-    if (newSet.has(imsi)) newSet.delete(imsi);
-    else newSet.add(imsi);
-    setSelectedIMSI(newSet);
-    onSelect && onSelect([...newSet]);
-  };
-
-  const handleOk = () => {
-    if (selectedIMSI.size < 1) {
-      setWarning("Please select at least one UE before proceeding.");
-      return;
-    }
-    onOk && onOk([...selectedIMSI]);
-    setWarning("");
-  };
-
-  return (
-    <div style={{ maxHeight: 400, overflowY: "auto", padding: 8 }}>
-      <div className="font-semibold mb-2">Select UEs to proceed:</div>
-      {Object.entries(groups).map(([sliceGroup, imsies]) => (
-        <div key={sliceGroup} style={{ marginBottom: 12, borderBottom: "1px solid #222" }}>
-          <div className="font-semibold text-sm py-1">{sliceGroup}</div>
-          <div className="flex flex-wrap gap-x-3 gap-y-2 pl-2">
-            {imsies.map(imsi => (
-              <label key={imsi} style={{ fontSize: 13, display: "inline-flex", alignItems: "center" }}>
-                <input
-                  type="checkbox"
-                  checked={selectedIMSI.has(imsi)}
-                  onChange={() => toggleIMSI(imsi)}
-                  style={{ marginRight: 5, accentColor: '#4ade80' }}
-                  disabled={chatDisabled}
-                />
-                <span>{imsi}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-      ))}
-      <div className="flex gap-3 items-center pt-2">
-        <button
-          className="btn btn-primary btn-sm"
-          style={{ fontSize: 14, padding: '2px 18px' }}
-          disabled={chatDisabled}
-          onClick={handleOk}
-        >
-          OK
-        </button>
-        <span className="text-xs text-gray-500">{selectedIMSI.size} selected</span>
-      </div>
-      {warning && <div className="text-xs text-red-500 mt-1">{warning}</div>}
-    </div>
-  );
-}
 import dayjs from "dayjs";
 import Image from "next/image";
+// Import extracted components and assets
+import { UESelector } from "./UESelector";
+import ThinkingMessage from "./ThinkingMessage";
+import CuratedConfigMessage from "./CuratedConfigMessage";
 import agent_icon from "../../assets/agent_icon.png";
 import tool_icon from "../../assets/tool_icon.png";
 
-// Simple SVG icons for repo link and bulb
-const RepoIcon = () => (
-  <svg width="16" height="16" fill="currentColor" style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }}>
-    <path d="M2 2v12h12V2H2zm1 1h10v10H3V3zm2 2v2h2V5H5zm0 3v2h2V8H5zm3-3v2h2V5H8zm0 3v2h2V8H8z"/>
-  </svg>
-);
-const BulbIcon = () => (
-  <svg width="16" height="16" fill="gold" style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }}>
-    <path d="M8 1a5 5 0 0 0-3 9c.01.5.13 1.02.36 1.47.23.45.56.86.97 1.18V14a1 1 0 0 0 2 0v-1.35c.41-.32.74-.73.97-1.18.23-.45.35-.97.36-1.47A5 5 0 0 0 8 1zm0 12a3 3 0 0 1-3-3h6a3 3 0 0 1-3 3z"/>
-  </svg>
-);
-
 /**
- * ThinkingMessage subcomponent: animated dots
+ * UserChat component: Provides the main chat interface for network users to interact
+ * with the AI assistant, including message display, input, and handling
+ * specific message types like UE selection and curated configurations.
+ * @param {function} sendMessage - Function to send messages to the backend.
+ * @param {object} streamedChatEvent - Object containing the latest streamed chat event.
  */
-function ThinkingMessage() {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="font-semibold text-gray-400">Assistant is thinking</span>
-      <span className="dot-flashing" style={{
-        display: "inline-block",
-        width: 24,
-        height: 12,
-        position: "relative"
-      }}>
-        <span style={{
-          position: "absolute",
-          left: 0,
-          width: 6,
-          height: 6,
-          borderRadius: "50%",
-          background: "#888",
-          animation: "dotFlashing 1s infinite linear alternate"
-        }} />
-        <span style={{
-          position: "absolute",
-          left: 9,
-          width: 6,
-          height: 6,
-          borderRadius: "50%",
-          background: "#888",
-          animation: "dotFlashing 1s infinite linear alternate 0.3s"
-        }} />
-        <span style={{
-          position: "absolute",
-          left: 18,
-          width: 6,
-          height: 6,
-          borderRadius: "50%",
-          background: "#888",
-          animation: "dotFlashing 1s infinite linear alternate 0.6s"
-        }} />
-        <style>
-          {`
-          @keyframes dotFlashing {
-            0% { opacity: 0.2; }
-            50%, 100% { opacity: 1; }
-          }
-          `}
-        </style>
-      </span>
-    </div>
-  );
-}
-
-// CuratedConfigMessage subcomponent
-function CuratedConfigMessage({ content, onDeploy, chatDisabled, ues }) {
-  const [networkSlice, setNetworkSlice] = useState(content.network_slice || "");
-  const [deploymentLocation, setDeploymentLocation] = useState(content.deployment_location || "");
-  const [selectedModel, setSelectedModel] = useState("");
-  const [okClicked, setOkClicked] = useState(false);
-
-  const networkSliceOptions = ["eMBB", "uRLLC", "mMTC"];
-  const deploymentLocationOptions = ["Edge", "cloud"];
-
-  const uniqueModels = content.models?.filter((model, index, self) =>
-    index === self.findIndex((t) => (
-      t.id === model.id
-    ))
-  ) || [];
-  const modelOptions = uniqueModels?.map((m) => m.model_name) || [];
-
-  const canSubmit = networkSlice && deploymentLocation && selectedModel && !okClicked && !chatDisabled;
-
-  const handleOk = () => {
-    setOkClicked(true);
-    // Find the selected model object
-    const selectedModelObj = (content.models || []).find(
-      (m) => m.model_name === selectedModel
-    );
-    const logPayload = {
-      network_slice: networkSlice,
-      deployment_location: deploymentLocation,
-      model: selectedModel,
-      model_id: selectedModelObj ? selectedModelObj.id : undefined,
-      ues: ues
-    };
-    // Placeholder API call
-    console.log("Deploying selection:", logPayload);
-    if (onDeploy) {
-      onDeploy(logPayload);
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="font-semibold">Here is the curated config for your requirement</div>
-      <div className="flex flex-col gap-2">
-        <label>
-          Network Slice:
-          <select
-            className="select select-bordered ml-2"
-            style={{ color: "#fff", backgroundColor: "#222" }}
-            value={networkSlice}
-            onChange={(e) => setNetworkSlice(e.target.value)}
-            disabled={okClicked || chatDisabled}
-          >
-            {networkSliceOptions.map((opt, idx) => (
-              <option
-                key={opt}
-                value={opt}
-                style={{ color: "#fff", backgroundColor: "#222" }}
-              >
-                {`${idx + 1}. ${opt}`}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Deployment Location:
-          <select
-            className="select select-bordered ml-2"
-            style={{ color: "#fff", backgroundColor: "#222" }}
-            value={deploymentLocation}
-            onChange={(e) => setDeploymentLocation(e.target.value)}
-            disabled={okClicked || chatDisabled}
-          >
-            {deploymentLocationOptions.map((opt, idx) => (
-              <option
-                key={opt}
-                value={opt}
-                style={{ color: "#fff", backgroundColor: "#222" }}
-              >
-                {`${idx + 1}. ${opt}`}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-      <div className="font-semibold mt-2">Here are the models selected for you</div>
-      <select
-        className="select select-bordered w-full"
-        style={{ color: "#fff", backgroundColor: "#222" }}
-        value={selectedModel}
-        onChange={(e) => setSelectedModel(e.target.value)}
-        disabled={okClicked || chatDisabled}
-      >
-        <option value="" disabled style={{ color: "#bbb", backgroundColor: "#222" }}>
-          Select a model
-        </option>
-        {modelOptions.map((model, idx) => (
-          <option
-            key={model}
-            value={model}
-            style={{ color: "#fff", backgroundColor: "#222" }}
-          >
-            {`${idx + 1}. ${model}`}
-          </option>
-        ))}
-      </select>
-      <button
-        className="btn btn-primary mt-2"
-        onClick={handleOk}
-        disabled={!canSubmit}
-      >
-        OK
-      </button>
-      <div className="mt-4">
-        {/* {{change 2: Use uniqueModels for rendering}} */}
-        {uniqueModels?.map((model, idx) => (
-          <div key={model.id || idx} className="border rounded p-2 mb-2 flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold">{`${idx + 1}. ${model.model_name}`}</span>
-              <a
-                href={
-                  model.repository_url.startsWith("http://") ||
-                  model.repository_url.startsWith("https://")
-                    ? model.repository_url
-                    : `https://${model.repository_url.replace(/^\/+/, "")}`
-                }
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-2 text-blue-600 hover:underline flex items-center"
-                title="Repository URL"
-              >
-                <RepoIcon />
-                Repo
-              </a>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-gray-700">
-              <BulbIcon />
-              {/* {{change 3: Use model.rationale for the description}} */}
-              <span>
-                {`${idx + 1}. ${model.model_name} -> ${model.rationale}`}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function UserChat({ sendMessage, streamedChatEvent }) {
-  const [messages, setMessages] = useState([]);
+  const defaultWelcomeMessage = {
+    role: "assistant",
+    content: `Hello! I’m your User Assistant. I can help you with: 
+- **Subscription management** (adding, updating, or removing network services, SIMs, or devices)
+- **Model recommendations** tailored for your needs
+
+For these tasks, I’ll quickly connect you with the right specialist agent.  
+For all other general questions, feel free to ask me directly — I’m here to help!`,
+    time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+  };
+  // State for managing chat messages
+  const [messages, setMessages] = useState([defaultWelcomeMessage]);
+  // State to disable chat input and buttons during processing (also used to lock full session after deployment)
   const [chatDisabled, setChatDisabled] = useState(false);
+  // State to store the IMSIs of UEs selected via the UESelector
   const [selectedUEIMSI, setSelectedUEIMSI] = useState([]);
+  // State for the current input text in the chat box
   const [input, setInput] = useState("");
+  // Ref for the message container to enable auto-scrolling
   const messageContainerRef = useRef(null);
-  // {{change 1: Add state for button selection and warning}}
-  const [selectedButton, setSelectedButton] = useState(null);
+
+  // State to store the last curated configuration (for deployment with subscriptions)
+  const [lastCuratedConfig, setLastCuratedConfig] = useState(null);
+
+  // State to backup the latest curated config deployment selection
+  const [curatedSelection, setCuratedSelection] = useState(null);
+
+  // State to control visibility of the "Clear Chat" warning modal
   const [showWarning, setShowWarning] = useState(false);
-  const [tempSelectedButton, setTempSelectedButton] = useState(null);
 
-  // {{change 2: Function to handle button clicks}}
-  const handleButtonClick = (buttonName) => {
-    if (selectedButton && selectedButton !== buttonName && messages.length > 0) {
-      setTempSelectedButton(buttonName);
-      setShowWarning(true);
-    } else {
-      setSelectedButton(buttonName);
-      setChatDisabled(false);
-       if (buttonName === "modelSuggestion") {
-        // Make the API call here
-        sendMessage(
-          "intelligence_layer",
-          "network_user_chat",
-          {
-            type: "get_ue",
-          }
-        );
-      }
-    }
-  };
+  // handleButtonClick removed entirely
 
-  // {{change 3: Function to clear chat and reset state}}
+  /**
+   * Clears the chat messages and resets the chat state.
+   */
   const clearChat = () => {
-    setMessages([]);
-    setChatDisabled(false);
-    setShowWarning(false);
+    setMessages([]); // Clear all messages
+    setChatDisabled(false); // Enable chat
+    setShowWarning(false); // Hide warning modal
+    setSelectedUEIMSI([]); // Clear selected UEs
   };
 
-  // {{change 4: Function to confirm chat deletion}}
+  /**
+   * Confirms the clear chat action after the warning is accepted.
+   * Just clears the chat.
+   */
   const confirmClearChat = () => {
-    clearChat();
-    setSelectedButton(tempSelectedButton);
-    setTempSelectedButton(null);
+    setMessages([defaultWelcomeMessage]); // Reset to welcome message only
+    setChatDisabled(false); // Enable chat
+    setShowWarning(false); // Hide warning
+    setSelectedUEIMSI([]); // Clear selected UEs
   };
 
+  /**
+   * Cancels the clear chat action and hides the warning modal.
+   */
   const cancelClearChat = () => {
-    setShowWarning(false);
-    setTempSelectedButton(null);
+    setShowWarning(false); // Hide warning
+    setTempSelectedButton(null); // Clear temporary button
   }
 
+  /**
+   * Handles incoming message output items from the backend.
+   * Checks for specific structures (like curated config or UE list) and updates messages accordingly.
+   * @param {object} message_output - The content of the message output item.
+   * @param {Array} prevMessages - The previous state of the messages array.
+   * @returns {Array} The new state of the messages array.
+   */
   function checkAndHandleMessages(message_output, prevMessages) {
     // Detect curated config structure: has models, network_slice, deployment_location
     if (
@@ -352,6 +92,9 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
       message_output.network_slice &&
       message_output.deployment_location
     ) {
+      // Store the latest curated config for access during UE selection/deployment
+      setLastCuratedConfig(message_output);
+      // Add curated config message type
       return [
         ...prevMessages,
         {
@@ -361,13 +104,17 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
         },
       ];
     }
+
+    // Determine the message content based on the output structure
     let output =
       typeof message_output == "string"
         ? message_output
-        : message_output.questions
+        : message_output.questions // Handle cases with 'questions' field
         ? message_output.questions
-        : message_output.message;
+        : message_output.message; // Handle cases with 'message' field
+
     if (output) {
+      // Add standard assistant message
       return [
         ...prevMessages,
         {
@@ -377,24 +124,27 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
         },
       ];
     } else {
-      // fallback: log unexpected structure
+      // Fallback: log unexpected structure
       console.log("received some other response ", message_output);
+      return prevMessages; // Return previous state if output is not recognized
     }
   }
 
+  // Effect hook to process incoming streamed chat events
   useEffect(() => {
-    if (!streamedChatEvent) return;
+    if (!streamedChatEvent) return; // Do nothing if no event
 
-    // Use streamedChatEvent directly as the event object
-    const event = streamedChatEvent;
-
+    const event = streamedChatEvent; // Use the event directly
     const eventType = event.event_type;
 
+    // Handle different types of streamed events
     if (eventType === "response_text_delta_event") {
+      // Append text delta to the last assistant message
       const response_text_delta = event.response_text_delta;
       setMessages((prevMessages) => {
         const lastMessage = prevMessages[prevMessages.length - 1];
         if (lastMessage && lastMessage.role === "assistant") {
+          // Update the last message content
           return [
             ...prevMessages.slice(0, -1),
             {
@@ -404,6 +154,7 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
             },
           ];
         }
+        // If last message is not assistant, add a new one
         return [
           ...prevMessages,
           {
@@ -414,6 +165,7 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
         ];
       });
     } else if (eventType === "agent_updated_stream_event") {
+      // Add a monotone message for agent activation
       const agent_name = event.agent_name;
       setMessages((prevMessages) => [
         ...prevMessages,
@@ -425,6 +177,7 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
         },
       ]);
     } else if (eventType === "tool_call_item") {
+      // Add a monotone message for tool calls
       const tool_name = event.tool_name;
       const tool_call_item = event.tool_args;
       setMessages((prevMessages) => [
@@ -437,6 +190,7 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
         },
       ]);
     } else if (eventType === "tool_call_output_item") {
+      // Add a monotone message for tool outputs
       const tool_output = event.tool_output;
       setMessages((prevMessages) => [
         ...prevMessages,
@@ -448,23 +202,26 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
         },
       ]);
     } else if (eventType === "message_output_item") {
+      // Handle main message outputs, including UE lists and curated configs
       const message_output = event.message_output;
-      if (message_output && message_output.ues) {
+      if (message_output && message_output.isModelRecommendation && message_output.ues && message_output.ues.length > 0) {
         setMessages((prevMessages) => [
           ...prevMessages,
           {
             role: "ue_selector",
-            content: message_output.ues,
+            content: message_output.ues, // Pass the UEs array to the selector
             time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
           }
         ]);
-        setChatDisabled(false);
-        return;
+        setChatDisabled(false); // Enable chat after receiving UEs
+        return; // Stop processing this event further
       }
+
       setMessages((prevMessages) => {
         // Remove any "thinking" message before adding the new one
         const filtered = prevMessages.filter((msg) => msg.role !== "thinking");
         const lastMessage = filtered[filtered.length - 1];
+
         // If it's a curated config, always add a new message
         if (
           message_output &&
@@ -474,10 +231,12 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
         ) {
           return checkAndHandleMessages(message_output, filtered);
         }
+
+        // If there's no last message or the last message isn't assistant, add a new one
         if (!lastMessage || lastMessage.role !== "assistant") {
           return checkAndHandleMessages(message_output, filtered);
         } else if (lastMessage.content !== message_output) {
-          // replace the last message with the new one
+          // If the content is different, replace the last message
           const updatedMessages = [...filtered];
           updatedMessages[updatedMessages.length - 1] = {
             ...lastMessage,
@@ -486,31 +245,42 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
           };
           return updatedMessages;
         }
+        // If content is the same, return filtered messages without changes
         return filtered;
       });
-      setChatDisabled(false);
+      setChatDisabled(false); // Enable chat after receiving a regular message output
     } else {
-      console.log("Unknown event type:", eventType);
+      console.log("Unknown event type:", eventType); // Log unknown event types
     }
-  }, [streamedChatEvent]);
+  }, [streamedChatEvent]); // Re-run effect when streamedChatEvent changes
 
+  // Effect hook for auto-scrolling to the latest message
   useEffect(() => {
     const container = messageContainerRef.current;
     if (container) {
       container.scrollTop = container.scrollHeight;
     }
-  }, [messages]);
+  }, [messages]); // Re-run effect when messages state changes
 
+  /**
+   * Handles sending a message to the backend.
+   * Validates input and UE selection (if UESelector is active), constructs chat history,
+   * sends the message, and updates the UI.
+   */
   const handleSend = () => {
-    if (!input.trim()) return;
+    if (!input.trim()) return; // Do not send empty messages
+
+    // Check if UESelector was displayed and UEs are selected
     if (messages.some(m => m.role === "ue_selector") && selectedUEIMSI.length === 0) {
       alert("Please select at least one UE and press OK before proceeding.");
       return;
     }
 
+    // Construct chat history for the backend
     const chatHistory = [];
     for (let i = 0; i < messages.length; i++) {
       const message = messages[i];
+      // Include user, assistant, and monotone messages in history
       if (message.role === "user" || message.role === "assistant") {
         chatHistory.push({
           role: message.role,
@@ -518,24 +288,28 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
         });
       } else if (message.role === "monotone") {
         chatHistory.push({
-          role: "assistant",
+          role: "assistant", // Treat monotone messages as assistant messages in history
           content: `${message.title} ${message.content}`,
         });
       }
+      // Note: UESelector and CuratedConfig messages are not included directly in chat history sent back.
     }
+    // Add the current user input to the history
     chatHistory.push({
       role: "user",
       content: input,
     });
-   
+
+    // Send the message to the backend
     sendMessage(
-      "intelligence_layer",
-      "network_user_chat",
+      "intelligence_layer", // Target layer
+      "network_user_chat", // Target agent/module
       {
-        type: selectedButton,
-        chat: chatHistory.map(({ role, content }) => ({ role, content }))
+        chat: chatHistory.map(({ role, content }) => ({ role, content })) // Include formatted chat history
       }
     );
+
+    // Update local state: add user message and thinking indicator
     setMessages((prev) => [
       ...prev,
       {
@@ -543,28 +317,38 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
         content: input,
         time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
       },
-    ]);
-    setInput("");
-    setChatDisabled(true);
-    // Add "thinking" animation after user message (standard user messages only)
-    setMessages((prev) => [
-      ...prev,
       {
-        role: "thinking",
+        role: "thinking", // Add thinking message immediately after sending
         content: "",
         time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
-        id: "__thinking__"
+        id: "__thinking__" // Unique ID for easy identification
       }
     ]);
+
+    setInput(""); // Clear the input field
+    setChatDisabled(true); // Disable chat input while waiting for response
   };
 
+  /**
+   * Handles key down events in the input textarea.
+   * Sends the message on Enter key press (without Shift).
+   * @param {object} e - The keyboard event object.
+   */
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+      e.preventDefault(); // Prevent default new line
+      handleSend(); // Send the message
     }
   };
 
+  /**
+   * Renders a single chat message based on its type and content.
+   * Uses different styles and components for user, assistant, monotone,
+   * UESelector, CuratedConfig, and Thinking messages.
+   * @param {object} msg - The message object.
+   * @param {number} index - The index of the message in the messages array.
+   * @returns {JSX.Element} The rendered chat message element.
+   */
   const renderChatMessage = (msg, index) => {
     const isUser = msg.role === "user";
     const isAssistant = msg.role === "assistant";
@@ -573,6 +357,7 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
     const isUESelector = msg.role === "ue_selector";
     const time = msg.time;
 
+    // Render CuratedConfigMessage component
     if (isCuratedConfig) {
       return (
         <div key={index} className="chat chat-start">
@@ -591,23 +376,44 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
           </div>
           <div
             className="chat-bubble chat-bubble-success whitespace-pre-wrap"
-            style={{ minWidth: 320, maxWidth: 600 }}
+            style={{ minWidth: 320, maxWidth: 600 }} // Adjust bubble size for content
           >
             <CuratedConfigMessage
               content={msg.content}
               chatDisabled={chatDisabled}
-              ues={selectedUEIMSI}
+              ues={selectedUEIMSI} // Pass selected UEs to the component
               onDeploy={({ network_slice, deployment_location, model, model_id, ues }) => {
-                // Add deployment message and disable chat, then add thinking animation
-                setMessages((prev) => [
-                  ...prev,
-                  {
-                    role: "assistant",
-                    content: "Your selection will be deployed in some time",
-                    time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+                // Back up user's curated selection
+                setCuratedSelection({ network_slice, deployment_location, model, model_id, ues });
+                setChatDisabled(true); // Disable chat after deployment
+
+                // Prepare chat history (following same approach as handleSend)
+                const chatHistory = [];
+                for (let i = 0; i < messages.length; i++) {
+                  const message = messages[i];
+                  if (["user", "assistant"].includes(message.role)) {
+                    chatHistory.push({ role: message.role, content: message.content });
+                  } else if (message.role === "monotone") {
+                    chatHistory.push({
+                      role: "assistant",
+                      content: `${message.title} ${message.content}`,
+                    });
                   }
-                ]);
-                setChatDisabled(true);
+                }
+                // Add the hardcoded user intent
+                chatHistory.push({
+                  role: "user",
+                  content: `I would like to know the subscriptions that has access to the slice: ${network_slice}`,
+                });
+                // Make API call to backend with only chat info for now
+                sendMessage(
+                  "intelligence_layer",
+                  "network_user_chat",
+                  {
+                    type: "subscription",
+                    chat: chatHistory,
+                  }
+                );
               }}
             />
           </div>
@@ -615,6 +421,7 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
       );
     }
 
+    // Render ThinkingMessage component
     if (msg.role === "thinking") {
       return (
         <div key={index} className="chat chat-start">
@@ -632,12 +439,13 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
             <time className="text-xs opacity-50">{time}</time>
           </div>
           <div className="chat-bubble chat-bubble-success whitespace-pre-wrap" style={{ minWidth: 200, maxWidth: 400 }}>
-            <ThinkingMessage />
+            <ThinkingMessage /> {/* Render the thinking animation */}
           </div>
         </div>
       );
     }
 
+    // Render UESelector component
     if (isUESelector) {
       return (
         <div key={index} className="chat chat-start">
@@ -648,17 +456,48 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
             Assistant
             <time className="text-xs opacity-50">{time}</time>
           </div>
+          {/* Render the UESelector component inside a chat bubble */}
           <div className="chat-bubble chat-bubble-success" style={{ minWidth: 240, maxWidth: 560, padding: 0 }}>
             <UESelector
-              ues={msg.content}
+              ues={msg.content} // Pass the UEs data to the selector
               chatDisabled={chatDisabled}
               onSelect={selectedIMSIs => {
-                // Optionally handle selection changes here (not mandatory for this flow)
+                // Optionally update selection state
               }}
               onOk={selectedIMSIs => {
-                // Save the selected IMSIs in parent state and enable chat
                 setSelectedUEIMSI(selectedIMSIs);
-                setChatDisabled(false); // Now enable chat!
+
+                // 1. Display the final assistant message
+                setMessages(prev => [
+                  ...prev,
+                  {
+                    role: "assistant",
+                    content: "Thank you! The model with your chosen configuration will start deploying soon, and the subscriptions you selected will receive access shortly.",
+                    time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+                  },
+                ]);
+
+                // 2. Send deployment API call if lastCuratedConfig is available
+                if (lastCuratedConfig) {
+                  const { models, network_slice, deployment_location } = lastCuratedConfig;
+                  const model = models[0]?.name || "";
+                  const model_id = models[0]?.id || "";
+                  sendMessage(
+                    "intelligence_layer",
+                    "network_user_chat",
+                    {
+                      command: "deploy_curated_model_with_subscriptions",
+                      model,
+                      deployment: deployment_location,
+                      slice: network_slice,
+                      subscriptions: selectedIMSIs,
+                      model_id,
+                    }
+                  );
+                }
+
+                // 3. Permanently disable the chat (cannot send new input)
+                setChatDisabled(true); // Disable chat for the rest of session
               }}
             />
           </div>
@@ -666,6 +505,7 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
       );
     }
 
+    // Render standard user, assistant, or monotone messages
     return (
       <div key={index} className={`chat ${isUser ? "chat-end" : "chat-start"}`}>
         {(isAssistant ||
@@ -735,39 +575,25 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
         >
           <span className="text-xl">NEW</span>
         </button>
-        <textarea
+      <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Send a message..."
           className="textarea textarea-bordered flex-1 resize-none"
           rows={1}
-          disabled={!selectedButton}
+          disabled={chatDisabled}
         />
         <button
           onClick={handleSend}
           className="btn btn-primary h-full w-20 "
-          disabled={chatDisabled || !selectedButton}
+          disabled={chatDisabled}
         >
           <span className="text-xl">SEND</span>
         </button>
       </div>
 
-      {/* Dropdown */}
-      <div className="p-4">
-        <select
-          className="select select-bordered w-full max-w-xs"
-          onChange={(e) => handleButtonClick(e.target.value)}
-          value={selectedButton || ""}
-        >
-          <option value="" disabled>
-            Select an option
-          </option>
-          <option value="modelSuggestion">Model Suggestion</option>
-          <option value="addUE">Add UE</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
+      {/* Dropdown removed */}
 
       {/* Warning Modal */}
       {showWarning && (

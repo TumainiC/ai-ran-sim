@@ -13,7 +13,7 @@ for i in range(UE_DEFAULT_MAX_COUNT):
     UE_IMSI = f"IMSI_{i}"
 
     # randomly pick the slice subscriptions for UEs
-    # first roughly 20% of UE is an IoT device, meaning that it is subscribed to MTC slice
+    # first roughly 20% of UE is an IoT device, meaning that it is subscribed to mMTC slice
     if random.random() < 0.2:
         CORE_UE_SUBSCRIPTION_DATA[UE_IMSI] = [NETWORK_SLICE_MTC_NAME]
         continue

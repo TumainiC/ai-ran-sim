@@ -102,7 +102,7 @@ category_matching_agent = Agent(
     handoffs= [model_suggestion_agent]
 )
 model_recommender_orchestrator = Agent(
-    name="telecom_agent",
+    name="model_recommender_orchestrator",
     instructions=f"""
     You are a great orchestrator and analyzer. Your goal is to understand the user's requirement and recommend the best option for their needs without using technical terms that a user may not know.
 

@@ -184,11 +184,80 @@ class SimulationEngine(metaclass=utils.SingletonMeta):
             self.remove_UE(ue)
             print(f"UE {ue.ue_imsi} deregistered and removed from simulation.")
 
+
     def remove_UE(self, ue):
         assert isinstance(ue, UE)
         assert ue.ue_imsi in self.ue_list
         del self.ue_list[ue.ue_imsi]
         print(f"UE {ue.ue_imsi} deregistered and removed from simulation.")
+
+    def deregister_ue(self, ue_imsi):
+        """
+        Deregisters and removes the UE from the simulation and all internal references.
+        """
+        ue = self.ue_list.get(ue_imsi)
+        if not ue:
+            print(f"UE {ue_imsi} not found in simulation.")
+            return False
+        # Deregister from CoreNetwork
+        if self.core_network:
+            self.core_network.handle_deregistration_request(ue)
+        # Remove from SimulationEngine's list
+        del self.ue_list[ue_imsi]
+        print(f"UE {ue_imsi} deregistered and fully removed from simulation.")
+        return True
+
+    def register_ue(self, ue_imsi, subscribed_slices, register_slice=None):
+        """
+        Register a new UE with IMSI and slice subscription list.
+        Optionally pick 'register_slice' for initial attachment, otherwise use the first in list.
+        Returns True if successful, False otherwise.
+        """
+        if self.core_network is None:
+            print("Core network not initialized.")
+            return False
+        if ue_imsi in self.ue_list:
+            print(f"UE {ue_imsi} already present in simulation.")
+            return False
+        if not isinstance(subscribed_slices, list) or not subscribed_slices:
+            print("Subscribed_slices must be a non-empty list.")
+            return False
+        # Update core network with slice subscription
+        self.core_network.ue_subscription_data[ue_imsi] = subscribed_slices
+        # Validate register_slice
+        attach_slice = register_slice if register_slice else subscribed_slices[0]
+        if attach_slice not in subscribed_slices:
+            print(f"Selected register_slice '{attach_slice}' is not in subscription list.")
+            return False
+        # Generate parameters for new UE
+        op_region = {"min_x": 0, "min_y": 0, "max_x": 2000, "max_y": 2000}
+        pos_x = random.randint(op_region["min_x"], op_region["max_x"])
+        pos_y = random.randint(op_region["min_y"], op_region["max_y"])
+        target_x = random.randint(op_region["min_x"], op_region["max_x"])
+        target_y = random.randint(op_region["min_y"], op_region["max_y"])
+        speed_mps = random.randint(settings.UE_speed_mps_MIN, settings.UE_speed_mps_MAX)
+        from .ue import UE
+        ue = UE(
+            ue_imsi=ue_imsi,
+            operation_region=op_region,
+            position_x=pos_x,
+            position_y=pos_y,
+            target_x=target_x,
+            target_y=target_y,
+            speed_mps=speed_mps,
+            simulation_engine=self,
+        )
+        # Power up (attach+auth registration via core network)
+        powered = ue.power_up()
+        if powered:
+            # Attach/authenticate with the chosen slice
+            self.core_network.handle_ue_authentication_and_registration(ue, requested_slice=attach_slice)
+            self.ue_list[ue_imsi] = ue
+            print(f"UE {ue_imsi} added and registered at runtime. Subscribed to slices: {subscribed_slices}. Registered on: {attach_slice}")
+            return True
+        else:
+            print(f"Failed to register UE {ue_imsi} at runtime.")
+            return False
 
     def step_BSs(self, delta_time):
         for bs in self.base_station_list.values():

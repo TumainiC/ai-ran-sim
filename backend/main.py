@@ -91,9 +91,7 @@ async def handle_query_knowledge(websocket, simulation_engine, knowledge_router,
     await websocket.send(response.to_json())
 
 
-async def handle_network_user_chat(
-    websocket, simulation_engine, knowledge_router, data
-):
+async def handle_network_user_chat(websocket, simulation_engine, knowledge_router, data):
     result = await user_chat_agent_function(data)
     response = WebSocketResponse(
         layer="intelligence_layer_user",
