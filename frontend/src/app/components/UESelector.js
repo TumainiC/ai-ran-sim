@@ -52,7 +52,7 @@ export function UESelector({ ues = [], onSelect, onOk, chatDisabled }) {
 
   return (
     <div className="bg-base-100 rounded-md p-4" style={{ maxHeight: 400, overflowY: "auto" }}>
-      <div className="font-semibold mb-2 text-base-content">Select UEs to proceed:</div>
+      <div className="font-semibold mb-2 text-base-content">Select subscriptions to proceed:</div>
       {/* Render groups of UEs by slice type */}
       {Object.entries(groups).map(([sliceGroup, imsies]) => (
         <div key={sliceGroup} style={{ marginBottom: 12, borderBottom: "1px solid #444" }}> {/* Changed border color */}

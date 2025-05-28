@@ -16,8 +16,18 @@ import tool_icon from "../../assets/tool_icon.png";
  * @param {object} streamedChatEvent - Object containing the latest streamed chat event.
  */
 export default function UserChat({ sendMessage, streamedChatEvent }) {
+  const defaultWelcomeMessage = {
+    role: "assistant",
+    content: `Hello! I’m your User Assistant. I can help you with: 
+- **Subscription management** (adding, updating, or removing network services, SIMs, or devices)
+- **Model recommendations** tailored for your needs
+
+For these tasks, I’ll quickly connect you with the right specialist agent.  
+For all other general questions, feel free to ask me directly — I’m here to help!`,
+    time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+  };
   // State for managing chat messages
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState([defaultWelcomeMessage]);
   // State to disable chat input and buttons during processing or specific interactions
   const [chatDisabled, setChatDisabled] = useState(false);
   // State to store the IMSIs of UEs selected via the UESelector
@@ -26,6 +36,9 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
   const [input, setInput] = useState("");
   // Ref for the message container to enable auto-scrolling
   const messageContainerRef = useRef(null);
+
+  // State to backup the latest curated config deployment selection
+  const [curatedSelection, setCuratedSelection] = useState(null);
 
   // State to control visibility of the "Clear Chat" warning modal
   const [showWarning, setShowWarning] = useState(false);
@@ -47,7 +60,7 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
    * Just clears the chat.
    */
   const confirmClearChat = () => {
-    setMessages([]); // Clear messages
+    setMessages([defaultWelcomeMessage]); // Reset to welcome message only
     setChatDisabled(false); // Enable chat
     setShowWarning(false); // Hide warning
     setSelectedUEIMSI([]); // Clear selected UEs
@@ -186,7 +199,7 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
     } else if (eventType === "message_output_item") {
       // Handle main message outputs, including UE lists and curated configs
       const message_output = event.message_output;
-      if (message_output && message_output.ues) {
+      if (message_output && message_output.ues && message_output.ues.length > 0) {
         // If UEs list is received, add UESelector message type
         setMessages((prevMessages) => [
           ...prevMessages,
@@ -366,17 +379,37 @@ export default function UserChat({ sendMessage, streamedChatEvent }) {
               chatDisabled={chatDisabled}
               ues={selectedUEIMSI} // Pass selected UEs to the component
               onDeploy={({ network_slice, deployment_location, model, model_id, ues }) => {
-                // Handle deployment confirmation: add message and disable chat
-                setMessages((prev) => [
-                  ...prev,
-                  {
-                    role: "assistant",
-                    content: "Your selection will be deployed in some time", // Confirmation message
-                    time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
-                  }
-                ]);
+                // Back up user's curated selection
+                setCuratedSelection({ network_slice, deployment_location, model, model_id, ues });
                 setChatDisabled(true); // Disable chat after deployment
-                // TODO: Potentially send a backend message here to trigger the actual deployment logic
+
+                // Prepare chat history (following same approach as handleSend)
+                const chatHistory = [];
+                for (let i = 0; i < messages.length; i++) {
+                  const message = messages[i];
+                  if (["user", "assistant"].includes(message.role)) {
+                    chatHistory.push({ role: message.role, content: message.content });
+                  } else if (message.role === "monotone") {
+                    chatHistory.push({
+                      role: "assistant",
+                      content: `${message.title} ${message.content}`,
+                    });
+                  }
+                }
+                // Add the hardcoded user intent
+                chatHistory.push({
+                  role: "user",
+                  content: `I would like to know the subscriptions that has access to the slice: ${network_slice}`,
+                });
+                // Make API call to backend with only chat info for now
+                sendMessage(
+                  "intelligence_layer",
+                  "network_user_chat",
+                  {
+                    type: "subscription",
+                    chat: chatHistory,
+                  }
+                );
               }}
             />
           </div>

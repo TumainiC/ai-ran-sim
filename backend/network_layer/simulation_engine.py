@@ -191,6 +191,22 @@ class SimulationEngine(metaclass=utils.SingletonMeta):
         del self.ue_list[ue.ue_imsi]
         print(f"UE {ue.ue_imsi} deregistered and removed from simulation.")
 
+    def deregister_ue(self, ue_imsi):
+        """
+        Deregisters and removes the UE from the simulation and all internal references.
+        """
+        ue = self.ue_list.get(ue_imsi)
+        if not ue:
+            print(f"UE {ue_imsi} not found in simulation.")
+            return False
+        # Deregister from CoreNetwork
+        if self.core_network:
+            self.core_network.handle_deregistration_request(ue)
+        # Remove from SimulationEngine's list
+        del self.ue_list[ue_imsi]
+        print(f"UE {ue_imsi} deregistered and fully removed from simulation.")
+        return True
+
     def register_ue(self, ue_imsi, subscribed_slices, register_slice=None):
         """
         Register a new UE with IMSI and slice subscription list.
