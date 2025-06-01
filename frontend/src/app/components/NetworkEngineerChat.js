@@ -4,7 +4,10 @@ import Image from "next/image";
 import agent_icon from "../../assets/agent_icon.png";
 import tool_icon from "../../assets/tool_icon.png";
 
-export default function NetworkEngineerChat({ sendMessage, streamedChatEvent }) {
+export default function NetworkEngineerChat({
+  sendMessage,
+  streamedChatEvent,
+}) {
   const [messages, setMessages] = useState([]);
   const [chatDisabled, setChatDisabled] = useState(false);
   const [input, setInput] = useState("");
@@ -210,7 +213,6 @@ export default function NetworkEngineerChat({ sendMessage, streamedChatEvent }) 
         ref={messageContainerRef}
       >
         {messages.map(renderChatMessage)}
-        {/* <div ref={chatEndRef} /> */}
       </div>
 
       {/* Input Box */}

@@ -5,4 +5,5 @@ from agents import set_tracing_disabled
 set_default_openai_key(os.environ.get("OPENAI_API_KEY", ""))
 set_tracing_disabled(True)
 
-from .chat_agent import network_chat_agent
+from .client_chat_agent import client_chat_agent
+from .engineer_chat_agent import engineer_chat_agent

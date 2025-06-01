@@ -1,6 +1,5 @@
-import os
 from agents import Agent
-from .network_knowledge_tools import get_knowledge, get_knowledge_bulk
+from .knowledge_tools import get_knowledge, get_knowledge_bulk
 from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
 from settings import OPENAI_NON_REASONING_MODEL_NAME, OPENAI_REASONING_MODEL_NAME
 
@@ -25,10 +24,11 @@ You should always start with
     "/docs/cells" (documentation on Cell-related knowledge base)
     "/docs/ric" (documentation on RIC-related knowledge base)
     "/docs/sim_engine" (documentation on simulation execution-related knowledge base)
+    "/docs/ai_services" (documentation on AI service-related knowledge base)
 
 The knowledge tools often returns a list of related knowledge keys.
 You should explore these related knowledge keys as well to gather more information to answer the user query wherever possible.
-Note that most elements in the query keys are plural (user_equipments, base_stations, cells, attributes, methods),
+Note that most elements in the query keys are plural (user_equipments, base_stations, cells, ai_services, attributes, methods),
 except for the RIC and simulation engine, which are singular (ric, sim_engine).
 """,
     model=OPENAI_NON_REASONING_MODEL_NAME,

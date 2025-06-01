@@ -1,61 +1,61 @@
 import React, { useState, useEffect, useRef } from "react";
 import dayjs from "dayjs";
 import Image from "next/image";
-// Import extracted components and assets
 import { UESelector } from "./UESelector";
 import ThinkingMessage from "./ThinkingMessage";
 import CuratedConfigMessage from "./CuratedConfigMessage";
 import agent_icon from "../../assets/agent_icon.png";
 import tool_icon from "../../assets/tool_icon.png";
 
+const getDefaultWelcomeMessage = () => ({
+  role: "assistant",
+  content: `Thank you for choosing our network.
+
+We offer a range of AI services ready-to-deploy across our base stations for your connected user equipments.
+Simply describe what applications or use cases you have in mind or you're currently building,
+and our AI assistant will help you deploy the services you need across our edge/cloud clusters.`,
+  time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+});
+
 /**
- * UserChat component: Provides the main chat interface for network users to interact
+ * NetworkUserChat component: Provides the main chat interface for network users to interact
  * with the AI assistant, including message display, input, and handling
  * specific message types like UE selection and curated configurations.
  * @param {function} sendMessage - Function to send messages to the backend.
  * @param {object} streamedChatEvent - Object containing the latest streamed chat event.
  */
-export default function UserChat({ sendMessage, streamedChatEvent }) {
-  const defaultWelcomeMessage = {
-    role: "assistant",
-    content: `Hello! I’m your User Assistant. I can help you with: 
-- **Subscription management** (adding, updating, or removing network services, SIMs, or devices)
-- **Model recommendations** tailored for your needs
-
-For these tasks, I’ll quickly connect you with the right specialist agent.  
-For all other general questions, feel free to ask me directly — I’m here to help!`,
-    time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
-  };
+export default function NetworkUserChat({ sendMessage, streamedChatEvent }) {
   // State for managing chat messages
-  const [messages, setMessages] = useState([defaultWelcomeMessage]);
+  const [messages, setMessages] = useState([getDefaultWelcomeMessage()]);
+
   // State to disable chat input and buttons during processing (also used to lock full session after deployment)
   const [chatDisabled, setChatDisabled] = useState(false);
+
   // State to store the IMSIs of UEs selected via the UESelector
-  const [selectedUEIMSI, setSelectedUEIMSI] = useState([]);
+  // const [selectedUEIMSI, setSelectedUEIMSI] = useState([]);
+
   // State for the current input text in the chat box
   const [input, setInput] = useState("");
   // Ref for the message container to enable auto-scrolling
   const messageContainerRef = useRef(null);
 
-  // State to store the last curated configuration (for deployment with subscriptions)
-  const [lastCuratedConfig, setLastCuratedConfig] = useState(null);
+  // // State to store the last curated configuration (for deployment with subscriptions)
+  // const [lastCuratedConfig, setLastCuratedConfig] = useState(null);
 
-  // State to backup the latest curated config deployment selection
-  const [curatedSelection, setCuratedSelection] = useState(null);
+  // // State to backup the latest curated config deployment selection
+  // const [curatedSelection, setCuratedSelection] = useState(null);
 
   // State to control visibility of the "Clear Chat" warning modal
   const [showWarning, setShowWarning] = useState(false);
-
-  // handleButtonClick removed entirely
 
   /**
    * Clears the chat messages and resets the chat state.
    */
   const clearChat = () => {
-    setMessages([]); // Clear all messages
+    setMessages([getDefaultWelcomeMessage()]); // Clear all messages
     setChatDisabled(false); // Enable chat
     setShowWarning(false); // Hide warning modal
-    setSelectedUEIMSI([]); // Clear selected UEs
+    // setSelectedUEIMSI([]); // Clear selected UEs
   };
 
   /**
@@ -63,7 +63,7 @@ For all other general questions, feel free to ask me directly — I’m here to 
    * Just clears the chat.
    */
   const confirmClearChat = () => {
-    setMessages([defaultWelcomeMessage]); // Reset to welcome message only
+    setMessages([getDefaultWelcomeMessage()]); // Reset to welcome message only
     setChatDisabled(false); // Enable chat
     setShowWarning(false); // Hide warning
     setSelectedUEIMSI([]); // Clear selected UEs
@@ -75,7 +75,7 @@ For all other general questions, feel free to ask me directly — I’m here to 
   const cancelClearChat = () => {
     setShowWarning(false); // Hide warning
     setTempSelectedButton(null); // Clear temporary button
-  }
+  };
 
   /**
    * Handles incoming message output items from the backend.
@@ -203,41 +203,72 @@ For all other general questions, feel free to ask me directly — I’m here to 
       ]);
     } else if (eventType === "message_output_item") {
       // Handle main message outputs, including UE lists and curated configs
-      const message_output = event.message_output;
-      if (message_output && message_output.isModelRecommendation && message_output.ues && message_output.ues.length > 0) {
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            role: "ue_selector",
-            content: message_output.ues, // Pass the UEs array to the selector
-            time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
-          }
-        ]);
-        setChatDisabled(false); // Enable chat after receiving UEs
-        return; // Stop processing this event further
-      }
+      // const message_output = event.message_output;
+      // if (
+      //   message_output &&
+      //   message_output.isModelRecommendation &&
+      //   message_output.ues &&
+      //   message_output.ues.length > 0
+      // ) {
+      //   setMessages((prevMessages) => [
+      //     ...prevMessages,
+      //     {
+      //       role: "ue_selector",
+      //       content: message_output.ues, // Pass the UEs array to the selector
+      //       time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+      //     },
+      //   ]);
+      //   setChatDisabled(false); // Enable chat after receiving UEs
+      //   return; // Stop processing this event further
+      // }
 
+      // setMessages((prevMessages) => {
+      //   // Remove any "thinking" message before adding the new one
+      //   const filtered = prevMessages.filter((msg) => msg.role !== "thinking");
+      //   const lastMessage = filtered[filtered.length - 1];
+
+      //   // If it's a curated config, always add a new message
+      //   if (
+      //     message_output &&
+      //     Array.isArray(message_output.models) &&
+      //     message_output.network_slice &&
+      //     message_output.deployment_location
+      //   ) {
+      //     return checkAndHandleMessages(message_output, filtered);
+      //   }
+
+      //   // If there's no last message or the last message isn't assistant, add a new one
+      //   if (!lastMessage || lastMessage.role !== "assistant") {
+      //     return checkAndHandleMessages(message_output, filtered);
+      //   } else if (lastMessage.content !== message_output) {
+      //     // If the content is different, replace the last message
+      //     const updatedMessages = [...filtered];
+      //     updatedMessages[updatedMessages.length - 1] = {
+      //       ...lastMessage,
+      //       content: message_output,
+      //       time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+      //     };
+      //     return updatedMessages;
+      //   }
+      //   // If content is the same, return filtered messages without changes
+      //   return filtered;
+      // });
+      // setChatDisabled(false); // Enable chat after receiving a regular message output
+      const message_output = streamedChatEvent.message_output;
       setMessages((prevMessages) => {
-        // Remove any "thinking" message before adding the new one
-        const filtered = prevMessages.filter((msg) => msg.role !== "thinking");
-        const lastMessage = filtered[filtered.length - 1];
-
-        // If it's a curated config, always add a new message
-        if (
-          message_output &&
-          Array.isArray(message_output.models) &&
-          message_output.network_slice &&
-          message_output.deployment_location
-        ) {
-          return checkAndHandleMessages(message_output, filtered);
-        }
-
-        // If there's no last message or the last message isn't assistant, add a new one
+        const lastMessage = prevMessages[prevMessages.length - 1];
         if (!lastMessage || lastMessage.role !== "assistant") {
-          return checkAndHandleMessages(message_output, filtered);
+          return [
+            ...prevMessages,
+            {
+              role: "assistant",
+              content: message_output,
+              time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+            },
+          ];
         } else if (lastMessage.content !== message_output) {
-          // If the content is different, replace the last message
-          const updatedMessages = [...filtered];
+          // replace the last message with the new one
+          const updatedMessages = [...prevMessages];
           updatedMessages[updatedMessages.length - 1] = {
             ...lastMessage,
             content: message_output,
@@ -245,10 +276,9 @@ For all other general questions, feel free to ask me directly — I’m here to 
           };
           return updatedMessages;
         }
-        // If content is the same, return filtered messages without changes
-        return filtered;
+        return prevMessages;
       });
-      setChatDisabled(false); // Enable chat after receiving a regular message output
+      setChatDisabled(false);
     } else {
       console.log("Unknown event type:", eventType); // Log unknown event types
     }
@@ -270,11 +300,14 @@ For all other general questions, feel free to ask me directly — I’m here to 
   const handleSend = () => {
     if (!input.trim()) return; // Do not send empty messages
 
-    // Check if UESelector was displayed and UEs are selected
-    if (messages.some(m => m.role === "ue_selector") && selectedUEIMSI.length === 0) {
-      alert("Please select at least one UE and press OK before proceeding.");
-      return;
-    }
+    // // Check if UESelector was displayed and UEs are selected
+    // if (
+    //   messages.some((m) => m.role === "ue_selector") &&
+    //   selectedUEIMSI.length === 0
+    // ) {
+    //   alert("Please select at least one UE and press OK before proceeding.");
+    //   return;
+    // }
 
     // Construct chat history for the backend
     const chatHistory = [];
@@ -304,9 +337,10 @@ For all other general questions, feel free to ask me directly — I’m here to 
     sendMessage(
       "intelligence_layer", // Target layer
       "network_user_chat", // Target agent/module
-      {
-        chat: chatHistory.map(({ role, content }) => ({ role, content })) // Include formatted chat history
-      }
+      chatHistory
+      // {
+      //   chat: chatHistory.map(({ role, content }) => ({ role, content })), // Include formatted chat history
+      // }
     );
 
     // Update local state: add user message and thinking indicator
@@ -317,12 +351,12 @@ For all other general questions, feel free to ask me directly — I’m here to 
         content: input,
         time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
       },
-      {
-        role: "thinking", // Add thinking message immediately after sending
-        content: "",
-        time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
-        id: "__thinking__" // Unique ID for easy identification
-      }
+      // {
+      //   role: "thinking", // Add thinking message immediately after sending
+      //   content: "",
+      //   time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+      //   id: "__thinking__", // Unique ID for easy identification
+      // },
     ]);
 
     setInput(""); // Clear the input field
@@ -341,171 +375,242 @@ For all other general questions, feel free to ask me directly — I’m here to 
     }
   };
 
-  /**
-   * Renders a single chat message based on its type and content.
-   * Uses different styles and components for user, assistant, monotone,
-   * UESelector, CuratedConfig, and Thinking messages.
-   * @param {object} msg - The message object.
-   * @param {number} index - The index of the message in the messages array.
-   * @returns {JSX.Element} The rendered chat message element.
-   */
+  // /**
+  //  * Renders a single chat message based on its type and content.
+  //  * Uses different styles and components for user, assistant, monotone,
+  //  * UESelector, CuratedConfig, and Thinking messages.
+  //  * @param {object} msg - The message object.
+  //  * @param {number} index - The index of the message in the messages array.
+  //  * @returns {JSX.Element} The rendered chat message element.
+  //  */
+  // const renderChatMessage = (msg, index) => {
+  //   const isUser = msg.role === "user";
+  //   const isAssistant = msg.role === "assistant";
+  //   const isMonotone = msg.role === "monotone";
+  //   const isCuratedConfig = msg.role === "curated_config";
+  //   const isUESelector = msg.role === "ue_selector";
+  //   const time = msg.time;
+
+  //   // Render CuratedConfigMessage component
+  //   if (isCuratedConfig) {
+  //     return (
+  //       <div key={index} className="chat chat-start">
+  //         <div className="chat-image avatar">
+  //           <Image
+  //             alt="Agent Icon"
+  //             src={agent_icon}
+  //             className="w-10 h-10 object-cover"
+  //             width={40}
+  //             height={40}
+  //           />
+  //         </div>
+  //         <div className="chat-header">
+  //           Assistant
+  //           <time className="text-xs opacity-50">{time}</time>
+  //         </div>
+  //         <div
+  //           className="chat-bubble chat-bubble-success whitespace-pre-wrap"
+  //           style={{ minWidth: 320, maxWidth: 600 }} // Adjust bubble size for content
+  //         >
+  //           <CuratedConfigMessage
+  //             content={msg.content}
+  //             chatDisabled={chatDisabled}
+  //             ues={selectedUEIMSI} // Pass selected UEs to the component
+  //             onDeploy={({
+  //               network_slice,
+  //               deployment_location,
+  //               model,
+  //               model_id,
+  //               ues,
+  //             }) => {
+  //               // Back up user's curated selection
+  //               setCuratedSelection({
+  //                 network_slice,
+  //                 deployment_location,
+  //                 model,
+  //                 model_id,
+  //                 ues,
+  //               });
+  //               setChatDisabled(true); // Disable chat after deployment
+
+  //               // Prepare chat history (following same approach as handleSend)
+  //               const chatHistory = [];
+  //               for (let i = 0; i < messages.length; i++) {
+  //                 const message = messages[i];
+  //                 if (["user", "assistant"].includes(message.role)) {
+  //                   chatHistory.push({
+  //                     role: message.role,
+  //                     content: message.content,
+  //                   });
+  //                 } else if (message.role === "monotone") {
+  //                   chatHistory.push({
+  //                     role: "assistant",
+  //                     content: `${message.title} ${message.content}`,
+  //                   });
+  //                 }
+  //               }
+  //               // Add the hardcoded user intent
+  //               chatHistory.push({
+  //                 role: "user",
+  //                 content: `I would like to know the subscriptions that has access to the slice: ${network_slice}`,
+  //               });
+  //               // Make API call to backend with only chat info for now
+  //               sendMessage("intelligence_layer", "network_user_chat", {
+  //                 type: "subscription",
+  //                 chat: chatHistory,
+  //               });
+  //             }}
+  //           />
+  //         </div>
+  //       </div>
+  //     );
+  //   }
+
+  //   // Render ThinkingMessage component
+  //   if (msg.role === "thinking") {
+  //     return (
+  //       <div key={index} className="chat chat-start">
+  //         <div className="chat-image avatar">
+  //           <Image
+  //             alt="Agent Icon"
+  //             src={agent_icon}
+  //             className="w-10 h-10 object-cover"
+  //             width={40}
+  //             height={40}
+  //           />
+  //         </div>
+  //         <div className="chat-header">
+  //           Assistant
+  //           <time className="text-xs opacity-50">{time}</time>
+  //         </div>
+  //         <div
+  //           className="chat-bubble chat-bubble-success whitespace-pre-wrap"
+  //           style={{ minWidth: 200, maxWidth: 400 }}
+  //         >
+  //           <ThinkingMessage /> {/* Render the thinking animation */}
+  //         </div>
+  //       </div>
+  //     );
+  //   }
+
+  //   // Render UESelector component
+  //   if (isUESelector) {
+  //     return (
+  //       <div key={index} className="chat chat-start">
+  //         <div className="chat-image avatar">
+  //           <Image
+  //             alt="Agent Icon"
+  //             src={agent_icon}
+  //             className="w-10 h-10 object-cover"
+  //             width={40}
+  //             height={40}
+  //           />
+  //         </div>
+  //         <div className="chat-header">
+  //           Assistant
+  //           <time className="text-xs opacity-50">{time}</time>
+  //         </div>
+  //         {/* Render the UESelector component inside a chat bubble */}
+  //         <div
+  //           className="chat-bubble chat-bubble-success"
+  //           style={{ minWidth: 240, maxWidth: 560, padding: 0 }}
+  //         >
+  //           <UESelector
+  //             ues={msg.content} // Pass the UEs data to the selector
+  //             chatDisabled={chatDisabled}
+  //             onSelect={(selectedIMSIs) => {
+  //               // Optionally update selection state
+  //             }}
+  //             onOk={(selectedIMSIs) => {
+  //               setSelectedUEIMSI(selectedIMSIs);
+
+  //               // 1. Display the final assistant message
+  //               setMessages((prev) => [
+  //                 ...prev,
+  //                 {
+  //                   role: "assistant",
+  //                   content:
+  //                     "Thank you! The model with your chosen configuration will start deploying soon, and the subscriptions you selected will receive access shortly.",
+  //                   time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+  //                 },
+  //               ]);
+
+  //               // 2. Send deployment API call if lastCuratedConfig is available
+  //               if (lastCuratedConfig) {
+  //                 const { models, network_slice, deployment_location } =
+  //                   lastCuratedConfig;
+  //                 const model = models[0]?.name || "";
+  //                 const model_id = models[0]?.id || "";
+  //                 sendMessage("intelligence_layer", "network_user_chat", {
+  //                   command: "deploy_curated_model_with_subscriptions",
+  //                   model,
+  //                   deployment: deployment_location,
+  //                   slice: network_slice,
+  //                   subscriptions: selectedIMSIs,
+  //                   model_id,
+  //                 });
+  //               }
+
+  //               // 3. Permanently disable the chat (cannot send new input)
+  //               setChatDisabled(true); // Disable chat for the rest of session
+  //             }}
+  //           />
+  //         </div>
+  //       </div>
+  //     );
+  //   }
+
+  //   // Render standard user, assistant, or monotone messages
+  //   return (
+  //     <div key={index} className={`chat ${isUser ? "chat-end" : "chat-start"}`}>
+  //       {(isAssistant ||
+  //         (isMonotone && msg.title && msg.title === "Agent Activated:")) && (
+  //         <div className="chat-image avatar">
+  //           <Image
+  //             alt="Agent Icon"
+  //             src={agent_icon}
+  //             className="w-10 h-10 object-cover"
+  //             width={40}
+  //             height={40}
+  //           />
+  //         </div>
+  //       )}
+  //       {isMonotone && msg.title && msg.title.includes("Tool") && (
+  //         <div className="chat-image avatar">
+  //           <Image
+  //             alt="Tool Icon"
+  //             src={tool_icon}
+  //             className="w-10 h-10 object-cover"
+  //             width={40}
+  //             height={40}
+  //           />
+  //         </div>
+  //       )}
+  //       <div className="chat-header">
+  //         {isUser ? "User" : isAssistant ? "Assistant" : msg.title}
+  //         <time className="text-xs opacity-50">{time}</time>
+  //       </div>
+  //       <pre
+  //         className={`chat-bubble whitespace-pre-wrap ${
+  //           isUser
+  //             ? "chat-bubble-info"
+  //             : isAssistant
+  //             ? "chat-bubble-success"
+  //             : "bg-base-200 text-base-content"
+  //         }`}
+  //       >
+  //         {msg.content}
+  //       </pre>
+  //     </div>
+  //   );
+  // };
+
   const renderChatMessage = (msg, index) => {
     const isUser = msg.role === "user";
     const isAssistant = msg.role === "assistant";
     const isMonotone = msg.role === "monotone";
-    const isCuratedConfig = msg.role === "curated_config";
-    const isUESelector = msg.role === "ue_selector";
     const time = msg.time;
 
-    // Render CuratedConfigMessage component
-    if (isCuratedConfig) {
-      return (
-        <div key={index} className="chat chat-start">
-          <div className="chat-image avatar">
-            <Image
-              alt="Agent Icon"
-              src={agent_icon}
-              className="w-10 h-10 object-cover"
-              width={40}
-              height={40}
-            />
-          </div>
-          <div className="chat-header">
-            Assistant
-            <time className="text-xs opacity-50">{time}</time>
-          </div>
-          <div
-            className="chat-bubble chat-bubble-success whitespace-pre-wrap"
-            style={{ minWidth: 320, maxWidth: 600 }} // Adjust bubble size for content
-          >
-            <CuratedConfigMessage
-              content={msg.content}
-              chatDisabled={chatDisabled}
-              ues={selectedUEIMSI} // Pass selected UEs to the component
-              onDeploy={({ network_slice, deployment_location, model, model_id, ues }) => {
-                // Back up user's curated selection
-                setCuratedSelection({ network_slice, deployment_location, model, model_id, ues });
-                setChatDisabled(true); // Disable chat after deployment
-
-                // Prepare chat history (following same approach as handleSend)
-                const chatHistory = [];
-                for (let i = 0; i < messages.length; i++) {
-                  const message = messages[i];
-                  if (["user", "assistant"].includes(message.role)) {
-                    chatHistory.push({ role: message.role, content: message.content });
-                  } else if (message.role === "monotone") {
-                    chatHistory.push({
-                      role: "assistant",
-                      content: `${message.title} ${message.content}`,
-                    });
-                  }
-                }
-                // Add the hardcoded user intent
-                chatHistory.push({
-                  role: "user",
-                  content: `I would like to know the subscriptions that has access to the slice: ${network_slice}`,
-                });
-                // Make API call to backend with only chat info for now
-                sendMessage(
-                  "intelligence_layer",
-                  "network_user_chat",
-                  {
-                    type: "subscription",
-                    chat: chatHistory,
-                  }
-                );
-              }}
-            />
-          </div>
-        </div>
-      );
-    }
-
-    // Render ThinkingMessage component
-    if (msg.role === "thinking") {
-      return (
-        <div key={index} className="chat chat-start">
-          <div className="chat-image avatar">
-            <Image
-              alt="Agent Icon"
-              src={agent_icon}
-              className="w-10 h-10 object-cover"
-              width={40}
-              height={40}
-            />
-          </div>
-          <div className="chat-header">
-            Assistant
-            <time className="text-xs opacity-50">{time}</time>
-          </div>
-          <div className="chat-bubble chat-bubble-success whitespace-pre-wrap" style={{ minWidth: 200, maxWidth: 400 }}>
-            <ThinkingMessage /> {/* Render the thinking animation */}
-          </div>
-        </div>
-      );
-    }
-
-    // Render UESelector component
-    if (isUESelector) {
-      return (
-        <div key={index} className="chat chat-start">
-          <div className="chat-image avatar">
-            <Image alt="Agent Icon" src={agent_icon} className="w-10 h-10 object-cover" width={40} height={40} />
-          </div>
-          <div className="chat-header">
-            Assistant
-            <time className="text-xs opacity-50">{time}</time>
-          </div>
-          {/* Render the UESelector component inside a chat bubble */}
-          <div className="chat-bubble chat-bubble-success" style={{ minWidth: 240, maxWidth: 560, padding: 0 }}>
-            <UESelector
-              ues={msg.content} // Pass the UEs data to the selector
-              chatDisabled={chatDisabled}
-              onSelect={selectedIMSIs => {
-                // Optionally update selection state
-              }}
-              onOk={selectedIMSIs => {
-                setSelectedUEIMSI(selectedIMSIs);
-
-                // 1. Display the final assistant message
-                setMessages(prev => [
-                  ...prev,
-                  {
-                    role: "assistant",
-                    content: "Thank you! The model with your chosen configuration will start deploying soon, and the subscriptions you selected will receive access shortly.",
-                    time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
-                  },
-                ]);
-
-                // 2. Send deployment API call if lastCuratedConfig is available
-                if (lastCuratedConfig) {
-                  const { models, network_slice, deployment_location } = lastCuratedConfig;
-                  const model = models[0]?.name || "";
-                  const model_id = models[0]?.id || "";
-                  sendMessage(
-                    "intelligence_layer",
-                    "network_user_chat",
-                    {
-                      command: "deploy_curated_model_with_subscriptions",
-                      model,
-                      deployment: deployment_location,
-                      slice: network_slice,
-                      subscriptions: selectedIMSIs,
-                      model_id,
-                    }
-                  );
-                }
-
-                // 3. Permanently disable the chat (cannot send new input)
-                setChatDisabled(true); // Disable chat for the rest of session
-              }}
-            />
-          </div>
-        </div>
-      );
-    }
-
-    // Render standard user, assistant, or monotone messages
     return (
       <div key={index} className={`chat ${isUser ? "chat-end" : "chat-start"}`}>
         {(isAssistant ||
@@ -575,7 +680,7 @@ For all other general questions, feel free to ask me directly — I’m here to 
         >
           <span className="text-xl">NEW</span>
         </button>
-      <textarea
+        <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -593,8 +698,6 @@ For all other general questions, feel free to ask me directly — I’m here to 
         </button>
       </div>
 
-      {/* Dropdown removed */}
-
       {/* Warning Modal */}
       {showWarning && (
         <div className="modal modal-open">
@@ -604,10 +707,13 @@ For all other general questions, feel free to ask me directly — I’m here to 
               Are you sure, your chat history will be deleted?
             </p>
             <div className="modal-action">
-              <button className="btn btn-ghost" onClick={() => {
-                setShowWarning(false);
-                setTempSelectedButton(null);
-              }}>
+              <button
+                className="btn btn-ghost"
+                onClick={() => {
+                  setShowWarning(false);
+                  setTempSelectedButton(null);
+                }}
+              >
                 Cancel
               </button>
               <button className="btn btn-primary" onClick={confirmClearChat}>

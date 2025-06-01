@@ -7,17 +7,20 @@ import BaseStationDashboard from "./components/BaseStationDashboard";
 import LogDashboard from "./components/LogDashboard";
 import KnowledgeLayerDashboard from "./components/KnowledgeLayerDashboard";
 import NetworkEngineerChat from "./components/NetworkEngineerChat";
-import UserChat from "./components/NetworkUserChat";
+import NetworkUserChat from "./components/NetworkUserChat";
 
 export default function Home() {
   const [websocket, setWebsocket] = useState(null);
   const [wsConnectionStatus, setWsConnectionStatus] = useState("disconnected");
   const [simulationState, setSimulationState] = useState(null);
   const [knowledgeQueryResponse, setKnowledgeQueryResponse] = useState(null);
-  const [networkEngineerChatEvent, setNetworkEngineerChatEvent] = useState(null);
+  const [networkEngineerChatEvent, setNetworkEngineerChatEvent] =
+    useState(null);
   const [userChatEvent, setUserChatEvent] = useState(null);
   const [bottomTabListIndex, setBottomTabListIndex] = useState("ue_dashboard");
-  const [rightTabListIndex, setRightTabListIndex] = useState("network_engineer_chat");
+  const [rightTabListIndex, setRightTabListIndex] = useState(
+    "network_engineer_chat"
+  );
   const [knowledgeLayerRoutes, setKnowledgeLayerRoutes] = useState({});
   const memoryRef = useRef([]);
 
@@ -53,10 +56,14 @@ export default function Home() {
           console.log("Knowledge Layer Value Response:", response);
           setKnowledgeQueryResponse(response);
         }
-      } else if(layer == "intelligence_layer_user"){
-        setUserChatEvent(response);
-      } else if (layer === "intelligence_layer") {
-            setNetworkEngineerChatEvent(response);
+      } else if (layer == "intelligence_layer") {
+        if (command === "network_engineer_chat_response") {
+          setNetworkEngineerChatEvent(response);
+        } else if (command === "network_user_chat_response") {
+          setUserChatEvent(response);
+        } else {
+          console.error(`Unknown command from intelligence_layer: ${command}`);
+        }
       } else {
         console.error(`Unknown layer: ${layer}`);
       }
@@ -170,85 +177,93 @@ export default function Home() {
           <div role="tablist" className="tabs tabs-border">
             <a
               role="tab"
-          className={
-            "tab " +
-            (rightTabListIndex === "network_engineer_chat" ? "tab-active" : "")
-          }
-          onClick={() => setRightTabListIndex("network_engineer_chat")}
-        >
-          Chat as Network Engineer
-        </a>
-        <a
-          role="tab"
-          className={
-            "tab " +
-            (rightTabListIndex === "network_user_chat" ? "tab-active" : "")
-          }
-          onClick={() => setRightTabListIndex("network_user_chat")}
-        >
-          Chat as Network User
-        </a>
-        <a
-          role="tab"
-          className={
-            "tab " +
-            (rightTabListIndex === "knowledge_dashboard"
-              ? "tab-active"
-              : "")
-          }
-          onClick={() => setRightTabListIndex("knowledge_dashboard")}
-        >
-          Knowledge Dashboard
-        </a>
-        <a
-          role="tab"
-          className={
-            "tab " +
-            (rightTabListIndex === "log_dashboard" ? "tab-active" : "")
-          }
-          onClick={() => setRightTabListIndex("log_dashboard")}
-        >
-          Log Dashboard
-        </a>
-      </div>
-      <div
-        className={
-          rightTabListIndex === "network_engineer_chat"
-            ? "flex-1 flex min-h-0"
-            : "hidden"
-        }
-      >
-        <NetworkEngineerChat
-          streamedChatEvent={networkEngineerChatEvent}
-          setStreamedChatEvent={setNetworkEngineerChatEvent}
-          sendMessage={sendMessage}
-        />
-      </div>
-      <div
-        className={
-          rightTabListIndex === "network_user_chat" ? "flex-1 flex min-h-0" : "hidden"
-        }
-      >
-        <UserChat
-          streamedChatEvent={userChatEvent}
-          setStreamedChatEvent={setUserChatEvent}
-          sendMessage={sendMessage}
-        />
-      </div>
-      <div
-        className={rightTabListIndex === "knowledge_dashboard" ? "" : "hidden"}
-      >
-        <KnowledgeLayerDashboard
-          sendMessage={sendMessage}
-          knowledgeLayerRoutes={knowledgeLayerRoutes}
-          knowledgeQueryResponse={knowledgeQueryResponse}
-        />
-      </div>
-      <div
-        className={rightTabListIndex === "log_dashboard" ? "" : "hidden"}
-      >
-        <LogDashboard simulationState={simulationState} />
-      </div>
+              className={
+                "tab " +
+                (rightTabListIndex === "network_engineer_chat"
+                  ? "tab-active"
+                  : "")
+              }
+              onClick={() => setRightTabListIndex("network_engineer_chat")}
+            >
+              Chat as Network Engineer
+            </a>
+            <a
+              role="tab"
+              className={
+                "tab " +
+                (rightTabListIndex === "network_user_chat" ? "tab-active" : "")
+              }
+              onClick={() => setRightTabListIndex("network_user_chat")}
+            >
+              Chat as Network User
+            </a>
+            <a
+              role="tab"
+              className={
+                "tab " +
+                (rightTabListIndex === "knowledge_dashboard"
+                  ? "tab-active"
+                  : "")
+              }
+              onClick={() => setRightTabListIndex("knowledge_dashboard")}
+            >
+              Knowledge Dashboard
+            </a>
+            <a
+              role="tab"
+              className={
+                "tab " +
+                (rightTabListIndex === "log_dashboard" ? "tab-active" : "")
+              }
+              onClick={() => setRightTabListIndex("log_dashboard")}
+            >
+              Log Dashboard
+            </a>
+          </div>
+          <div
+            className={
+              rightTabListIndex === "network_engineer_chat"
+                ? "flex-1 flex min-h-0"
+                : "hidden"
+            }
+          >
+            <NetworkEngineerChat
+              streamedChatEvent={networkEngineerChatEvent}
+              setStreamedChatEvent={setNetworkEngineerChatEvent}
+              sendMessage={sendMessage}
+            />
+          </div>
+          <div
+            className={
+              rightTabListIndex === "network_user_chat"
+                ? "flex-1 flex min-h-0"
+                : "hidden"
+            }
+          >
+            <NetworkUserChat
+              streamedChatEvent={userChatEvent}
+              setStreamedChatEvent={setUserChatEvent}
+              sendMessage={sendMessage}
+            />
+          </div>
+          <div
+            className={
+              rightTabListIndex === "knowledge_dashboard"
+                ? "flex-1 flex min-h-0"
+                : "hidden"
+            }
+          >
+            <KnowledgeLayerDashboard
+              sendMessage={sendMessage}
+              knowledgeLayerRoutes={knowledgeLayerRoutes}
+              knowledgeQueryResponse={knowledgeQueryResponse}
+            />
+          </div>
+          <div
+            className={rightTabListIndex === "log_dashboard" ? "" : "hidden"}
+          >
+            <LogDashboard simulationState={simulationState} />
+          </div>
         </div>
       </div>
       <div className="flex flex-col gap-3">

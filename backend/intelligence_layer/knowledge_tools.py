@@ -8,7 +8,7 @@ knowledge_router = KnowledgeRouter()  # get the singleton instance of KnowledgeR
 
 @function_tool
 async def get_knowledge(knowledge_query_key: str) -> str:
-    """Get the knowledge of a specific key in the network knowledge database.
+    """Get the knowledge of a specific key in the knowledge database.
 
     Args:
         knowledge_query_key (str): The key to query in the knowledge layer.
@@ -18,7 +18,7 @@ async def get_knowledge(knowledge_query_key: str) -> str:
 
 @function_tool
 async def get_knowledge_bulk(knowledge_query_key_list: list[str]) -> str:
-    """Get the knowledge of a list of keys in the network knowledge database.
+    """Get the knowledge of a list of keys in the knowledge database.
 
     Args:
         knowledge_query_key_list (list[str]): The list of keys to query in the knowledge layer.

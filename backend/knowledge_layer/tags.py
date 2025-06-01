@@ -20,3 +20,6 @@ class KnowledgeTag(Enum):
 
     # knowledge layer related
     KNOWLEDGE_GUIDE = "KNOWLEDGE_GUIDE"
+
+    # AI services related
+    AI_SERVICE = "AI_SERVICE"

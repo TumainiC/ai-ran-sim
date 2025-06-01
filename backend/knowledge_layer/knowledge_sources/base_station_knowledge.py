@@ -1,4 +1,3 @@
-import json
 import inspect
 from ..knowledge_entry import knowledge_entry
 from ..tags import KnowledgeTag
@@ -61,7 +60,7 @@ def bs_knowledge_help(sim, knowledge_router, query_key, params):
     related=[],
 )
 def get_bs_repr_list(sim, knowledge_router, query_key, params):
-    list_of_bs_repr = [repr(bs) for bs in sim.bs_list.values()]
+    list_of_bs_repr = [repr(bs) for bs in sim.base_station_list.values()]
     return (
         f"Currently there are {len(list_of_bs_repr)} BSs in the simulation:\n"
         f"{"\n".join(list_of_bs_repr)}\n"
@@ -79,7 +78,7 @@ def get_bs_repr_list(sim, knowledge_router, query_key, params):
 )
 def get_bs_attributes(sim, knowledge_router, query_key, params):
     bs_id = params["bs_id"]
-    bs = sim.bs_list.get(bs_id, None)
+    bs = sim.base_station_list.get(bs_id, None)
     if bs is None:
         return f"Base Station with ID: {bs_id} not found."
     response = f"Attributes of BS {bs_id}:\n"
@@ -144,7 +143,7 @@ def get_bs_attributes(sim, knowledge_router, query_key, params):
 def get_bs_attribute_value(sim, knowledge_router, query_key, params):
     bs_id = params["bs_id"]
     attribute_name = params["attribute_name"]
-    bs = sim.bs_list.get(bs_id, None)
+    bs = sim.base_station_list.get(bs_id, None)
     if bs is None:
         return f"Base Station with ID: {bs_id} not found."
     if attribute_name not in SUPPORTED_BS_ATTRIBUTES:

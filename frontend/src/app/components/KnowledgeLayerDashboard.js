@@ -93,27 +93,29 @@ export default function KnowledgeLayerDashboard({
   };
 
   return (
-    <div className="flex-1">
-      <button
-        className="btn btn-outline my-3 mr-3"
-        onClick={getKnowledgeRoutes}
-      >
-        1. Get Knowledge Routes
-      </button>
-      <button
-        className="btn btn-outline my-3 mr-3"
-        onClick={generateRouteDotGraph}
-        disabled={!knowledgeLayerRoutes}
-      >
-        2. Generate Route DOT graph
-      </button>
-      <a
-        href="https://dreampuf.github.io/GraphvizOnline/"
-        target="_blank"
-        className="btn btn-outline my-3"
-      >
-        3. Open DOT Visualizer Page
-      </a>
+    <div className="flex-1 h-full flex flex-col">
+      <div className="flex flex-row gap-3 items-center">
+        <button
+          className="btn btn-outline my-3 mr-3"
+          onClick={getKnowledgeRoutes}
+        >
+          1. Get Knowledge Routes
+        </button>
+        <button
+          className="btn btn-outline my-3 mr-3"
+          onClick={generateRouteDotGraph}
+          disabled={!knowledgeLayerRoutes}
+        >
+          2. Generate Route DOT graph
+        </button>
+        <a
+          href="https://dreampuf.github.io/GraphvizOnline/"
+          target="_blank"
+          className="btn btn-outline my-3"
+        >
+          3. Open DOT Visualizer Page
+        </a>
+      </div>
 
       <div className="flex flex-row gap-3 items-center">
         <input
@@ -127,7 +129,7 @@ export default function KnowledgeLayerDashboard({
           Query Knowledge
         </button>
       </div>
-      <div>
+      <div className="overflow-y-auto ">
         <div className="my-4">Knowledge Layer Response</div>
         <pre className="whitespace-pre-wrap break-words">
           {knowledgeQueryResponse}
