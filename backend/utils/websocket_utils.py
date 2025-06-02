@@ -193,3 +193,28 @@ async def send_message_output_item_event(websocket, command, message_output):
         error=None,
     )
     await websocket.send(response.to_json())
+
+
+async def handle_network_user_action(
+    websocket, simulation_engine, knowledge_router, data
+):
+    action_type = data.get("action_type")
+    response_content = None
+    if action_type == "query_knowledge":
+        query = data.get("query")
+        response_content = {
+            "action_type": action_type,
+            "query_response":knowledge_router.query_knowledge(query)
+        }
+    else:
+        response_content = {
+            "action_type": action_type,
+            "error": f"Unsupported action type: {action_type}",
+        }
+    response = WebSocketResponse(
+        layer="intelligence_layer",
+        command="network_user_action_response",
+        response=response_content,
+        error=None,
+    )
+    await websocket.send(response.to_json())

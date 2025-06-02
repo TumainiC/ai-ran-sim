@@ -1,11 +1,13 @@
+'use client';
+
 import React, { useState, useEffect, useRef } from "react";
 import dayjs from "dayjs";
 import Image from "next/image";
-import { UESelector } from "./UESelector";
-import ThinkingMessage from "./ThinkingMessage";
-import CuratedConfigMessage from "./CuratedConfigMessage";
-import agent_icon from "../../assets/agent_icon.png";
-import tool_icon from "../../assets/tool_icon.png";
+// import { UESelector } from "../../UESelector";
+// import ThinkingMessage from "../../ThinkingMessage";
+// import CuratedConfigMessage from "../../CuratedConfigMessage";
+import agent_icon from "../../../assets/agent_icon.png";
+import tool_icon from "../../../assets/tool_icon.png";
 
 const getDefaultWelcomeMessage = () => ({
   role: "assistant",

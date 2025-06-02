@@ -14,6 +14,7 @@ from utils import (
     handle_get_routes,
     handle_query_knowledge,
     handle_network_chat,
+    handle_network_user_action,
 )
 from network_layer.simulation_engine import SimulationEngine
 from utils import setup_logging
@@ -41,6 +42,7 @@ COMMAND_HANDLERS = {
         command="network_engineer_chat_response",
         agent_func=engineer_chat_agent,
     ),
+    ("intelligence_layer", "network_user_action"): handle_network_user_action,
 }
 
 
@@ -75,7 +77,7 @@ async def websocket_handler(websocket):
                 )
             else:
                 response = WebSocketResponse(
-                    layer=layer, command=command, response=None, error="Unknown command"
+                    layer=layer, command=command, response=None, error=f"Unknown command: {command}"
                 )
                 await websocket.send(response.to_json())
         except Exception as e:

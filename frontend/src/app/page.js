@@ -7,7 +7,7 @@ import BaseStationDashboard from "./components/BaseStationDashboard";
 import LogDashboard from "./components/LogDashboard";
 import KnowledgeLayerDashboard from "./components/KnowledgeLayerDashboard";
 import NetworkEngineerChat from "./components/NetworkEngineerChat";
-import NetworkUserChat from "./components/NetworkUserChat";
+import NetworkUserChat from "./components/NetworkUserChat/NetworkUserChat";
 
 export default function Home() {
   const [websocket, setWebsocket] = useState(null);
@@ -17,10 +17,10 @@ export default function Home() {
   const [networkEngineerChatEvent, setNetworkEngineerChatEvent] =
     useState(null);
   const [userChatEvent, setUserChatEvent] = useState(null);
+  const [userActionResponse, setUserActionResponse] = useState(null);
   const [bottomTabListIndex, setBottomTabListIndex] = useState("ue_dashboard");
-  const [rightTabListIndex, setRightTabListIndex] = useState(
-    "network_engineer_chat"
-  );
+  const [rightTabListIndex, setRightTabListIndex] =
+    useState("network_user_chat");
   const [knowledgeLayerRoutes, setKnowledgeLayerRoutes] = useState({});
   const memoryRef = useRef([]);
 
@@ -61,6 +61,8 @@ export default function Home() {
           setNetworkEngineerChatEvent(response);
         } else if (command === "network_user_chat_response") {
           setUserChatEvent(response);
+        } else if (command === "network_user_action_response") {
+          setUserActionResponse(response);
         } else {
           console.error(`Unknown command from intelligence_layer: ${command}`);
         }
@@ -241,6 +243,7 @@ export default function Home() {
             }
           >
             <NetworkUserChat
+              userActionResponse={userActionResponse}
               streamedChatEvent={userChatEvent}
               setStreamedChatEvent={setUserChatEvent}
               sendMessage={sendMessage}
