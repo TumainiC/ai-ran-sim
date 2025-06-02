@@ -2,6 +2,8 @@ import Image from "next/image";
 import agent_icon from "../../../assets/agent_icon.png";
 import tool_icon from "../../../assets/tool_icon.png";
 import thinking_icon from "../../../assets/thinking_icon.png";
+import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm';
 
 export default function renderMessage(index, msg) {
   const isUser = msg.role === "user";
@@ -49,7 +51,8 @@ export default function renderMessage(index, msg) {
         {isUser ? "User" : isAssistant ? "Assistant" : msg.title}
         <time className="text-xs opacity-50">{time}</time>
       </div>
-      <pre
+        
+      <div
         className={`chat-bubble whitespace-pre-wrap ${
           isUser
             ? "chat-bubble-info"
@@ -59,7 +62,7 @@ export default function renderMessage(index, msg) {
         }`}
       >
         {msg.content}
-      </pre>
+      </div>
     </div>
   );
 }

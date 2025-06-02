@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import SimulationRenderer from "./components/SimulationRenderer";
 import UEDashboard from "./components/UEDashboard";
 import BaseStationDashboard from "./components/BaseStationDashboard";
@@ -23,6 +23,7 @@ export default function Home() {
     useState("network_user_chat");
   const [knowledgeLayerRoutes, setKnowledgeLayerRoutes] = useState({});
   const memoryRef = useRef([]);
+  const wsRef = useRef(null);
 
   const wsMessageHandler = (event) => {
     console.log("WebSocket message received:", event);
@@ -89,11 +90,14 @@ export default function Home() {
     };
 
     ws.onmessage = wsMessageHandler;
+
+    wsRef.current = ws;
   };
 
   const sendMessage = (layer, command, data = {}) => {
-    if (websocket && wsConnectionStatus === "connected") {
-      websocket.send(
+    const ws = wsRef.current;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(
         JSON.stringify({
           layer,
           command,
@@ -172,7 +176,6 @@ export default function Home() {
           Save Memory to JSON
         </button>
       </div>
-
       <div className="flex flex-row gap-4">
         <SimulationRenderer simulationState={simulationState} />
         <div className="flex flex-col gap-3 h-[1000px] my-5 flex-1">
@@ -269,6 +272,7 @@ export default function Home() {
           </div>
         </div>
       </div>
+
       <div className="flex flex-col gap-3">
         <div role="tablist" className="tabs tabs-border">
           <a
