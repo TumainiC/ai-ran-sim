@@ -1,11 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function KnowledgeLayerDashboard({
   sendMessage,
-  knowledgeLayerRoutes,
-  knowledgeQueryResponse,
+  registerMessageHandler,
 }) {
   const [knowledgeQueryInput, setKnowledgeQueryInput] = useState("");
+  const [knowledgeLayerRoutes, setKnowledgeLayerRoutes] = useState(null);
+  const [knowledgeQueryResponse, setKnowledgeQueryResponse] = useState("");
+
+  useEffect(() => {
+    if (!registerMessageHandler) {
+      console.error("registerMessageHandler is not provided");
+      return;
+    }
+    registerMessageHandler("knowledge_layer", "get_routes", (response) => {
+      console.log("Received knowledge layer routes:", response);
+      setKnowledgeLayerRoutes(response);
+    });
+
+    registerMessageHandler("knowledge_layer", "query_knowledge", (response) => {
+      console.log("Received knowledge query response:", response);
+      setKnowledgeQueryResponse(response);
+    });
+  }, []);
+
   const getKnowledgeRoutes = () => {
     if (!sendMessage) {
       console.error("websocket is not connected");

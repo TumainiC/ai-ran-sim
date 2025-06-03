@@ -224,7 +224,7 @@ export default function SimulationRenderer({ simulationState }) {
         <div
           style={{
             position: "absolute",
-            left: mousePos.x ,
+            left: mousePos.x,
             top: mousePos.y - 20,
             background: "rgba(0, 0, 255, 0.9)",
             border: "1px solid #ccc",

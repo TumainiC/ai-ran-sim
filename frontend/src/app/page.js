@@ -13,17 +13,14 @@ export default function Home() {
   const [websocket, setWebsocket] = useState(null);
   const [wsConnectionStatus, setWsConnectionStatus] = useState("disconnected");
   const [simulationState, setSimulationState] = useState(null);
-  const [knowledgeQueryResponse, setKnowledgeQueryResponse] = useState(null);
-  const [networkEngineerChatEvent, setNetworkEngineerChatEvent] =
-    useState(null);
-  const [userChatEvent, setUserChatEvent] = useState(null);
-  const [userActionResponse, setUserActionResponse] = useState(null);
   const [bottomTabListIndex, setBottomTabListIndex] = useState("ue_dashboard");
   const [rightTabListIndex, setRightTabListIndex] =
     useState("network_user_chat");
-  const [knowledgeLayerRoutes, setKnowledgeLayerRoutes] = useState({});
-  const memoryRef = useRef([]);
+  const [messageHandlers, setMessageHandlers] = useState({});
   const wsRef = useRef(null);
+  const memoryRef = useRef([]);
+
+  const hasInitialized = useRef(false);
 
   const wsMessageHandler = (event) => {
     console.log("WebSocket message received:", event);
@@ -36,41 +33,32 @@ export default function Home() {
         console.error(`Error from ${layer}: ${error}`);
         return;
       }
-      if (layer === "network_layer") {
-        if (command === "simulation_state_update") {
-          console.log("Simulation State Update:", response);
-          setSimulationState(response);
-          memoryRef.current.push(response);
-          // Maintain fixed size of 1000
-          if (memoryRef.current.length > 1000) {
-            memoryRef.current.shift();
-          }
-        }
-        if (command === "get_simulation_state") {
-          console.log("Simulation State:", response);
-        }
-      } else if (layer === "knowledge_layer") {
-        if (command === "get_routes") {
-          console.log("Knowledge Layer Routes:", response);
-          setKnowledgeLayerRoutes(response);
-        } else if (command === "query_knowledge") {
-          console.log("Knowledge Layer Value Response:", response);
-          setKnowledgeQueryResponse(response);
-        }
-      } else if (layer == "intelligence_layer") {
-        if (command === "network_engineer_chat_response") {
-          setNetworkEngineerChatEvent(response);
-        } else if (command === "network_user_chat_response") {
-          setUserChatEvent(response);
-        } else if (command === "network_user_action_response") {
-          setUserActionResponse(response);
-        } else {
-          console.error(`Unknown command from intelligence_layer: ${command}`);
-        }
+
+      if (!layer || !command) {
+        console.error("Invalid message format:", messageData);
+        return;
+      }
+
+      // Check if a specific handler is registered for this layer and command
+      const handlerKey = `${layer}_${command}`;
+      if (messageHandlers[handlerKey]) {
+        console.log(`Handling message with registered handler: ${handlerKey}`);
+        messageHandlers[handlerKey](response);
+        return;
       } else {
-        console.error(`Unknown layer: ${layer}`);
+        console.warn(
+          `No handler registered for ${layer} command: ${command}. Nothing to do.`
+        );
       }
     }
+  };
+
+  const registerMessageHandler = (layer, command, handler) => {
+    console.log("Registering message handler:", layer, command);
+    setMessageHandlers((prevHandlers) => ({
+      ...prevHandlers,
+      [`${layer}_${command}`]: handler,
+    }));
   };
 
   const connectWebSocket = () => {
@@ -120,6 +108,33 @@ export default function Home() {
   const onGetSimulationState = () => {
     sendMessage("network_layer", "get_simulation_state");
   };
+
+  useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
+    registerMessageHandler(
+      "network_layer",
+      "simulation_state_update",
+      (response) => {
+        console.log("Simulation State Update:", response);
+        setSimulationState(response);
+        memoryRef.current.push(response);
+        // Maintain fixed size of 1000
+        if (memoryRef.current.length > 1000) {
+          memoryRef.current.shift();
+        }
+      }
+    );
+
+    registerMessageHandler(
+      "network_layer",
+      "get_simulation_state",
+      (response) => {
+        console.log("Simulation State:", response);
+      }
+    );
+  }, []);
 
   const saveMemoryToFile = () => {
     const dataStr = JSON.stringify(memoryRef.current, null, 2);
@@ -225,50 +240,32 @@ export default function Home() {
               Log Dashboard
             </a>
           </div>
-          <div
-            className={
-              rightTabListIndex === "network_engineer_chat"
-                ? "flex-1 flex min-h-0"
-                : "hidden"
-            }
-          >
-            <NetworkEngineerChat
-              streamedChatEvent={networkEngineerChatEvent}
-              setStreamedChatEvent={setNetworkEngineerChatEvent}
-              sendMessage={sendMessage}
-            />
-          </div>
-          <div
-            className={
-              rightTabListIndex === "network_user_chat"
-                ? "flex-1 flex min-h-0"
-                : "hidden"
-            }
-          >
-            <NetworkUserChat
-              userActionResponse={userActionResponse}
-              streamedChatEvent={userChatEvent}
-              setStreamedChatEvent={setUserChatEvent}
-              sendMessage={sendMessage}
-            />
-          </div>
-          <div
-            className={
-              rightTabListIndex === "knowledge_dashboard"
-                ? "flex-1 flex min-h-0"
-                : "hidden"
-            }
-          >
-            <KnowledgeLayerDashboard
-              sendMessage={sendMessage}
-              knowledgeLayerRoutes={knowledgeLayerRoutes}
-              knowledgeQueryResponse={knowledgeQueryResponse}
-            />
-          </div>
-          <div
-            className={rightTabListIndex === "log_dashboard" ? "" : "hidden"}
-          >
-            <LogDashboard simulationState={simulationState} />
+
+          <div className="flex-1 flex min-h-0">
+            {rightTabListIndex === "network_user_chat" && (
+              <NetworkUserChat
+                sendMessage={sendMessage}
+                registerMessageHandler={registerMessageHandler}
+              />
+            )}
+
+            {rightTabListIndex === "network_engineer_chat" && (
+              <NetworkEngineerChat
+                registerMessageHandler={registerMessageHandler}
+                sendMessage={sendMessage}
+              />
+            )}
+
+            {rightTabListIndex === "knowledge_dashboard" && (
+              <KnowledgeLayerDashboard
+                sendMessage={sendMessage}
+                registerMessageHandler={registerMessageHandler}
+              />
+            )}
+
+            {rightTabListIndex === "log_dashboard" && (
+              <LogDashboard simulationState={simulationState} />
+            )}
           </div>
         </div>
       </div>

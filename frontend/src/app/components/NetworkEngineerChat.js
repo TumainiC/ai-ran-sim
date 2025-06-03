@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import dayjs from "dayjs";
@@ -8,7 +8,7 @@ import tool_icon from "../../assets/tool_icon.png";
 
 export default function NetworkEngineerChat({
   sendMessage,
-  streamedChatEvent,
+  registerMessageHandler,
 }) {
   const [messages, setMessages] = useState([]);
   const [chatDisabled, setChatDisabled] = useState(false);
@@ -16,97 +16,105 @@ export default function NetworkEngineerChat({
   const messageContainerRef = useRef(null);
 
   useEffect(() => {
-    if (!streamedChatEvent) return;
+    if (registerMessageHandler) {
+      registerMessageHandler(
+        "intelligence_layer",
+        "network_engineer_chat_response",
+        (streamedChatEvent) => {
+          if (!streamedChatEvent) return;
 
-    const eventType = streamedChatEvent.event_type;
+          const eventType = streamedChatEvent.event_type;
 
-    if (eventType === "response_text_delta_event") {
-      const response_text_delta = streamedChatEvent.response_text_delta;
-      setMessages((prevMessages) => {
-        const lastMessage = prevMessages[prevMessages.length - 1];
-        if (lastMessage && lastMessage.role === "assistant") {
-          return [
-            ...prevMessages.slice(0, -1),
-            {
-              ...lastMessage,
-              content: lastMessage.content + response_text_delta,
-              time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
-            },
-          ];
+          if (eventType === "response_text_delta_event") {
+            const response_text_delta = streamedChatEvent.response_text_delta;
+            setMessages((prevMessages) => {
+              const lastMessage = prevMessages[prevMessages.length - 1];
+              if (lastMessage && lastMessage.role === "assistant") {
+                return [
+                  ...prevMessages.slice(0, -1),
+                  {
+                    ...lastMessage,
+                    content: lastMessage.content + response_text_delta,
+                    time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+                  },
+                ];
+              }
+              return [
+                ...prevMessages,
+                {
+                  role: "assistant",
+                  content: response_text_delta,
+                  time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+                },
+              ];
+            });
+          } else if (eventType === "agent_updated_stream_event") {
+            const agent_name = streamedChatEvent.agent_name;
+            setMessages((prevMessages) => [
+              ...prevMessages,
+              {
+                role: "monotone",
+                content: agent_name,
+                title: "Agent Activated:",
+                time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+              },
+            ]);
+          } else if (eventType === "tool_call_item") {
+            const tool_name = streamedChatEvent.tool_name;
+            const tool_call_item = streamedChatEvent.tool_args;
+            setMessages((prevMessages) => [
+              ...prevMessages,
+              {
+                role: "monotone",
+                content: `${tool_name}(${tool_call_item})`,
+                title: "Tool Call",
+                time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+              },
+            ]);
+          } else if (eventType === "tool_call_output_item") {
+            const tool_output = streamedChatEvent.tool_output;
+            setMessages((prevMessages) => [
+              ...prevMessages,
+              {
+                role: "monotone",
+                content: tool_output,
+                title: "Tool Output",
+                time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+              },
+            ]);
+          } else if (eventType === "message_output_item") {
+            const message_output = streamedChatEvent.message_output;
+            setMessages((prevMessages) => {
+              const lastMessage = prevMessages[prevMessages.length - 1];
+              if (!lastMessage || lastMessage.role !== "assistant") {
+                return [
+                  ...prevMessages,
+                  {
+                    role: "assistant",
+                    content: message_output,
+                    time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+                  },
+                ];
+              } else if (lastMessage.content !== message_output) {
+                // replace the last message with the new one
+                const updatedMessages = [...prevMessages];
+                updatedMessages[updatedMessages.length - 1] = {
+                  ...lastMessage,
+                  content: message_output,
+                  time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+                };
+                return updatedMessages;
+              }
+              return prevMessages;
+            });
+            setChatDisabled(false);
+          } else {
+            console.log("Unknown event type:", eventType);
+          }
         }
-        return [
-          ...prevMessages,
-          {
-            role: "assistant",
-            content: response_text_delta,
-            time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
-          },
-        ];
-      });
-    } else if (eventType === "agent_updated_stream_event") {
-      const agent_name = streamedChatEvent.agent_name;
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          role: "monotone",
-          content: agent_name,
-          title: "Agent Activated:",
-          time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
-        },
-      ]);
-    } else if (eventType === "tool_call_item") {
-      const tool_name = streamedChatEvent.tool_name;
-      const tool_call_item = streamedChatEvent.tool_args;
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          role: "monotone",
-          content: `${tool_name}(${tool_call_item})`,
-          title: "Tool Call",
-          time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
-        },
-      ]);
-    } else if (eventType === "tool_call_output_item") {
-      const tool_output = streamedChatEvent.tool_output;
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          role: "monotone",
-          content: tool_output,
-          title: "Tool Output",
-          time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
-        },
-      ]);
-    } else if (eventType === "message_output_item") {
-      const message_output = streamedChatEvent.message_output;
-      setMessages((prevMessages) => {
-        const lastMessage = prevMessages[prevMessages.length - 1];
-        if (!lastMessage || lastMessage.role !== "assistant") {
-          return [
-            ...prevMessages,
-            {
-              role: "assistant",
-              content: message_output,
-              time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
-            },
-          ];
-        } else if (lastMessage.content !== message_output) {
-          // replace the last message with the new one
-          const updatedMessages = [...prevMessages];
-          updatedMessages[updatedMessages.length - 1] = {
-            ...lastMessage,
-            content: message_output,
-            time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
-          };
-          return updatedMessages;
-        }
-        return prevMessages;
-      });
-      setChatDisabled(false);
-    } else {
-      console.log("Unknown event type:", eventType);
+      );
     }
-  }, [streamedChatEvent]);
+  }, []);
 
   useEffect(() => {
     const container = messageContainerRef.current;
