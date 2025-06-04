@@ -9,6 +9,7 @@ import tool_icon from "../../assets/tool_icon.png";
 export default function NetworkEngineerChat({
   sendMessage,
   registerMessageHandler,
+  deregisterMessageHandler,
 }) {
   const [messages, setMessages] = useState([]);
   const [chatDisabled, setChatDisabled] = useState(false);
@@ -114,6 +115,15 @@ export default function NetworkEngineerChat({
         }
       );
     }
+
+    return () => {
+      if (deregisterMessageHandler) {
+        deregisterMessageHandler(
+          "intelligence_layer",
+          "network_engineer_chat_response"
+        );
+      }
+    };
   }, []);
 
   useEffect(() => {

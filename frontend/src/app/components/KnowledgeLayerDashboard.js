@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 export default function KnowledgeLayerDashboard({
   sendMessage,
   registerMessageHandler,
+  deregisterMessageHandler,
 }) {
   const [knowledgeQueryInput, setKnowledgeQueryInput] = useState("");
   const [knowledgeLayerRoutes, setKnowledgeLayerRoutes] = useState(null);
@@ -22,6 +23,15 @@ export default function KnowledgeLayerDashboard({
       console.log("Received knowledge query response:", response);
       setKnowledgeQueryResponse(response);
     });
+
+    return () => {
+      if (deregisterMessageHandler) {
+        deregisterMessageHandler("knowledge_layer", "get_routes");
+        deregisterMessageHandler("knowledge_layer", "query_knowledge");
+      } else {
+        console.error("deregisterMessageHandler is not provided");
+      }
+    };
   }, []);
 
   const getKnowledgeRoutes = () => {
@@ -109,6 +119,10 @@ export default function KnowledgeLayerDashboard({
       knowledgeQueryInput.trim()
     );
   };
+
+  useEffect(() => {
+    console.log("Knowledge Query Response Updated:", knowledgeQueryResponse);
+  }, [knowledgeQueryResponse]);
 
   return (
     <div className="flex-1 h-full flex flex-col">

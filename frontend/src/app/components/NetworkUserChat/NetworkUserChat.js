@@ -24,27 +24,19 @@ and our AI assistant will help you deploy the services you need across our edge/
 export default function NetworkUserChat({
   sendMessage,
   registerMessageHandler,
+  deregisterMessageHandler,
 }) {
   const [currentMenu, setCurrentMenu] = useState("main_menu");
-  const [messages, setMessageList] = useState([]);
+  const [messages, setMessages] = useState([]);
 
   let renderedMenu = null;
-
-  const setMessages = (newMessages_or_callback) => {
-    console.log("setMessages called with:", newMessages_or_callback);
-
-    if (typeof newMessages_or_callback === "function") {
-      setMessageList((prevMessages) => newMessages_or_callback(prevMessages));
-    } else {
-      setMessageList(newMessages_or_callback);
-    }
-  };
 
   switch (currentMenu) {
     case "main_menu":
       renderedMenu = (
         <UserMenuMain
           registerMessageHandler={registerMessageHandler}
+          deregisterMessageHandler={deregisterMessageHandler}
           getDefaultMessages={getDefaultMessages}
           sendMessage={sendMessage}
           setMessages={setMessages}
@@ -56,6 +48,7 @@ export default function NetworkUserChat({
       renderedMenu = (
         <UserMenuAIServiceRequest
           registerMessageHandler={registerMessageHandler}
+          deregisterMessageHandler={deregisterMessageHandler}
           sendMessage={sendMessage}
           setMessages={setMessages}
           setCurrentMenu={setCurrentMenu}
@@ -63,23 +56,16 @@ export default function NetworkUserChat({
       );
       break;
     default:
-      renderedMenu = (
-        <UserMenuMain
-          registerMessageHandler={registerMessageHandler}
-          getDefaultMessages={getDefaultMessages}
-          sendMessage={sendMessage}
-          setMessages={setMessages}
-          setCurrentMenu={setCurrentMenu}
-        />
-      );
+      renderedMenu = null;
       break;
   }
-
-  console.log("Current Menu:", currentMenu);
 
   useEffect(() => {
     console.log("Messages updated:", messages);
   }, [messages]);
+
+  console.log("Current Menu:", currentMenu);
+  console.log("messages:", messages);
 
   return (
     <div className="flex flex-col h-full flex-1">

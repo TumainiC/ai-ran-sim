@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import handleChatEvent from "../ChatEventHandler";
 import handleUserActionResponse from "./ActionResponseHandler";
@@ -6,13 +6,13 @@ import dayjs from "dayjs";
 
 export default function UserMenuMain({
   registerMessageHandler,
+  deregisterMessageHandler,
   getDefaultMessages,
   setMessages,
   setCurrentMenu,
   sendMessage,
 }) {
   const [optionButtonList, setOptionButtonList] = useState([]);
-  const hasInitialized = useState(false);
 
   const onOverviewAIService = () => {
     console.log("running onOverviewAIService");
@@ -65,37 +65,69 @@ export default function UserMenuMain({
     ]);
   };
 
+  const streamedChatEventHandler = (streamedChatEvent) => {
+    console.log(
+      "Calling handleChatEvent with streamedChatEvent:",
+      streamedChatEvent
+    );
+    handleChatEvent(streamedChatEvent, setMessages);
+    console.log("streamedChatEventHandler completed");
+  };
+
+  const userActionResponseHandler = (userActionResponse) => {
+    console.log(
+      "Calling handleUserActionResponse with userActionResponse:",
+      userActionResponse
+    );
+    handleUserActionResponse(userActionResponse, setMessages);
+  };
+
   useEffect(() => {
-    if (hasInitialized.current) return;
-    hasInitialized.current = true;
+    console.log("UserMenuMain useEffect called");
 
     if (registerMessageHandler) {
+      console.log(
+        "Registering message handlers for intelligence_layer - network_user_chat_response and network_user_action_response"
+      );
       registerMessageHandler(
         "intelligence_layer",
         "network_user_chat_response",
-        (streamedChatEvent) => {
-          console.log(
-            "Calling handleChatEvent with streamedChatEvent:",
-            streamedChatEvent
-          );
-          handleChatEvent(streamedChatEvent, setMessages);
-        }
+        streamedChatEventHandler
       );
 
+      console.log(
+        "Registering message handler for intelligence_layer - network_user_action_response"
+      );
       registerMessageHandler(
         "intelligence_layer",
         "network_user_action_response",
-        (userActionResponse) => {
-          console.log(
-            "Calling handleUserActionResponse with userActionResponse:",
-            userActionResponse
-          );
-          handleUserActionResponse(userActionResponse, setMessages);
-        }
+        userActionResponseHandler
       );
     }
 
     initMenu();
+
+    return () => {
+      if (deregisterMessageHandler) {
+        console.log(
+          "Deregistering message handlers for intelligence_layer - network_user_chat_response and network_user_action_response"
+        );
+        deregisterMessageHandler(
+          "intelligence_layer",
+          "network_user_chat_response"
+        );
+        console.log(
+          "Deregistering message handler for intelligence_layer - network_user_action_response"
+        );
+        deregisterMessageHandler(
+          "intelligence_layer",
+          "network_user_action_response"
+        );
+      } else {
+        console.error("deregisterMessageHandler is not provided");
+      }
+      console.log("UserMenuMain cleanup completed");
+    };
   }, []);
 
   return (

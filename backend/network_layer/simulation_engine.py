@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class SimulationEngine(metaclass=utils.SingletonMeta):
-    def __init__(self, websocket=None):
-        self.websocket = websocket
+    def __init__(self):
+        self.websocket = utils.WebSocketSingleton().get_websocket()
         self.core_network = None
         self.nearRT_ric = None
 
@@ -184,7 +184,6 @@ class SimulationEngine(metaclass=utils.SingletonMeta):
             self.remove_UE(ue)
             print(f"UE {ue.ue_imsi} deregistered and removed from simulation.")
 
-
     def remove_UE(self, ue):
         assert isinstance(ue, UE)
         assert ue.ue_imsi in self.ue_list
@@ -227,7 +226,9 @@ class SimulationEngine(metaclass=utils.SingletonMeta):
         # Validate register_slice
         attach_slice = register_slice if register_slice else subscribed_slices[0]
         if attach_slice not in subscribed_slices:
-            print(f"Selected register_slice '{attach_slice}' is not in subscription list.")
+            print(
+                f"Selected register_slice '{attach_slice}' is not in subscription list."
+            )
             return False
         # Generate parameters for new UE
         op_region = {"min_x": 0, "min_y": 0, "max_x": 2000, "max_y": 2000}
@@ -237,6 +238,7 @@ class SimulationEngine(metaclass=utils.SingletonMeta):
         target_y = random.randint(op_region["min_y"], op_region["max_y"])
         speed_mps = random.randint(settings.UE_speed_mps_MIN, settings.UE_speed_mps_MAX)
         from .ue import UE
+
         ue = UE(
             ue_imsi=ue_imsi,
             operation_region=op_region,
@@ -251,9 +253,13 @@ class SimulationEngine(metaclass=utils.SingletonMeta):
         powered = ue.power_up()
         if powered:
             # Attach/authenticate with the chosen slice
-            self.core_network.handle_ue_authentication_and_registration(ue, requested_slice=attach_slice)
+            self.core_network.handle_ue_authentication_and_registration(
+                ue, requested_slice=attach_slice
+            )
             self.ue_list[ue_imsi] = ue
-            print(f"UE {ue_imsi} added and registered at runtime. Subscribed to slices: {subscribed_slices}. Registered on: {attach_slice}")
+            print(
+                f"UE {ue_imsi} added and registered at runtime. Subscribed to slices: {subscribed_slices}. Registered on: {attach_slice}"
+            )
             return True
         else:
             print(f"Failed to register UE {ue_imsi} at runtime.")

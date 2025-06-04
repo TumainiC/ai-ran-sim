@@ -5,6 +5,22 @@ from openai.types.responses import ResponseTextDeltaEvent, ResponseFunctionToolC
 from agents import Runner
 
 
+class WebSocketSingleton:
+    _instance = None
+    _websocket = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(WebSocketSingleton, cls).__new__(cls)
+        return cls._instance
+
+    def set_websocket(self, websocket):
+        self._websocket = websocket
+
+    def get_websocket(self):
+        return self._websocket
+
+
 class WebSocketResponse:
     def __init__(self, layer=None, command=None, response=None, error=None):
         self.layer = layer
@@ -88,7 +104,7 @@ async def handle_query_knowledge(websocket, simulation_engine, knowledge_router,
 #     await websocket.send(response.to_json())
 
 
-async def handle_network_chat(
+async def stream_agent_chat(
     websocket, simulation_engine, knowledge_router, data, command, agent_func
 ):
     """
@@ -204,7 +220,7 @@ async def handle_network_user_action(
         query = data.get("query")
         response_content = {
             "action_type": action_type,
-            "query_response":knowledge_router.query_knowledge(query)
+            "query_response": knowledge_router.query_knowledge(query),
         }
     else:
         response_content = {

@@ -16,11 +16,9 @@ export default function Home() {
   const [bottomTabListIndex, setBottomTabListIndex] = useState("ue_dashboard");
   const [rightTabListIndex, setRightTabListIndex] =
     useState("network_user_chat");
-  const [messageHandlers, setMessageHandlers] = useState({});
   const wsRef = useRef(null);
   const memoryRef = useRef([]);
-
-  const hasInitialized = useRef(false);
+  const messageHandlersRef = useRef({});
 
   const wsMessageHandler = (event) => {
     console.log("WebSocket message received:", event);
@@ -41,24 +39,29 @@ export default function Home() {
 
       // Check if a specific handler is registered for this layer and command
       const handlerKey = `${layer}_${command}`;
-      if (messageHandlers[handlerKey]) {
+      const handlers = messageHandlersRef.current;
+      if (handlers[handlerKey]) {
         console.log(`Handling message with registered handler: ${handlerKey}`);
-        messageHandlers[handlerKey](response);
+        console.log(handlers[handlerKey]);
+        handlers[handlerKey](response);
         return;
       } else {
         console.warn(
           `No handler registered for ${layer} command: ${command}. Nothing to do.`
         );
+        console.log("Available handlers:", handlers);
       }
     }
   };
 
   const registerMessageHandler = (layer, command, handler) => {
     console.log("Registering message handler:", layer, command);
-    setMessageHandlers((prevHandlers) => ({
-      ...prevHandlers,
-      [`${layer}_${command}`]: handler,
-    }));
+    messageHandlersRef.current[`${layer}_${command}`] = handler;
+  };
+
+  const deregisterMessageHandler = (layer, command) => {
+    console.log("Deregistering message handler:", layer, command);
+    delete messageHandlersRef.current[`${layer}_${command}`];
   };
 
   const connectWebSocket = () => {
@@ -110,9 +113,6 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (hasInitialized.current) return;
-    hasInitialized.current = true;
-
     registerMessageHandler(
       "network_layer",
       "simulation_state_update",
@@ -134,6 +134,12 @@ export default function Home() {
         console.log("Simulation State:", response);
       }
     );
+
+    return () => {
+      console.log("Cleaning up message handlers");
+      deregisterMessageHandler("network_layer", "simulation_state_update");
+      deregisterMessageHandler("network_layer", "get_simulation_state");
+    };
   }, []);
 
   const saveMemoryToFile = () => {
@@ -246,6 +252,7 @@ export default function Home() {
               <NetworkUserChat
                 sendMessage={sendMessage}
                 registerMessageHandler={registerMessageHandler}
+                deregisterMessageHandler={deregisterMessageHandler}
               />
             )}
 
@@ -253,6 +260,7 @@ export default function Home() {
               <NetworkEngineerChat
                 registerMessageHandler={registerMessageHandler}
                 sendMessage={sendMessage}
+                deregisterMessageHandler={deregisterMessageHandler}
               />
             )}
 
@@ -260,6 +268,7 @@ export default function Home() {
               <KnowledgeLayerDashboard
                 sendMessage={sendMessage}
                 registerMessageHandler={registerMessageHandler}
+                deregisterMessageHandler={deregisterMessageHandler}
               />
             )}
 

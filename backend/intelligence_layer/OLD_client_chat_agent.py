@@ -2,26 +2,26 @@ from agents import Agent, ModelSettings  # RunConfig, Runner
 
 # from intelligence_layer.user_chat.ue_chat_agent import ue_subscription_agent
 # from .user_chat.model_recommender_agents import model_recommender_orchestrator
-from .client_ai_service_agent import client_ai_service_agent
+from .client_ai_service_pipeline_agents import client_ai_service_agent
 import settings
 
 
-client_chat_agent = Agent(
-    name="Network Client Assistant",
-    instructions="""
-    You're the network client assistant. 
-    You chat with the network users/clients.
-    You only responsibility is to route user queries to appropriate agents you're connected with.
+# client_chat_agent = Agent(
+#     name="Network Client Assistant",
+#     instructions="""
+#     You're the network client assistant. 
+#     You chat with the network users/clients.
+#     You only responsibility is to route user queries to appropriate agents you're connected with.
     
-    Routing Guidelines:
-    - Route all AI related questions to the AI Service agent
-    """,
-    handoffs=[client_ai_service_agent],
-    model=settings.OPENAI_NON_REASONING_MODEL_NAME,
-    model_settings=ModelSettings(
-        temperature=0,
-    ),
-)
+#     Routing Guidelines:
+#     - Route all AI related questions to the AI Service agent
+#     """,
+#     handoffs=[client_ai_service_agent],
+#     model=settings.OPENAI_NON_REASONING_MODEL_NAME,
+#     model_settings=ModelSettings(
+#         temperature=0,
+#     ),
+# )
 
 
 # client_chat_agent = Agent(
