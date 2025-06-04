@@ -218,11 +218,14 @@ Please select one of the above AI serivces that you would like to deploy.`,
         current_step: currentStep,
         messages: updatedMessages.map((msg) => {
           if (msg.role !== "monotone") {
-            return msg;
+            return {
+              role: msg.role,
+              content: msg.content
+            };
           } else {
             return {
-              ...msg,
               role: "assistant", // Convert monotone messages to assistant role
+              content: msg.content,
             };
           }
         }),
