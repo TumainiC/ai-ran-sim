@@ -1,3 +1,4 @@
+import asyncio
 from utils import stream_agent_chat, WebSocketSingleton, WebSocketResponse
 
 from agents import Agent, function_tool
@@ -15,7 +16,7 @@ STEP_SERVICE_MONITORING = "step_service_monitoring"
 
 
 @function_tool
-def recommend_ai_services(ai_service_names: list[str]) -> None:
+def recommend_ai_services(ai_service_names: list[str]) -> str:
     """Recommend AI services for the user to select from.
 
     Args:
@@ -27,7 +28,7 @@ def recommend_ai_services(ai_service_names: list[str]) -> None:
 
     if websocket is None:
         print("WebSocket is not available.")
-        return None
+        return "Websocket connection with the frontend is not available."
 
     ai_service_descriptions = [
         knowledge_router.query_knowledge(f"/ai_services/{name}")
@@ -44,7 +45,9 @@ def recommend_ai_services(ai_service_names: list[str]) -> None:
         },
         error=None,
     )
-    websocket.send(response.to_json())
+    asyncio.create_task(websocket.send(response.to_json()))
+
+    return "AI services recommendation sent to the user."
 
 
 # client_ai_service_deployer = Agent(
@@ -74,6 +77,7 @@ client_ai_service_need_profiler = Agent(
     tools=[
         get_knowledge,
         get_knowledge_bulk,
+        recommend_ai_services,
     ],
     # instructions=f"""{RECOMMENDED_PROMPT_PREFIX}
     instructions=f"""You're the the first step in helping users to select and deploy the right AI services for their devices and applications connected to our simulated network.
@@ -87,8 +91,7 @@ You can start with the query key "/docs/ai_services" for the guidance to better 
 
 Your job is to chat with the user and guide the user to find a suitable AI service in our knowledge base for their needs.
 
-When the user confirms a suitable AI service, you should hand off to the "Client AI Service Deployer Assistant" agent, 
-which will handle the deployment of the selected AI service to the user's device or application.
+Use the tool `recommend_ai_services` to recommend AI services based on the user's needs and preferences to allow the user to select from a list of AI services.
 """,
     model=OPENAI_NON_REASONING_MODEL_NAME,
 )

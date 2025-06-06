@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import UserMenuMain from "./UserMenuMain";
 import UserMenuAIServiceRequest from "./UserMenuAiServiceRequest";
 import dayjs from "dayjs";
@@ -28,6 +28,7 @@ export default function NetworkUserChat({
 }) {
   const [currentMenu, setCurrentMenu] = useState("main_menu");
   const [messages, setMessages] = useState([]);
+  const messagesEndRef = useRef(null); // Add this ref
 
   let renderedMenu = null;
 
@@ -62,15 +63,19 @@ export default function NetworkUserChat({
 
   useEffect(() => {
     console.log("Messages updated:", messages);
+    // Scroll to bottom when messages update
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
+    }
   }, [messages]);
-
-  console.log("Current Menu:", currentMenu);
-  console.log("messages:", messages);
 
   return (
     <div className="flex flex-col h-full flex-1">
       {/* Messages */}
-      <div className="overflow-y-auto p-4 space-y-4 flex-1">
+      <div
+        className="overflow-y-auto p-4 space-y-4 flex-1"
+        ref={messagesEndRef}
+      >
         {messages.map((msg, index) => renderMessage(index, msg))}
       </div>
       {renderedMenu}

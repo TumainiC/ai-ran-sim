@@ -134,7 +134,7 @@ export default function UserMenuMain({
     <>
       {/* Options */}
       <div className="p-4 border-t border-base-300 bg-base-100">
-        <div className="flex flex-row gap-2 items-center">
+        <div className="flex flex-row gap-2 items-center flex-wrap">
           <span>OPTIONS</span>
           {optionButtonList.map((option, index) => (
             <button

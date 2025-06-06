@@ -210,6 +210,7 @@ Please select one of the above AI serivces that you would like to deploy.`,
   }, [currentStep]);
 
   const handleSend = () => {
+    messageSent.current = false; // Reset message sent flag
     setMessages((prevMessages) => {
       const updatedMessages = [
         ...prevMessages,
@@ -243,7 +244,7 @@ Please select one of the above AI serivces that you would like to deploy.`,
     });
 
     setInput("");
-    setChatDisabled(true);
+    // setChatDisabled(true);
   };
 
   const handleKeyDown = (e) => {
@@ -262,7 +263,7 @@ Please select one of the above AI serivces that you would like to deploy.`,
     <>
       {/* Options */}
       <div className="p-4 border-t border-base-300 bg-base-100">
-        <div className="flex flex-row gap-2 items-center">
+        <div className="flex flex-row gap-2 items-center flex-wrap">
           <span>OPTIONS</span>
           {optionButtonList.map((option, index) => (
             <button
