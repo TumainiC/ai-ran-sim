@@ -20,6 +20,7 @@ export default function UserMenuAIServiceRequest({
   const [chatDisabled, setChatDisabled] = useState(false);
   const [currentStep, setCurrentStep] = useState(null);
   const [input, setInput] = useState("");
+  const messageSent = useRef(false);
 
   // this is to handle the strict mode of React double rendering.
   const initialMessageAdded = useRef(false);
@@ -69,6 +70,7 @@ export default function UserMenuAIServiceRequest({
 
   const onRequestOtherServices = () => {
     setCurrentStep(STEP_SERVICE_NEED_PROFILING);
+    messageSent.current = false; // Reset message sent flag
     setMessages((prevMessages) => {
       const newMessages = [
         ...prevMessages,
@@ -78,15 +80,19 @@ export default function UserMenuAIServiceRequest({
           time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
         },
       ];
-      sendMessage("intelligence_layer", "ai_service_pipeline", {
-        current_step: STEP_SERVICE_NEED_PROFILING,
-        messages: [
-          {
-            role: "user",
-            content: "Show me other AI service candidates please.",
-          },
-        ],
-      });
+      // the setMessage callback is called twice in React strict mode
+      if (!messageSent.current) {
+        sendMessage("intelligence_layer", "ai_service_pipeline", {
+          current_step: STEP_SERVICE_NEED_PROFILING,
+          messages: [
+            {
+              role: "user",
+              content: "Show me other AI service candidates please.",
+            },
+          ],
+        });
+        messageSent.current = true; // Set flag to true after sending the message
+      }
       return newMessages;
     });
   };
@@ -213,23 +219,25 @@ Please select one of the above AI serivces that you would like to deploy.`,
           time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
         },
       ];
-
-      sendMessage("intelligence_layer", "ai_service_pipeline", {
-        current_step: currentStep,
-        messages: updatedMessages.map((msg) => {
-          if (msg.role !== "monotone") {
-            return {
-              role: msg.role,
-              content: msg.content
-            };
-          } else {
-            return {
-              role: "assistant", // Convert monotone messages to assistant role
-              content: msg.content,
-            };
-          }
-        }),
-      });
+      if (!messageSent.current) {
+        sendMessage("intelligence_layer", "ai_service_pipeline", {
+          current_step: currentStep,
+          messages: updatedMessages.map((msg) => {
+            if (msg.role !== "monotone") {
+              return {
+                role: msg.role,
+                content: msg.content,
+              };
+            } else {
+              return {
+                role: "assistant", // Convert monotone messages to assistant role
+                content: msg.content,
+              };
+            }
+          }),
+        });
+        messageSent.current = true; // Set flag to true after sending the message
+      }
 
       return updatedMessages;
     });
