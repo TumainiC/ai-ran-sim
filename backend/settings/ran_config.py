@@ -151,6 +151,15 @@ def RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS():
     ]
 
 
+def RAN_BS_EDGE_DEFAULT_SERVER():
+    return {
+        "node_id": "LAP004262",
+        "device_type": "DeviceType.CPU",
+        "cpu_memory_GB": 10,  # set this to the docker CPU memory limit minus some overhead.
+        "device_memory_GB": 0.0,  # this is the device (GPU, FPGA, etc.) memory, set to 0 if not applicable
+    }
+
+
 RAN_DEFAULT_BS_LIST = [
     {
         "bs_id": "bs_11",
@@ -158,6 +167,7 @@ RAN_DEFAULT_BS_LIST = [
         "position_y": 500,
         "cell_list": RAN_BS_DEFAULT_CELLS("bs_11"),
         "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
+        "edge_server": RAN_BS_EDGE_DEFAULT_SERVER(),
     },
     {
         "bs_id": "bs_12",
@@ -165,6 +175,7 @@ RAN_DEFAULT_BS_LIST = [
         "position_y": 500,
         "cell_list": RAN_BS_DEFAULT_CELLS("bs_12"),
         "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
+        "edge_server": RAN_BS_EDGE_DEFAULT_SERVER(),
     },
     {
         "bs_id": "bs_21",
@@ -172,6 +183,7 @@ RAN_DEFAULT_BS_LIST = [
         "position_y": 1500,
         "cell_list": RAN_BS_DEFAULT_CELLS("bs_21"),
         "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
+        "edge_server": RAN_BS_EDGE_DEFAULT_SERVER(),
     },
     {
         "bs_id": "bs_22",
@@ -179,6 +191,7 @@ RAN_DEFAULT_BS_LIST = [
         "position_y": 1500,
         "cell_list": RAN_BS_DEFAULT_CELLS("bs_22"),
         "rrc_measurement_events": RAN_BS_DEFAULT_RRC_MEASUREMENT_EVENTS(),
+        "edge_server": RAN_BS_EDGE_DEFAULT_SERVER(),
     },
     # {
     #     "bs_id": "bs_31",

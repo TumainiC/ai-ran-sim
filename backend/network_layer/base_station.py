@@ -1,5 +1,6 @@
 import settings
 from .cell import Cell
+from .edge_server import EdgeServer
 
 
 class BaseStation:
@@ -21,6 +22,8 @@ class BaseStation:
             )
             self.cell_list[cell_init_data["cell_id"]] = new_cell
         self.rrc_measurement_events = bs_init_data["rrc_measurement_events"]
+
+        self.edge_server = EdgeServer(self, bs_init_data["edge_server"])
 
         self.ue_registry = {}
         self.ue_rrc_meas_events = []

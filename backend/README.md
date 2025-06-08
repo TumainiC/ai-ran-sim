@@ -50,6 +50,7 @@ backend/
 ## 📦 Requirements
 
 - Python 3.12 or higher
+- docker (to deploy the AI services)
 - Install dependencies using:
 
 ```bash

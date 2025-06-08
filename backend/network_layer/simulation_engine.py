@@ -183,13 +183,13 @@ class SimulationEngine(metaclass=utils.SingletonMeta):
 
         for ue in ue_to_remove:
             self.remove_UE(ue)
-            print(f"UE {ue.ue_imsi} deregistered and removed from simulation.")
+            logger.info(f"UE {ue.ue_imsi} deregistered and removed from simulation.")
 
     def remove_UE(self, ue):
         assert isinstance(ue, UE)
         assert ue.ue_imsi in self.ue_list
         del self.ue_list[ue.ue_imsi]
-        print(f"UE {ue.ue_imsi} deregistered and removed from simulation.")
+        logger.info(f"UE {ue.ue_imsi} deregistered and removed from simulation.")
 
     def deregister_ue(self, ue_imsi):
         """
@@ -197,14 +197,14 @@ class SimulationEngine(metaclass=utils.SingletonMeta):
         """
         ue = self.ue_list.get(ue_imsi)
         if not ue:
-            print(f"UE {ue_imsi} not found in simulation.")
+            logger.warning(f"UE {ue_imsi} not found in simulation.")
             return False
         # Deregister from CoreNetwork
         if self.core_network:
             self.core_network.handle_deregistration_request(ue)
         # Remove from SimulationEngine's list
         del self.ue_list[ue_imsi]
-        print(f"UE {ue_imsi} deregistered and fully removed from simulation.")
+        logger.info(f"UE {ue_imsi} deregistered and fully removed from simulation.")
         return True
 
     def register_ue(self, ue_imsi, subscribed_slices, register_slice=None):
@@ -214,21 +214,25 @@ class SimulationEngine(metaclass=utils.SingletonMeta):
         Returns True if successful, False otherwise.
         """
         if self.core_network is None:
-            print("Core network not initialized.")
+            logger.error("Core network not initialized.")
             return False
         if ue_imsi in self.ue_list:
-            print(f"UE {ue_imsi} already present in simulation.")
+            logger.warning(
+                f"UE {ue_imsi} already present in simulation. Cannot register again."
+            )
             return False
         if not isinstance(subscribed_slices, list) or not subscribed_slices:
-            print("Subscribed_slices must be a non-empty list.")
+            logger.error(
+                f"Subscribed_slices for UE {ue_imsi} is not a valid list: {subscribed_slices}"
+            )
             return False
         # Update core network with slice subscription
         self.core_network.ue_subscription_data[ue_imsi] = subscribed_slices
         # Validate register_slice
         attach_slice = register_slice if register_slice else subscribed_slices[0]
         if attach_slice not in subscribed_slices:
-            print(
-                f"Selected register_slice '{attach_slice}' is not in subscription list."
+            logger.error(
+                f"Selected register_slice '{attach_slice}' is not in subscription list for UE {ue_imsi}."
             )
             return False
         # Generate parameters for new UE
@@ -258,36 +262,45 @@ class SimulationEngine(metaclass=utils.SingletonMeta):
                 ue, requested_slice=attach_slice
             )
             self.ue_list[ue_imsi] = ue
-            print(
+            logger.info(
                 f"UE {ue_imsi} added and registered at runtime. Subscribed to slices: {subscribed_slices}. Registered on: {attach_slice}"
             )
             return True
         else:
-            print(f"Failed to register UE {ue_imsi} at runtime.")
+            logger.error(f"Failed to register UE {ue_imsi} at runtime.")
             return False
 
     def step_BSs(self, delta_time):
         for bs in self.base_station_list.values():
             bs.step(delta_time)
 
+    def step_ric(self, delta_time):
+        if self.ric is not None:
+            self.ric.step(delta_time)
+        else:
+            logger.warning("RIC is not initialized. Skipping RIC step.")
+
     def step(self, delta_time):
-        print("===================================")
-        print("        Simulation Step  ")
-        print("===================================")
+        logger.info(
+            f"Simulation step {self.sim_step} started with delta_time {delta_time} seconds."
+        )
 
         self.logs = []
 
         # spawn new UEs if needed
-        print("\n ---------- Spawning UEs -----------\n")
+        logger.info("Spawning new UEs if needed...")
         self.spawn_UEs()
 
         # move UEs towards their targets, monitor signal quality, report measurement events ...
-        print("\n ---------- Step UEs ----------- \n")
+        logger.info("Stepping through UEs...")
         self.step_UEs(delta_time)
 
         # dynamically allocate resources for UEs
-        print("\n ---------- Step BSs ----------- \n")
+        logger.info("Stepping through Base Stations...")
         self.step_BSs(delta_time)
+        
+        logger.info("Stepping through RIC...")
+        self.step_ric(delta_time)
 
     async def start_simulation(self):
         assert not self.sim_started

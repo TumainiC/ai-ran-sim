@@ -9,15 +9,20 @@ class xAppBase:
 
     @property
     def base_station_list(self):
-        return self.ric.simulation_engine.base_station_list
+        return self.ric.base_station_list
 
     @property
     def cell_list(self):
-        return self.ric.simulation_engine.cell_list
+        return self.ric.cell_list
 
     @property
     def ue_list(self):
-        return self.ric.simulation_engine.ue_list
+        return self.ric.ue_list
 
     def start(self):
         assert False, "Not implemented in base class"
+
+    def step(self):
+        # xApps can be implemented in an event-driven manner or in an simulation step-driven manner.
+        # if this method is overridden, it will be called in each simulation step by the RIC.
+        pass

@@ -53,6 +53,21 @@ export default function UserMenuAIServiceRequest({
         onSelectAIService("ultralytics-yolov8-yolov8n");
       },
     },
+    {
+      label: "Test: Please recommend.",
+      onClick: () => {
+        onSendQuickMessage(
+          STEP_SERVICE_DEPLOYMENT,
+          "Please recommend some AI services."
+        );
+      },
+    },
+    {
+      label: "Test: IMSI_1, IMSI_2",
+      onClick: () => {
+        onSendQuickMessage(STEP_SERVICE_DEPLOYMENT, "IMSI_1, IMSI_2");
+      },
+    },
   ];
 
   const initMenu = () => {
@@ -137,7 +152,7 @@ export default function UserMenuAIServiceRequest({
       if (!messageSent.current) {
         setChatDisabled(true); // Disable chat while processing
         sendMessage("intelligence_layer", "ai_service_pipeline", {
-          current_step: STEP_SERVICE_NEED_PROFILING,
+          current_step: current_step,
           messages: newMessages.map((msg) => {
             if (msg.role !== "monotone") {
               return {

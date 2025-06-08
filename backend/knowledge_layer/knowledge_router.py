@@ -44,7 +44,7 @@ class KnowledgeRouter(metaclass=utils.SingletonMeta):
                 return route, params
         raise KeyError(f"Query key '{key}' not recognized.")
 
-    def query_knowledge(self, query_key: str) -> str:
+    def query_knowledge(self, query_key: str):
         try:
             route, params = self._find_route(query_key)
             print(f"Querying knowledge for key: {query_key}")
