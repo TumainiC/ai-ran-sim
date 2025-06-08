@@ -1,4 +1,3 @@
-import json
 import inspect
 from ..tags import KnowledgeTag
 from ..relationships import KnowledgeRelationship
