@@ -4,8 +4,9 @@ import random
 
 from utils import get_random_ue_operational_region
 from .core_network import CoreNetwork
-from .ran import BaseStation, Cell
-from .ric import NearRTRIC
+from .base_station import BaseStation
+from .cell import Cell
+from .ric import RIC
 from .ue import UE
 import settings
 import utils
@@ -18,7 +19,7 @@ class SimulationEngine(metaclass=utils.SingletonMeta):
     def __init__(self):
         self.websocket = utils.WebSocketSingleton().get_websocket()
         self.core_network = None
-        self.nearRT_ric = None
+        self.ric = None
 
         self.base_station_list = {}
         self.cell_list = {}
@@ -54,7 +55,7 @@ class SimulationEngine(metaclass=utils.SingletonMeta):
         self.sim_step = 0
         self.logs = []
         self.core_network = None
-        self.nearRT_ric = None
+        self.ric = None
         logger.info("Network reset complete.")
 
     def network_setup(self):
@@ -74,8 +75,8 @@ class SimulationEngine(metaclass=utils.SingletonMeta):
 
         # for the moment, the ric must be initialized after the core network and the base stations.
         # so that the xApps can subscribe information from the base stations.
-        self.nearRT_ric = NearRTRIC(self)
-        self.nearRT_ric.load_xApps()
+        self.ric = RIC(self)
+        self.ric.load_xApps()
 
     def spawn_random_ue(self):
         ue_operation_region = get_random_ue_operational_region()

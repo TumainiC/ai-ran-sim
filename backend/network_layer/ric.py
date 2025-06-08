@@ -5,7 +5,7 @@ import os
 from network_layer.xApps.xapp_base import xAppBase
 
 
-class NearRTRIC:
+class RIC:
     # Near Real-Time Ran Intelligent Controller
     def __init__(self, simulation_engine=None):
         self.ric_id = "NearRT-RIC"

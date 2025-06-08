@@ -102,3 +102,25 @@ Service Image Size:\t{bytes_pretty_printer(ai_service["service_disk_size_bytes"]
 {ai_service['task_detail']}
 """
     return response
+
+
+# Below entries are for internal use only as their output are can take any format instead of agent-friendly strings/paragraphs
+
+
+@knowledge_entry(
+    key="/ai_services/{ai_service_name}/raw",
+    tags=[KnowledgeTag.AI_SERVICE],
+    related=[],
+)
+def ai_service_raw(sim, knowledge_router, query_key, params):
+    ai_service_name = params["ai_service_name"]
+
+    if not ai_service_name or ai_service_name.strip() == "":
+        return None
+
+    ai_service_name = ai_service_name.strip()
+
+    if ai_service_name not in AI_SERVICE_NAME_MAP:
+        return None
+
+    return AI_SERVICE_NAME_MAP[ai_service_name].copy()

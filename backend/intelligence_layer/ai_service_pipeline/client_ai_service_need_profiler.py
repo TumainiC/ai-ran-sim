@@ -1,18 +1,10 @@
 import asyncio
-from utils import stream_agent_chat, WebSocketSingleton, WebSocketResponse
+from utils import WebSocketSingleton, WebSocketResponse
 
 from agents import Agent, function_tool
-from .knowledge_tools import get_knowledge, get_knowledge_bulk
-from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
+from ..knowledge_tools import get_knowledge, get_knowledge_bulk
 from settings import OPENAI_NON_REASONING_MODEL_NAME
 from knowledge_layer import KnowledgeRouter
-from network_layer.simulation_engine import SimulationEngine
-
-
-STEP_SERVICE_NEED_PROFILING = "step_service_need_profiling"
-STEP_SERVICE_DEPLOYMENT = "step_service_deployment"
-STEP_NETWORK_ADAPTATION = "step_network_adaptation"
-STEP_SERVICE_MONITORING = "step_service_monitoring"
 
 
 @function_tool
@@ -95,30 +87,3 @@ Use the tool `recommend_ai_services` to recommend AI services based on the user'
 """,
     model=OPENAI_NON_REASONING_MODEL_NAME,
 )
-
-
-async def handle_ai_service_pipeline(
-    websocket, simulation_engine, knowledge_router, data
-):
-    current_step = data.get("current_step", None)
-    messages = data.get("messages", [])
-
-    if current_step is None:
-        return "Error: 'current_step' is required in the data."
-    if not messages:
-        return "Error: 'messages' cannot be empty."
-
-    print(f"Handling AI service pipeline step {current_step}")
-    print(f"last message: {messages[-1]}")
-
-    if current_step == STEP_SERVICE_NEED_PROFILING:
-        await stream_agent_chat(
-            websocket=websocket,
-            simulation_engine=simulation_engine,
-            knowledge_router=knowledge_router,
-            data=messages,
-            command="ai_service_pipeline_response",
-            agent_func=client_ai_service_need_profiler,
-        )
-    else:
-        return f"Error: Unsupported step '{current_step}' in AI service pipeline."

@@ -211,7 +211,7 @@ def sim_logs_explainer(sim, knowledge_router, query_key, params):
             KnowledgeRelationship.CALL_METHOD,
             "/docs/sim_engine/methods/add_base_station",
         ),
-        (KnowledgeRelationship.SET_ATTRIBUTE, "/docs/sim_engine/attributes/nearRT_ric"),
+        (KnowledgeRelationship.SET_ATTRIBUTE, "/docs/sim_engine/attributes/ric"),
     ],
 )
 def sim_network_setup_explainer(sim, knowledge_router, query_key, params):

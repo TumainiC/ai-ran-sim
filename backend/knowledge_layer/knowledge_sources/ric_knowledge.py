@@ -2,7 +2,7 @@ import json
 import inspect
 from ..tags import KnowledgeTag
 from ..relationships import KnowledgeRelationship
-from network_layer.ric import NearRTRIC
+from network_layer.ric import RIC
 from ..knowledge_entry import knowledge_entry
 
 from network_layer.xApps.xapp_base import xAppBase
@@ -51,7 +51,7 @@ def ric_knowledge_help(sim, knowledge_router, query_key, params):
     related=[],
 )
 def get_ric_attributes(sim, knowledge_router, query_key, params):
-    ric = getattr(sim, "nearRT_ric", None)
+    ric = getattr(sim, "ric", None)
     if not ric:
         return "RAN Intelligent Controller has not been initiated yet."
     response = f"Attributes of RIC:\n"
@@ -75,7 +75,7 @@ def get_ric_attributes(sim, knowledge_router, query_key, params):
     key="/ric/attributes/{attribute_name}",
 )
 def ric_attribute_getter(sim, knowledge_router, query_key, params):
-    ric = getattr(sim, "nearRT_ric", None)
+    ric = getattr(sim, "ric", None)
     if not ric:
         return "RAN Intelligent Controller has not been initiated yet."
     attribute_name = params["attribute_name"]
@@ -136,7 +136,7 @@ def ric_xapp_list_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ric_load_xapps_explainer(sim, knowledge_router, query_key, params):
-    code = inspect.getsource(getattr(NearRTRIC, "load_xApps"))
+    code = inspect.getsource(getattr(RIC, "load_xApps"))
     explanation = (
         "The `load_xApps` method dynamically discovers and loads all available xApps from the xApps directory. "
         "It instantiates each xApp, assigns it to the RIC, and stores it in the `xapp_list` attribute. "
@@ -158,7 +158,7 @@ def ric_load_xapps_explainer(sim, knowledge_router, query_key, params):
     ],
 )
 def ric_xapps_root(sim, knowledge_router, query_key, params):
-    ric = getattr(sim, "nearRT_ric", None)
+    ric = getattr(sim, "ric", None)
     if not ric or not hasattr(ric, "xapp_list"):
         return "RIC or xApp list not found."
     xapp_ids = list(ric.xapp_list.keys())
@@ -181,7 +181,7 @@ def ric_xapps_root(sim, knowledge_router, query_key, params):
 
 
 def ric_xapp_detail(sim, knowledge_router, query_key, params):
-    ric = getattr(sim, "nearRT_ric", None)
+    ric = getattr(sim, "ric", None)
     if not ric or not hasattr(ric, "xapp_list"):
         return "RIC or xApp list not found."
     xapp_id = params["xapp_id"]

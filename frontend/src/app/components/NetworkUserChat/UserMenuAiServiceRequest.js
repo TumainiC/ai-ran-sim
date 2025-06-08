@@ -1,5 +1,4 @@
-import { use, useEffect, useRef, useState } from "react";
-import renderMessage from "./MessageRenderer";
+import { useEffect, useRef, useState } from "react";
 import handleChatEvent from "../ChatEventHandler";
 import handleUserActionResponse from "./ActionResponseHandler";
 import dayjs from "dayjs";
@@ -18,12 +17,43 @@ export default function UserMenuAIServiceRequest({
 }) {
   const [optionButtonList, setOptionButtonList] = useState([]);
   const [chatDisabled, setChatDisabled] = useState(false);
-  const [currentStep, setCurrentStep] = useState(null);
   const [input, setInput] = useState("");
   const messageSent = useRef(false);
+  const currentStep = useRef(null);
 
   // this is to handle the strict mode of React double rendering.
   const initialMessageAdded = useRef(false);
+
+  const getDefaultOptionButtonList = () => [
+    {
+      label: "RESET",
+      onClick: () => setCurrentMenu("main_menu"),
+    },
+    {
+      label:
+        "Test: I'm working on a fleed of autonomous ground vehicles to search stray animals in my university campus.",
+      onClick: () =>
+        onSendQuickMessage(
+          STEP_SERVICE_NEED_PROFILING,
+          "I'm working on a fleet of autonomous ground vehicles to search stray animals in my university campus."
+        ),
+    },
+    {
+      label:
+        "Test: yeah the vehicles are equipped with wide angle cameras. I wish to be able to recognize different animal species, such that I don't miss dogs or cats but can safely ignore birds.",
+      onClick: () =>
+        onSendQuickMessage(
+          STEP_SERVICE_NEED_PROFILING,
+          "yeah the vehicles are equipped with wide angle cameras. I wish to be able to recognize different animal species, such that I don't miss dogs or cats but can safely ignore birds."
+        ),
+    },
+    {
+      label: "Test: Select AI service: ultralytics-yolov8-yolov8n",
+      onClick: () => {
+        onSelectAIService("ultralytics-yolov8-yolov8n");
+      },
+    },
+  ];
 
   const initMenu = () => {
     console.log("Initializing AI Service Request Menu.");
@@ -42,54 +72,85 @@ export default function UserMenuAIServiceRequest({
       });
       initialMessageAdded.current = true;
     }
-    setOptionButtonList([
-      {
-        label: "RESET",
-        onClick: () => setCurrentMenu("main_menu"),
-      },
-    ]);
+    setOptionButtonList(getDefaultOptionButtonList());
     setCurrentStep(STEP_SERVICE_NEED_PROFILING);
   };
 
   const onSelectAIService = (aiServiceName) => {
     console.log(`Selected AI Service: ${aiServiceName}`);
+    messageSent.current = false; // Reset message sent flag
     setCurrentStep(STEP_SERVICE_DEPLOYMENT);
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      {
-        role: "user",
-        content: `I would like to deploy the AI service: ${aiServiceName}.`,
-        time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
-      },
-    ]);
-    sendMessage("intelligence_layer", "ai_service_pipeline", {
-      current_step: STEP_SERVICE_DEPLOYMENT,
-      ai_service_name: aiServiceName,
+    setMessages((prevMessages) => {
+      const newMessages = [
+        ...prevMessages,
+        {
+          role: "user",
+          content: `I would like to deploy the AI service: ${aiServiceName}.`,
+          time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+        },
+      ];
+
+      if (!messageSent.current) {
+        // Send the message to the backend
+        setChatDisabled(true); // Disable chat while processing
+        sendMessage("intelligence_layer", "ai_service_pipeline", {
+          current_step: STEP_SERVICE_DEPLOYMENT,
+          ai_service_name: aiServiceName,
+          messages: newMessages.map((msg) => {
+            if (msg.role !== "monotone") {
+              return {
+                role: msg.role,
+                content: msg.content,
+              };
+            } else {
+              return {
+                role: "assistant", // Convert monotone messages to assistant role
+                content: msg.title + "\n" + msg.content,
+              };
+            }
+          }),
+        });
+        messageSent.current = true; // Set flag to true after sending the message
+      }
+
+      return newMessages;
     });
   };
 
-  const onRequestOtherServices = () => {
-    setCurrentStep(STEP_SERVICE_NEED_PROFILING);
+  const onSendQuickMessage = (current_step, messageContent) => {
+    if (current_step) {
+      // when the new step is provided, update it, otherwise use the current step
+      setCurrentStep(current_step);
+    }
+
     messageSent.current = false; // Reset message sent flag
     setMessages((prevMessages) => {
       const newMessages = [
         ...prevMessages,
         {
           role: "user",
-          content: "Show me other AI service candidates please.",
+          content: messageContent,
           time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
         },
       ];
       // the setMessage callback is called twice in React strict mode
       if (!messageSent.current) {
+        setChatDisabled(true); // Disable chat while processing
         sendMessage("intelligence_layer", "ai_service_pipeline", {
           current_step: STEP_SERVICE_NEED_PROFILING,
-          messages: [
-            {
-              role: "user",
-              content: "Show me other AI service candidates please.",
-            },
-          ],
+          messages: newMessages.map((msg) => {
+            if (msg.role !== "monotone") {
+              return {
+                role: msg.role,
+                content: msg.content,
+              };
+            } else {
+              return {
+                role: "assistant", // Convert monotone messages to assistant role
+                content: msg.title + "\n" + msg.content,
+              };
+            }
+          }),
         });
         messageSent.current = true; // Set flag to true after sending the message
       }
@@ -114,21 +175,25 @@ export default function UserMenuAIServiceRequest({
             time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
           },
         ]);
+        setOptionButtonList(getDefaultOptionButtonList());
         return;
       }
 
       setOptionButtonList([
-        {
-          label: "RESET",
-          onClick: () => setCurrentMenu("main_menu"),
-        },
+        ...getDefaultOptionButtonList(),
         ...ai_service_names.map((name, index) => ({
-          label: `Select: ${name}`,
+          label: `Select recommended AI Service: ${name}`,
           onClick: () => onSelectAIService(name),
         })),
         {
           label: "Show me other AI service candidates please.",
-          onClick: onRequestOtherServices,
+          onClick: () => {
+            onSendQuickMessage(
+              STEP_SERVICE_NEED_PROFILING,
+              "Show me other AI service candidates please."
+            );
+            setOptionButtonList(getDefaultOptionButtonList());
+          },
         },
       ]);
 
@@ -149,6 +214,7 @@ Please select one of the above AI serivces that you would like to deploy.`,
     }
 
     handleChatEvent(streamedChatEvent, setMessages);
+    setChatDisabled(false); // Re-enable chat after processing the event
   };
 
   const UserActionResponseHandler = (userActionResponse) => {
@@ -187,11 +253,17 @@ Please select one of the above AI serivces that you would like to deploy.`,
     };
   }, []);
 
-  useEffect(() => {
-    if (!currentStep) return;
-    setChatDisabled(true);
+  const setCurrentStep = (newStep) => {
+    if (currentStep.current === newStep) {
+      return;
+    }
 
-    if (currentStep === STEP_SERVICE_NEED_PROFILING) {
+    currentStep.current = newStep;
+    console.log(`Current step updated to: ${newStep}`);
+
+    if (!currentStep.current) return;
+
+    if (currentStep.current === STEP_SERVICE_NEED_PROFILING) {
       setMessages((prevMessages) => {
         console.log("set messages called: ");
         console.log(prevMessages);
@@ -205,9 +277,8 @@ Please select one of the above AI serivces that you would like to deploy.`,
           },
         ];
       });
-      setChatDisabled(false);
     }
-  }, [currentStep]);
+  };
 
   const handleSend = () => {
     messageSent.current = false; // Reset message sent flag
@@ -221,8 +292,9 @@ Please select one of the above AI serivces that you would like to deploy.`,
         },
       ];
       if (!messageSent.current) {
+        setChatDisabled(true); // Disable chat while processing
         sendMessage("intelligence_layer", "ai_service_pipeline", {
-          current_step: currentStep,
+          current_step: currentStep.current,
           messages: updatedMessages.map((msg) => {
             if (msg.role !== "monotone") {
               return {

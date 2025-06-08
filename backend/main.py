@@ -22,7 +22,8 @@ from utils import setup_logging, WebSocketSingleton
 from knowledge_layer import KnowledgeRouter
 from functools import partial
 
-from intelligence_layer import engineer_chat_agent, handle_ai_service_pipeline
+from intelligence_layer import engineer_chat_agent
+from intelligence_layer.ai_service_pipeline import handle_ai_service_pipeline_chat
 
 setup_logging()
 
@@ -33,7 +34,7 @@ COMMAND_HANDLERS = {
     ("network_layer", "get_simulation_state"): handle_get_simulation_state,
     ("knowledge_layer", "get_routes"): handle_get_routes,
     ("knowledge_layer", "query_knowledge"): handle_query_knowledge,
-    ("intelligence_layer", "ai_service_pipeline"): handle_ai_service_pipeline,
+    ("intelligence_layer", "ai_service_pipeline"): handle_ai_service_pipeline_chat,
     ("intelligence_layer", "network_engineer_chat"): partial(
         stream_agent_chat,
         command="network_engineer_chat_response",

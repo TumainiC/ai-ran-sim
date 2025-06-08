@@ -7,4 +7,3 @@ set_tracing_disabled(True)
 
 from .engineer_chat_agent import engineer_chat_agent
 
-from .client_ai_service_pipeline_agents import handle_ai_service_pipeline

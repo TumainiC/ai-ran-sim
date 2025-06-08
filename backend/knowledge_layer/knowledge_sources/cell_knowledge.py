@@ -2,7 +2,7 @@ import json
 import inspect
 from ..tags import KnowledgeTag
 from ..relationships import KnowledgeRelationship
-from network_layer.ran import Cell
+from network_layer.base_station import Cell
 from ..knowledge_entry import knowledge_entry
 
 SUPPORTED_CELL_ATTRIBUTES = [

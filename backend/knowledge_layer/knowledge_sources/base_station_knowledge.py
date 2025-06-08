@@ -2,7 +2,7 @@ import inspect
 from ..knowledge_entry import knowledge_entry
 from ..tags import KnowledgeTag
 from ..relationships import KnowledgeRelationship
-from network_layer.ran import BaseStation
+from network_layer.base_station import BaseStation
 
 SUPPORTED_BS_ATTRIBUTES = [
     "bs_id",
