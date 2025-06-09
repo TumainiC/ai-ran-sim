@@ -1,6 +1,3 @@
-import asyncio
-import json
-from utils import stream_agent_chat, WebSocketSingleton, WebSocketResponse
 from .client_ai_service_need_profiler import client_ai_service_need_profiler
 from .client_ai_service_deployer import client_ai_service_deployer
 import logging
@@ -79,35 +76,8 @@ async def handle_ai_service_pipeline_chat(
         if new_ai_service_subscription is None:
             logger.error("Failed to create AI service subscription.")
             return
-
         logger.info(
-            f"AI service subscription created successfully with ID: {new_ai_service_subscription.subscription_id} for service {ai_service_name} with UEs {ue_id_list}."
+            f"AI service subscription created successfully: {new_ai_service_subscription}"
         )
-
-        response_message = f"""AI service subscription created successfully with ID: {new_ai_service_subscription.subscription_id} for service {ai_service_name} with UEs {ue_ids}.
-
-    When the User Equipments are connected to any base station,
-    the AI service will be started automatically at the edge clustered of that base station if computation resources are available.
-
-    The AI services offers RESTful API endspoint at `http://cranfield_6G.com/ai_services/{ai_service_name}`. 
-    The Base Stations will automatically perform local breakout of UE's requests and route them to the AI services at the edge clusters.
-
-    Below are the sample code snippets for using the AI service:
-
-    ```python
-    {ai_service_data["code"]["ai_client_script_content"]}
-    ```
-    """
-        response = WebSocketResponse(
-            layer="intelligence_layer",
-            command="ai_service_pipeline_response",
-            response={
-                "event_type": "ai_service_deployment",
-                "subscription_data": new_ai_service_subscription.to_json(),
-                "message": response_message,
-            },
-            error=None,
-        )
-        await websocket.send(response.to_json())
     else:
         logger.error(f"Unsupported step: {current_step}")
