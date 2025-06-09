@@ -1,6 +1,7 @@
 import logging
 from utils.class_utils import generate_short_hash
 from typing import Optional
+from settings import AI_SERVICE_UNDEPLOYMENT_COUNT_DOWN_STEPS
 
 
 logger = logging.getLogger(__name__)
@@ -47,22 +48,26 @@ class AIServiceSubscription:
         }
 
     def step(self):
+        """manage the current AI service subscription
+        for each base station,
+          if there are any subscribing UEs connected to it
+              if the AI service has not started.
+                  try to start the AI service at the edge cluster of the base station
+                  configure the local breakout and start the QoS monitoring xApp
+              else
+                  do nothing
+          else:
+              if the AI service has started
+                  stop the AI service at the edge cluster of the base station,
+                  clean the local breakout rules and stop the QoS monitoring xApp
+        """
         logger.info(
             f"Stepping through AI service subscription {self.subscription_id} for service {self.ai_service_name} with UEs {self.ue_id_list}"
         )
-        # manage the current AI service subscription
-        # for each base station,
-        #   if there are any subscribing UEs connected to it
-        #       if the AI service has not started.
-        #           try to start the AI service at the edge cluster of the base station
-        #           configure the local breakout and start the QoS monitoring xApp
-        #       else
-        #           do nothing
-        #   else:
-        #       if the AI service has started
-        #           stop the AI service at the edge cluster of the base station,
-        #           clean the local breakout rules and stop the QoS monitoring xApp
         for base_station in self.base_station_list.values():
+            ai_service_deployment = base_station.edge_server.get_ai_service_deployment(
+                self
+            )
             found_subscribing_ue = None
             for ue_imsi in self.ue_id_list:
                 if ue_imsi in base_station.ue_registry:
@@ -72,11 +77,19 @@ class AIServiceSubscription:
                 f"Base station {base_station.bs_id} found subscribing UE: {found_subscribing_ue}"
             )
             if found_subscribing_ue:
+                if ai_service_deployment:
+                    # Reset countdown if deployment exists
+                    ai_service_deployment["countdown_steps"] = (
+                        AI_SERVICE_UNDEPLOYMENT_COUNT_DOWN_STEPS
+                    )
+                    continue
+
                 logger.info(
                     f"getting or creating AI service deployment for subscription {self.subscription_id} at base station {base_station.bs_id}"
                 )
+
                 error, ai_service_deployment = (
-                    base_station.edge_server.get_or_create_ai_service_deployment(self)
+                    base_station.edge_server.create_ai_service_deployment(self)
                 )
                 if error:
                     logger.error(
@@ -84,13 +97,21 @@ class AIServiceSubscription:
                     )
                 else:
                     logger.info(
-                        f"AI service deployment for subscription {self.subscription_id} is ready. Container name: {ai_service_deployment["container_name"]}"
+                        f"AI service deployment for subscription {self.subscription_id} is ready. Container name: {ai_service_deployment['container_name']}"
                     )
             else:
                 logger.info(
-                    f"No subscribing UEs found at base station {base_station.bs_id} for subscription {self.subscription_id}. Stopping AI service if it is running."
+                    f"No subscribing UEs found at base station {base_station.bs_id} for subscription {self.subscription_id}. Handling AI service undeployment countdown."
                 )
-                # base_station.edge_server.stop_ai_service_deployment(self)
+
+                if ai_service_deployment:
+                    # Decrement countdown, undeploy if reaches zero
+                    ai_service_deployment["countdown_steps"] -= 1
+                    if ai_service_deployment["countdown_steps"] <= 0:
+                        logger.info(
+                            f"AI service deployment for subscription {self.subscription_id} has reached countdown zero. Undeploying AI service."
+                        )
+                        base_station.edge_server.undeploy_ai_service(self)
 
 
 class AIServiceSubscriptionManager:

@@ -1,4 +1,9 @@
-from utils import parse_memory_usage_string, start_ai_service_with_docker
+from utils import (
+    parse_memory_usage_string,
+    start_ai_service_in_docker,
+    remove_ai_service_in_docker,
+)
+from settings import AI_SERVICE_UNDEPLOYMENT_COUNT_DOWN_STEPS
 import logging
 
 logger = logging.getLogger(__name__)
@@ -46,22 +51,23 @@ class EdgeServer:
         """
         return f"{self.edge_id}_{ai_service_subscription.subscription_id}_{ai_service_subscription.ai_service_name.replace(' ', '_')}"
 
-    def get_or_create_ai_service_deployment(self, ai_service_subscription):
+    def create_ai_service_deployment(self, ai_service_subscription):
         """
-        Get or create an AI service deployment for the given AI service subscription.
+        Create an AI service deployment for the given AI service subscription.
         AI service is per subscription basis for the moment, until in the future we support multiple deployments per subscription to enable load balancing.
 
         returns:
             error (str): Error message if any, otherwise None.
             ai_service_deployment (dict): The AI service deployment data if created or found, otherwise None.
         """
-        subscription_id = ai_service_subscription.subscription_id
-        if subscription_id in self.ai_service_deployments:
+
+        if ai_service_subscription.subscription_id in self.ai_service_deployments:
             return (
-                None,
-                self.ai_service_deployments[subscription_id],
+                f"AI service subscription {ai_service_subscription.subscription_id} already exists on edge server {self.edge_id}.",
+                self.ai_service_deployments[ai_service_subscription.subscription_id],
             )
 
+        subscription_id = ai_service_subscription.subscription_id
         ai_service_name = ai_service_subscription.ai_service_name
 
         # check if the edge server has enough resources to deploy the AI serivce
@@ -104,7 +110,7 @@ class EdgeServer:
         image_repository_url = ai_service_data["image_repository_url"]
 
         container_name = self.format_container_name(ai_service_subscription)
-        error, ai_service_endpoint = start_ai_service_with_docker(
+        error, ai_service_endpoint = start_ai_service_in_docker(
             ai_service_image_url=image_repository_url,
             container_name=container_name,
         )
@@ -126,9 +132,40 @@ class EdgeServer:
             "container_name": self.format_container_name(ai_service_subscription),
             "edge_specific_cpu_memory_usage_GB": edge_specific_cpu_memory_usage_GB,
             "edge_specific_device_memory_usage_GB": edge_specific_device_memory_usage_GB,
+            "countdown_steps": AI_SERVICE_UNDEPLOYMENT_COUNT_DOWN_STEPS,
         }
 
         logger.info(
             f"Deployed AI service {ai_service_name} on edge server {self.edge_id} with endpoint {ai_service_endpoint}."
         )
         return None, self.ai_service_deployments[subscription_id]
+
+    def undeploy_ai_service(self, ai_service_subscription):
+        """
+        Stop the AI service deployment if it exists for the given AI service subscription.
+
+        Args:
+            ai_service_subscription (AIServiceSubscription): The AI service subscription object.
+        """
+        ai_service_deployment = self.get_ai_service_deployment(ai_service_subscription)
+        if ai_service_deployment:
+            logger.info(
+                f"Undeploying AI service {ai_service_subscription.ai_service_name} for subscription {ai_service_subscription.subscription_id} on edge server {self.edge_id}."
+            )
+            remove_ai_service_in_docker(
+                container_name=ai_service_deployment["container_name"],
+            )
+
+    def get_ai_service_deployment(self, ai_service_subscription):
+        """
+        Get the AI service deployment data for the given subscription ID.
+
+        Args:
+            ai_service_subscription (AIServiceSubscription): The AI service subscription object.
+
+        Returns:
+            dict: The AI service deployment data if found, otherwise None.
+        """
+        return self.ai_service_deployments.get(
+            ai_service_subscription.subscription_id, None
+        )

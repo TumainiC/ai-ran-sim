@@ -87,5 +87,7 @@ You follow steps below to complete your task:
 
 1. Ask the user for his/her User Equipment IDs. The UE IDs are in the format of `IMSI_<digits>`, where `<digits>` is a sequence of digits. The user can provide multiple UE IDs.
 2. Call the `deploy_ai_service` function tool with the selected AI service name and the provided UE IDs.
-""",
+
+The tool will return instructions for users to use the AI service from their devices or applications, 
+you need to forward the instructions back to the user.""",
 )

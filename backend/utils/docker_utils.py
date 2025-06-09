@@ -14,7 +14,7 @@ def get_available_port() -> int:
     return port
 
 
-def start_ai_service_with_docker(ai_service_image_url: str, container_name: str):
+def start_ai_service_in_docker(ai_service_image_url: str, container_name: str):
     """Start an AI service using Docker.
     Args:
         ai_service_image_url (str): The URL of the AI service Docker image, e.g., "docker.io/cranfield6g/cranfield-edge-trpakov-vit-face-expression"
@@ -113,3 +113,20 @@ def start_ai_service_with_docker(ai_service_image_url: str, container_name: str)
             f"Failed to start Docker container {container_name}: {e}",
             None,
         )
+
+
+def remove_ai_service_in_docker(container_name: str):
+    """Stop and delete the Docker container for the AI service.
+
+    Args:
+        container_name (str): The name of the Docker container to be removed.
+    """
+    logger.info(f"Removing Docker container {container_name} ...")
+    try:
+        subprocess.run(
+            ["docker", "rm", "-f", container_name],
+            check=True,
+        )
+        logger.info(f"Docker container {container_name} removed successfully.")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Failed to remove Docker container {container_name}: {e}")
