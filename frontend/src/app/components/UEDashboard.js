@@ -21,7 +21,7 @@ export default function UEDashboard({ simulationState }) {
               <td>Current Cell</td>
               <td>Position</td>
               <td>Slice / QoS</td>
-              <td>Downlink Bitrate</td>
+              <td>Achivable Downlink Bitrate</td>
               <td>Downlink Signals</td>
               <td>Downlink SINR / CQI</td>
               <td>Downlink MCS Index / MCS Data</td>
@@ -60,7 +60,7 @@ export default function UEDashboard({ simulationState }) {
                       return (
                         <div key={cell_id}>
                           {cell_id}: freq priority: {frequency_priority} signal
-                          power: {received_power_dBm} dBm
+                          power: {received_power_dBm.toFixed(2)} dBm
                         </div>
                       );
                     }

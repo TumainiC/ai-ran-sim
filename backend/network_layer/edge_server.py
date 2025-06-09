@@ -158,7 +158,12 @@ class EdgeServer:
             or edge_specific_device_memory_usage_GB > available_device_memory_GB
         ):
             return (
-                f"Not enough resources to deploy {ai_service_name} AI service on the edge server {self.edge_id}.",
+                f"""Not enough resources to deploy {ai_service_name} AI service on the edge server {self.edge_id}.
+                Available CPU memory: {available_cpu_memory_GB} GB,
+                Available device memory: {available_device_memory_GB} GB,
+                Required CPU memory: {edge_specific_cpu_memory_usage_GB} GB,
+                Required device memory: {edge_specific_device_memory_usage_GB} GB.
+""",
                 None,
             )
 

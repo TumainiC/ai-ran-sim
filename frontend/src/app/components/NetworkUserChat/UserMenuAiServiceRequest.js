@@ -68,6 +68,10 @@ export default function UserMenuAIServiceRequest({
         onSendQuickMessage(STEP_SERVICE_DEPLOYMENT, "IMSI_1, IMSI_2");
       },
     },
+    {
+      label: "Test: Deploy sample AI service.",
+      onClick: onDeployTestAIService,
+    },
   ];
 
   const initMenu = () => {
@@ -153,6 +157,47 @@ export default function UserMenuAIServiceRequest({
         setChatDisabled(true); // Disable chat while processing
         sendMessage("intelligence_layer", "ai_service_pipeline", {
           current_step: current_step,
+          messages: newMessages.map((msg) => {
+            if (msg.role !== "monotone") {
+              return {
+                role: msg.role,
+                content: msg.content,
+              };
+            } else {
+              return {
+                role: "assistant", // Convert monotone messages to assistant role
+                content: msg.title + "\n" + msg.content,
+              };
+            }
+          }),
+        });
+        messageSent.current = true; // Set flag to true after sending the message
+      }
+      return newMessages;
+    });
+  };
+
+  const onDeployTestAIService = () => {
+    messageSent.current = false; // Reset message sent flag
+    setMessages((prevMessages) => {
+      const newMessages = [
+        ...prevMessages,
+        {
+          role: "user",
+          content:
+            "Deploying a test AI service: ultralytics-yolov8-yolov8n for UE IMSI_1.",
+          time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+        },
+      ];
+      // the setMessage callback is called twice in React strict mode
+      if (!messageSent.current) {
+        setChatDisabled(true); // Disable chat while processing
+        sendMessage("intelligence_layer", "ai_service_pipeline", {
+          current_step: "step_test_ai_service_deployment",
+          data: {
+            ai_service_name: "ultralytics-yolov8-yolov8n",
+            ue_id_list: ["IMSI_1"],
+          },
           messages: newMessages.map((msg) => {
             if (msg.role !== "monotone") {
               return {
