@@ -20,22 +20,81 @@ class EdgeServer:
 
         self.ai_service_deployments = {}
 
+    def to_json(self):
+        return {
+            "edge_id": self.edge_id,
+            "node_id": self.node_id,
+            "device_type": self.device_type,
+            "cpu_memory_GB": self.cpu_memory_GB,
+            "device_memory_GB": self.device_memory_GB,
+            "ai_service_deployments": {
+                sub_id: {
+                    "ai_service_subscription": deployment[
+                        "ai_service_subscription"
+                    ].subscription_id,
+                    "ai_service_name": deployment[
+                        "ai_service_subscription"
+                    ].ai_service_name,
+                    "ai_service_endpoint": deployment["ai_service_endpoint"],
+                    "image_repository_url": deployment["image_repository_url"],
+                    "container_name": deployment["container_name"],
+                    "edge_specific_cpu_memory_usage_GB": deployment[
+                        "edge_specific_cpu_memory_usage_GB"
+                    ],
+                    "edge_specific_device_memory_usage_GB": deployment[
+                        "edge_specific_device_memory_usage_GB"
+                    ],
+                    "countdown_steps": deployment["countdown_steps"],
+                    "ue_id_list": deployment["ai_service_subscription"].ue_id_list,
+                }
+                for sub_id, deployment in self.ai_service_deployments.items()
+            },
+            "available_cpu_memory_GB": self.available_cpu_memory_GB,
+            "available_device_memory_GB": self.available_device_memory_GB,
+        }
+
     @property
     def available_cpu_memory_GB(self):
         cpu_memory_used_GB = 0
-        for deployed_ai_service in self.ai_service_deployments.values():
-            cpu_memory_used_GB += deployed_ai_service.get(
-                "edge_specific_cpu_memory_usage_GB", 0.0
-            )
+        # below code is used when you have real multiple edge servers
+        # for deployed_ai_service in self.ai_service_deployments.values():
+        #     cpu_memory_used_GB += deployed_ai_service.get(
+        #         "edge_specific_cpu_memory_usage_GB", 0.0
+        #     )
+
+        # below code is used when you have a single edge server that's shared by all base stations
+        for (
+            base_station
+        ) in self.base_station.simulation_engine.base_station_list.values():
+            if base_station.edge_server is not None:
+                for (
+                    deployed_ai_service
+                ) in base_station.edge_server.ai_service_deployments.values():
+                    cpu_memory_used_GB += deployed_ai_service.get(
+                        "edge_specific_cpu_memory_usage_GB", 0.0
+                    )
         return self.cpu_memory_GB - cpu_memory_used_GB
 
     @property
     def available_device_memory_GB(self):
         device_memory_used_GB = 0
-        for deployed_ai_service in self.ai_service_deployments.values():
-            device_memory_used_GB += deployed_ai_service.get(
-                "edge_specific_device_memory_usage_GB", 0.0
-            )
+        # below code is used when you have real multiple edge servers
+        # for deployed_ai_service in self.ai_service_deployments.values():
+        #     device_memory_used_GB += deployed_ai_service.get(
+        #         "edge_specific_device_memory_usage_GB", 0.0
+        #     )
+
+        # below code is used when you have a single edge server that's shared by all base stations
+        for (
+            base_station
+        ) in self.base_station.simulation_engine.base_station_list.values():
+            if base_station.edge_server is not None:
+                for (
+                    deployed_ai_service
+                ) in base_station.edge_server.ai_service_deployments.values():
+                    device_memory_used_GB += deployed_ai_service.get(
+                        "edge_specific_device_memory_usage_GB", 0.0
+                    )
 
         return self.device_memory_GB - device_memory_used_GB
 
@@ -155,6 +214,7 @@ class EdgeServer:
             remove_ai_service_in_docker(
                 container_name=ai_service_deployment["container_name"],
             )
+            del self.ai_service_deployments[ai_service_subscription.subscription_id]
 
     def get_ai_service_deployment(self, ai_service_subscription):
         """

@@ -16,6 +16,3 @@ class SingletonMeta(type):
 def generate_short_hash(length=8):
     random_bytes = secrets.token_bytes(length)
     return base64.urlsafe_b64encode(random_bytes).decode("utf-8")[:length]
-
-
-print(generate_short_hash())  # Example usage, can be removed later

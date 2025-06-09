@@ -87,6 +87,7 @@ class BaseStation:
             "vis_position_y": self.position_y * settings.REAL_LIFE_DISTANCE_MULTIPLIER,
             "ue_registry": list(self.ue_registry.keys()),
             "cell_list": [cell.to_json() for cell in self.cell_list.values()],
+            "edge_server": self.edge_server.to_json(),
         }
 
     def init_rrc_measurement_event_handler(self, event_id, handler):
