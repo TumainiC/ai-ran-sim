@@ -147,6 +147,16 @@ class AIServiceSubscriptionManager:
             self, ai_service_name, ai_service_data, ue_id_list
         )
         self.subscriptions[subscription.subscription_id] = subscription
+        for ue_id in ue_id_list:
+            if ue_id not in self.ue_list:
+                logger.warning(
+                    f"User Equipment {ue_id} is not registered in the system. Subscription will not be fully functional."
+                )
+            else:
+                logger.info(
+                    f"Adding AI service subscription {subscription.subscription_id} to UE {ue_id}"
+                )
+                self.ue_list[ue_id].add_ai_service_subscription(subscription)
         logger.info(
             f"Created AI service subscription: {subscription.subscription_id} for service {ai_service_name} with UEs {ue_id_list}"
         )
@@ -157,7 +167,16 @@ class AIServiceSubscriptionManager:
 
     def delete_subscription(self, subscription_id: str) -> bool:
         if subscription_id in self.subscriptions:
+            subscription = self.subscriptions[subscription_id]
+            for ue_id in subscription.ue_id_list:
+                if ue_id in self.ue_list:
+                    self.ue_list[ue_id].remove_ai_service_subscription(
+                        subscription.subscription_id
+                    )
             del self.subscriptions[subscription_id]
+            logger.info(
+                f"Deleted AI service subscription: {subscription_id} for service {subscription.ai_service_name}"
+            )
             return True
         return False
 

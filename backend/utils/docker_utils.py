@@ -1,6 +1,7 @@
 import subprocess
 import logging
 import socket
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -130,3 +131,21 @@ def remove_ai_service_in_docker(container_name: str):
         logger.info(f"Docker container {container_name} removed successfully.")
     except subprocess.CalledProcessError as e:
         logger.error(f"Failed to remove Docker container {container_name}: {e}")
+
+
+def send_post_request(url, data, files):
+    """Send request to run AI service and display AI service responses."""
+    try:
+        response = requests.post(url, files=files, data=data)
+        # get the process time, node id and k8s pod name from the response headers
+        process_time = response.headers.get("X-Process-Time")
+        node_id = response.headers.get("X-NODE-ID")
+        k8s_pod_name = response.headers.get("X-K8S-POD-NAME")
+        if response.status_code == 200:
+            return response.json(), process_time, node_id, k8s_pod_name
+        else:
+            print(f"Error: {response.status_code}, {response.text}")
+            return None, None, None, None
+    except Exception as e:
+        print(f"Request failed: {e}")
+        return None, None, None, None

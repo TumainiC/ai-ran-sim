@@ -1,4 +1,5 @@
 from utils import (
+    send_post_request,
     parse_memory_usage_string,
     start_ai_service_in_docker,
     remove_ai_service_in_docker,
@@ -162,8 +163,7 @@ class EdgeServer:
                 Available CPU memory: {available_cpu_memory_GB} GB,
                 Available device memory: {available_device_memory_GB} GB,
                 Required CPU memory: {edge_specific_cpu_memory_usage_GB} GB,
-                Required device memory: {edge_specific_device_memory_usage_GB} GB.
-""",
+                Required device memory: {edge_specific_device_memory_usage_GB} GB.""",
                 None,
             )
 
@@ -234,3 +234,61 @@ class EdgeServer:
         return self.ai_service_deployments.get(
             ai_service_subscription.subscription_id, None
         )
+
+    def check_ue_subscription(self, ai_service_name, ue_imsi):
+        for deployment in self.ai_service_deployments.values():
+            if (
+                deployment["ai_service_subscription"].ai_service_name == ai_service_name
+                and ue_imsi in deployment["ai_service_subscription"].ue_id_list
+            ):
+                return deployment["ai_service_subscription"]
+        return None
+
+    def handle_ai_service_request(
+        self, ai_service_subscription, request_data, request_files=None
+    ):
+        """
+        Handle the AI service request from a User Equipment (UE).
+
+        Args:
+            ai_service_subscription (AIServiceSubscription): The AI service subscription object.
+            request_data (dict): The request data to be sent to the AI service.
+            request_files (dict, optional): Files to be sent with the request.
+
+        Returns:
+            dict: The response from the AI service.
+        """
+        ai_service_deployment = self.get_ai_service_deployment(ai_service_subscription)
+        if ai_service_deployment is None:
+            return {
+                "response": None,
+                "error": f"AI service {ai_service_subscription.ai_service_name} is not deployed on edge server {self.edge_id}.",
+            }
+
+        ai_service_endpoint = ai_service_deployment.get("ai_service_endpoint", "")
+        if not ai_service_endpoint:
+            return {
+                "response": None,
+                "error": f"AI service {ai_service_subscription.ai_service_name} is not deployed on edge server {self.edge_id}.",
+            }
+
+        response, process_time, node_id, k8s_pod_name = send_post_request(
+            url=f"http://{ai_service_endpoint}/model/run",
+            data=request_data,
+            files=request_files or {},
+        )
+
+        logger.info(
+            f"AI service {ai_service_subscription.ai_service_name} response: {response}, process time: {process_time}, node ID: {node_id}, k8s pod name: {k8s_pod_name}"
+        )
+
+        if response is None:
+            return {
+                "response": None,
+                "error": f"Failed to process request for {ai_service_subscription.ai_service_name} on edge server {self.edge_id}.",
+            }
+
+        return {
+            "error": None,
+            "response": response,
+        }

@@ -273,6 +273,22 @@ Please select one of the above AI serivces that you would like to deploy.`,
       return;
     }
 
+    if (eventType === "ai_service_deployment") {
+      const message = streamedChatEvent.message;
+      if (message) {
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            role: "assistant",
+            content: message,
+            time: dayjs().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+          },
+        ]);
+        setOptionButtonList(getDefaultOptionButtonList());
+        return;
+      }
+    }
+
     handleChatEvent(streamedChatEvent, setMessages);
     setChatDisabled(false); // Re-enable chat after processing the event
   };

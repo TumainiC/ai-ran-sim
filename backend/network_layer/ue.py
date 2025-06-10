@@ -1,4 +1,9 @@
+import time
 import numpy as np
+from settings.ai_service_config import (
+    AI_SERVICE_SAMPLE_IMAGE_SIZE_BYTES,
+    prepare_ai_service_sample_request,
+)
 from utils import (
     dist_between,
     get_rrc_measurement_event_monitor,
@@ -56,6 +61,10 @@ class UE:
         self.current_cell = None
         self.serving_cell_history = []
 
+        self.ai_service_subscriptions = {}
+        self.ai_service_request_countdonw = settings.UE_AI_SERVICE_REQUEST_COUNTDOWN
+        self.ai_service_responses = {}
+
     def __repr__(self):
         return f"UE(ue_imsi={self.ue_imsi}, \
             operation_region={self.operation_region}, \
@@ -110,6 +119,31 @@ class UE:
 
     def set_downlink_cqi(self, downlink_cqi):
         self.downlink_cqi = downlink_cqi
+
+    def add_ai_service_subscription(self, ai_service_subscription):
+        ai_service_subscription_id = ai_service_subscription.subscription_id
+        if ai_service_subscription_id in self.ai_service_subscriptions:
+            logger.warning(
+                f"UE {self.ue_imsi}: AI service subscription {ai_service_subscription_id} already exists."
+            )
+        else:
+            self.ai_service_subscriptions[ai_service_subscription_id] = (
+                ai_service_subscription
+            )
+            logger.info(
+                f"UE {self.ue_imsi}: AI service subscription {ai_service_subscription_id} added."
+            )
+
+    def remove_ai_service_subscription(self, ai_service_subscription_id):
+        if ai_service_subscription_id in self.ai_service_subscriptions:
+            del self.ai_service_subscriptions[ai_service_subscription_id]
+            logger.info(
+                f"UE {self.ue_imsi}: AI service subscription {ai_service_subscription_id} removed."
+            )
+        else:
+            logger.warning(
+                f"UE {self.ue_imsi}: AI service subscription {ai_service_subscription_id} does not exist."
+            )
 
     def cell_selection_and_camping(self):
         # Sort SSBs by received power
@@ -365,10 +399,73 @@ class UE:
                 # print(f"{self} Reporting event: {event_report}")
                 self.current_bs.receive_ue_rrc_meas_events(event_report)
 
+    def request_ai_service(self):
+        if self.current_bs is None:
+            logger.warning(
+                f"UE {self.ue_imsi}: No base station to request AI service from."
+            )
+            self.ai_service_responses = {}
+            return
+
+        if len(self.ai_service_subscriptions) == 0:
+            logger.warning(f"UE {self.ue_imsi}: No AI service subscriptions available.")
+            self.ai_service_responses = {}
+            return
+
+        if self.downlink_bitrate == 0:
+            logger.warning(
+                f"UE {self.ue_imsi}: Downlink bitrate is 0, cannot request AI service."
+            )
+            self.ai_service_responses = {}
+            return
+
+        self.ai_service_request_countdonw -= 1
+        if self.ai_service_request_countdonw > 0:
+            logger.info(
+                f"UE {self.ue_imsi}: AI service request countdown: {self.ai_service_request_countdonw}"
+            )
+            return
+
+        self.ai_service_request_countdonw = settings.UE_AI_SERVICE_REQUEST_COUNTDOWN
+        for ai_service_subscription in self.ai_service_subscriptions.values():
+            ai_service_request_data = prepare_ai_service_sample_request(
+                ai_service_subscription.ai_service_name, self.ue_imsi
+            )
+            logger.info(
+                f"UE {self.ue_imsi}: Requesting AI service {ai_service_subscription.ai_service_name}."
+            )
+            start_time_ms = time.time() * 1000  # Convert to milliseconds
+            response = self.current_bs.on_ue_application_traffic(
+                ai_service_request_data
+            )
+            end_time_ms = time.time() * 1000  # Convert to milliseconds
+
+            # total latency is the time taken to process the request plus the air transmission time.
+            # for the moment we use both achivable downlink bitrate to estimate the air transmission time
+            ai_service_latency_ms = (
+                end_time_ms
+                - start_time_ms
+                + AI_SERVICE_SAMPLE_IMAGE_SIZE_BYTES
+                * 8
+                / self.downlink_bitrate
+                * 1000
+                * 2
+            )
+
+            logger.info(
+                f"UE {self.ue_imsi}: AI service response: {response.get('response', 'No response field.')}, "
+            )
+            self.ai_service_responses[ai_service_subscription.subscription_id] = {
+                "latency": ai_service_latency_ms,
+                "response": response,
+                "ai_service_name": ai_service_subscription.ai_service_name,
+            }
+
     def step(self, delta_time):
         self.move_towards_target(delta_time)
         self.monitor_signal_strength()
         self.check_rrc_meas_events_to_monitor()
+        self.request_ai_service()
         self.time_remaining -= delta_time
         if self.time_remaining <= 0:
             self.deregister()
@@ -411,4 +508,17 @@ class UE:
             "downlink_cqi": self.downlink_cqi,
             "downlink_mcs_index": self.downlink_mcs_index,
             "downlink_mcs_data": self.downlink_mcs_data,
+            "ai_service_subscriptions": {
+                subscription_id: subscription.to_json()
+                for subscription_id, subscription in self.ai_service_subscriptions.items()
+            },
+            "ai_service_request_countdonw": self.ai_service_request_countdonw,
+            "ai_service_responses": {
+                subscription_id: {
+                    "latency": response["latency"],
+                    "response": response["response"],
+                    "ai_service_name": response["ai_service_name"],
+                }
+                for subscription_id, response in self.ai_service_responses.items()
+            },
         }

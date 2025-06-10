@@ -1,6 +1,10 @@
 import settings
 from .cell import Cell
 from .edge_server import EdgeServer
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class BaseStation:
@@ -43,8 +47,8 @@ class BaseStation:
         assert (
             ue.current_cell.cell_id == current_cell.cell_id
         ), f"UE {ue.ue_imsi} (current cell: {ue.current_cell.cell_id}) is not in the current cell ({current_cell.cell_id})"
-        print(f"{self} received UE reported RRC measurement event:")
-        print(event)
+        logger.info(f"{self} received UE reported RRC measurement event:")
+        logger.info(event)
         self.ue_rrc_meas_events.append(event)
 
     def handle_ue_authentication_and_registration(self, ue):
@@ -75,7 +79,9 @@ class BaseStation:
         for event in events_to_remove:
             self.ue_rrc_meas_events.remove(event)
 
-        print(f"gNB {self.bs_id}: UE {ue.ue_imsi} deregistered and resources released.")
+        logger.info(
+            f"gNB {self.bs_id}: UE {ue.ue_imsi} deregistered and resources released."
+        )
         return True
 
     def to_json(self):
@@ -106,7 +112,7 @@ class BaseStation:
         ue_handover_actions = {}
         for action in self.ric_control_actions:
             if action.action_type != action.ACTION_TYPE_HANDOVER:
-                print(
+                logger.info(
                     f"gNB {self.bs_id}: Ignoring non-handover action: {action.action_type}"
                 )
                 continue
@@ -153,7 +159,7 @@ class BaseStation:
             ue.execute_handover(target_cell)
             self.ue_registry[ue.ue_imsi]["cell"] = target_cell
             source_cell.deregister_ue(ue)
-            print(
+            logger.info(
                 f"gNB {self.bs_id}: Handover UE {ue.ue_imsi} from cell {source_cell.cell_id} to cell {target_cell.cell_id}"
             )
         else:
@@ -165,7 +171,7 @@ class BaseStation:
             ue.execute_handover(target_cell)
             source_cell.deregister_ue(ue)
             del source_bs.ue_registry[ue.ue_imsi]
-            print(
+            logger.info(
                 f"gNB {self.bs_id} Handover UE {ue.ue_imsi} from cell {source_cell.cell_id} to BS: {target_bs.bs_id} cell {target_cell.cell_id} (different BS)"
             )
 
@@ -182,7 +188,7 @@ class BaseStation:
             event = self.ue_rrc_meas_events.pop(0)
             event_id = event["event_id"]
             if event_id not in self.ue_rrc_meas_event_handers:
-                print(
+                logger.info(
                     f"gNB {self.bs_id}: No handler for event ID {event_id}. Skipping."
                 )
                 continue
@@ -193,9 +199,37 @@ class BaseStation:
                 # add the action to the RIC control actions list
                 self.ric_control_actions.append(action)
 
-            print(
+            logger.info(
                 f"gNB {self.bs_id}: Processed RRC measurement event {event_id} for UE {event["triggering_ue"].ue_imsi}"
             )
 
         # process (reject, merge or execute) all the RIC control actions
         self.process_ric_control_actions()
+
+    def on_ue_application_traffic(self, traffic_data):
+        url = traffic_data["url"]
+
+        # for the moment, we only support the AI service traffic
+        if not url.startswith("http://cranfield_6G.com/ai_services/"):
+            return
+
+        # when a connected UE requests edge AI service
+        ai_service_name = url.replace("http://cranfield_6G.com/ai_services/", "")
+        ue_imsi = traffic_data["data"]["ue_id"]
+        if not ai_service_name:
+            logger.warning("Undefined ai_service_name")
+            return
+
+        # local breakout
+        ai_service_subscription = self.edge_server.check_ue_subscription(
+            ai_service_name, ue_imsi
+        )
+        if not ai_service_subscription:
+            return
+
+        # forward the request to the edge server
+        return self.edge_server.handle_ai_service_request(
+            ai_service_subscription=ai_service_subscription,
+            request_data=traffic_data["data"],
+            request_files=traffic_data.get("files", {}),
+        )
