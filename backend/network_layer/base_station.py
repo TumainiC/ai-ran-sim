@@ -1,3 +1,4 @@
+import time
 import settings
 from .cell import Cell
 from .edge_server import EdgeServer
@@ -34,6 +35,8 @@ class BaseStation:
         self.ue_rrc_meas_event_handers = {}
 
         self.ric_control_actions = []
+
+        self.ai_service_event_handler = None
 
     def __repr__(self):
         return f"BS {self.bs_id}"
@@ -103,6 +106,10 @@ class BaseStation:
             event_id not in self.ue_rrc_meas_event_handers
         ), f"Handler for event ID {event_id} already registered"
         self.ue_rrc_meas_event_handers[event_id] = handler
+
+    def init_ai_service_event_handler(self, handler):
+        assert handler is not None, "Handler cannot be None"
+        self.ai_service_event_handler = handler
 
     def process_ric_control_actions(self):
         # only handover actions are supported for now
@@ -206,7 +213,7 @@ class BaseStation:
         # process (reject, merge or execute) all the RIC control actions
         self.process_ric_control_actions()
 
-    def on_ue_application_traffic(self, traffic_data):
+    def on_ue_application_traffic(self, ue, traffic_data):
         url = traffic_data["url"]
 
         # for the moment, we only support the AI service traffic
@@ -228,8 +235,33 @@ class BaseStation:
             return
 
         # forward the request to the edge server
-        return self.edge_server.handle_ai_service_request(
+        start_time = time.time() * 1000  # convert to milliseconds
+        response = self.edge_server.handle_ai_service_request(
             ai_service_subscription=ai_service_subscription,
             request_data=traffic_data["data"],
             request_files=traffic_data.get("files", {}),
         )
+
+        end_time = time.time() * 1000  # convert to milliseconds
+
+        if self.ai_service_event_handler:
+            files = traffic_data.get("files", {})
+            request_files_size = 0
+            if files and files.get("file", None):
+                request_files_size = len(files["file"])
+            self.ai_service_event_handler(
+                {
+                    "ue": ue,
+                    "request": {
+                        "ai_service_name": ai_service_name,
+                        "ue_imsi": ue_imsi,
+                        "request_data": traffic_data["data"],
+                        "request_files": files,
+                        "request_files_size": request_files_size,
+                    },
+                    "response": response,
+                    "service_response_time_ms": end_time - start_time,
+                }
+            )
+
+        return response

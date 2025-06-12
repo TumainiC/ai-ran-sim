@@ -143,7 +143,7 @@ export default function UEDashboard({ simulationState }) {
                         </div>
                       );
                     }
-                  )}{" "}
+                  )}
                   <br />
                   <strong>Downlink SINR / CQI</strong> <br />
                   {ue.downlink_sinr} dB <br /> CQI: {ue.downlink_cqi} <br />{" "}

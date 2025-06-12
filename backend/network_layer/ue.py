@@ -1,7 +1,7 @@
 import time
 import numpy as np
 from settings.ai_service_config import (
-    AI_SERVICE_SAMPLE_IMAGE_SIZE_BYTES,
+    get_random_ai_service_request_data,
     prepare_ai_service_sample_request,
 )
 from utils import (
@@ -428,14 +428,23 @@ class UE:
 
         self.ai_service_request_countdonw = settings.UE_AI_SERVICE_REQUEST_COUNTDOWN
         for ai_service_subscription in self.ai_service_subscriptions.values():
+
+            sample_request_data = get_random_ai_service_request_data()
+            files, size, name = (
+                sample_request_data["files"],
+                sample_request_data["size"],
+                sample_request_data["name"],
+            )
+
             ai_service_request_data = prepare_ai_service_sample_request(
-                ai_service_subscription.ai_service_name, self.ue_imsi
+                ai_service_subscription.ai_service_name, self.ue_imsi, files
             )
             logger.info(
-                f"UE {self.ue_imsi}: Requesting AI service {ai_service_subscription.ai_service_name}."
+                f"UE {self.ue_imsi}: Requesting AI service {ai_service_subscription.ai_service_name} with {name}."
             )
             start_time_ms = time.time() * 1000  # Convert to milliseconds
             response = self.current_bs.on_ue_application_traffic(
+                self,
                 ai_service_request_data
             )
             end_time_ms = time.time() * 1000  # Convert to milliseconds
@@ -445,11 +454,7 @@ class UE:
             ai_service_latency_ms = (
                 end_time_ms
                 - start_time_ms
-                + AI_SERVICE_SAMPLE_IMAGE_SIZE_BYTES
-                * 8
-                / self.downlink_bitrate
-                * 1000
-                * 2
+                + size * 8 / self.downlink_bitrate * 1000 * 2
             )
 
             logger.info(
