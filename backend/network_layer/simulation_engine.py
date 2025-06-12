@@ -338,6 +338,7 @@ class SimulationEngine(metaclass=utils.SingletonMeta):
             "time_step": self.sim_step,
             "base_stations": [bs.to_json() for bs in self.base_station_list.values()],
             "cells": [cell.to_json() for cell in self.cell_list.values()],
+            "ric": self.ric.to_json() if self.ric else None,
             "UE_list": [ue.to_json() for ue in self.ue_list.values()],
             "logs": self.logs,
         }

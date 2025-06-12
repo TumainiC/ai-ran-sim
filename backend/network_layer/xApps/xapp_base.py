@@ -1,3 +1,6 @@
+import inspect
+
+
 class xAppBase:
     def __init__(self, ric=None):
         self.ric = ric
@@ -26,3 +29,15 @@ class xAppBase:
         # xApps can be implemented in an event-driven manner or in an simulation step-driven manner.
         # if this method is overridden, it will be called in each simulation step by the RIC.
         pass
+
+    def to_json(self):
+        # Get the source code of the actual class (including child classes)
+        try:
+            source_code = inspect.getsource(self.__class__)
+        except Exception:
+            source_code = None
+        return {
+            "xapp_id": self.xapp_id,
+            "enabled": self.enabled,
+            "source_code": source_code,
+        }

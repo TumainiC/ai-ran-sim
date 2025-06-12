@@ -64,3 +64,10 @@ class RIC:
 
         # Step through AI service subscription manager
         self.ai_service_subscription_manager.step()
+
+    def to_json(self):
+        return {
+            "ric_id": self.ric_id,
+            "xapp_list": [xapp.to_json() for xapp in self.xapp_list.values()],
+            "ai_service_subscription_manager": self.ai_service_subscription_manager.to_json(),
+        }

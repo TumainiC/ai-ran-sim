@@ -58,3 +58,11 @@ class xAppAIServiceMonitor(xAppBase):
         # subcribe events from all base stations
         for bs in self.base_station_list.values():
             bs.init_ai_service_event_handler(self.handle_ai_service_event)
+
+    def to_json(self):
+        res = super().to_json()
+        res["per_ue_memory_size"] = self.per_ue_memory_size
+        res["ai_service_event_memory"] = {
+            ue_imsi: events for ue_imsi, events in self.ai_service_event_memory.items()
+        }
+        return res
