@@ -235,7 +235,7 @@ export default function SimulationRenderer({ simulationState }) {
             zIndex: 100,
           }}
         >
-          ({mousePos.x}, {mousePos.y})
+          (X: {mousePos.x}, Y: {mousePos.y})
         </div>
       )}
     </div>

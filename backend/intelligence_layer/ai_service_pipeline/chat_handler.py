@@ -1,3 +1,4 @@
+from utils import stream_agent_chat
 from .client_ai_service_need_profiler import client_ai_service_need_profiler
 from .client_ai_service_deployer import client_ai_service_deployer
 import logging
@@ -6,8 +7,6 @@ import logging
 from .constants import (
     STEP_SERVICE_NEED_PROFILING,
     STEP_SERVICE_DEPLOYMENT,
-    STEP_NETWORK_ADAPTATION,
-    STEP_SERVICE_MONITORING,
 )
 
 logger = logging.getLogger(__name__)

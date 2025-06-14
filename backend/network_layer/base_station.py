@@ -3,6 +3,8 @@ import settings
 from .cell import Cell
 from .edge_server import EdgeServer
 import logging
+import base64
+
 
 
 logger = logging.getLogger(__name__)
@@ -249,9 +251,12 @@ class BaseStation:
             request_files_size = 0
             if files and files.get("file", None):
                 request_files_size = len(files["file"])
+                # encode the files from bytes to base64 string
+                files["file_base64"] = base64.b64encode(files["file"]).decode("utf-8")
+                del files["file"]
             self.ai_service_event_handler(
                 {
-                    "ue": ue,
+                    "ue_imsi": ue.ue_imsi,
                     "request": {
                         "ai_service_name": ai_service_name,
                         "ue_imsi": ue_imsi,

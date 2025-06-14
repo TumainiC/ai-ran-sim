@@ -5,8 +5,7 @@ import dayjs from "dayjs";
 
 const STEP_SERVICE_NEED_PROFILING = "step_service_need_profiling";
 const STEP_SERVICE_DEPLOYMENT = "step_service_deployment";
-const STEP_NETWORK_ADAPTATION = "step_network_adaptation";
-const STEP_SERVICE_MONITORING = "step_service_monitoring";
+
 
 export default function UserMenuAIServiceRequest({
   registerMessageHandler,
@@ -57,7 +56,7 @@ export default function UserMenuAIServiceRequest({
       label: "Test: Please recommend.",
       onClick: () => {
         onSendQuickMessage(
-          STEP_SERVICE_DEPLOYMENT,
+          STEP_SERVICE_NEED_PROFILING,
           "Please recommend some AI services."
         );
       },

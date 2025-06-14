@@ -291,4 +291,7 @@ class EdgeServer:
         return {
             "error": None,
             "response": response,
+            "process_time": process_time,
+            "node_id": node_id,
+            "k8s_pod_name": k8s_pod_name,
         }

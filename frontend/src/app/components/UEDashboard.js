@@ -55,6 +55,36 @@ function renderAIServiceResponse(responseData) {
       );
     }
 
+    case "ultralytics-yolov8-yolov8s": {
+      const { model_results, ue_id, visualization } = model_response;
+      return (
+        <div className="flex flex-row gap-2 items-center">
+          {visualization ? (
+            <Image
+              src={`data:image/png;base64,${visualization}`}
+              alt="AI Service Visualization"
+              width={320}
+              height={240}
+              className="my-2 max-w-xs border rounded flex-1"
+              unoptimized
+            />
+          ) : (
+            ""
+          )}
+          <div className="flex-1">
+            <strong>AI Service Name:</strong> <br />
+            {ai_service_name} <br /> <br />
+            <strong>Latency</strong> <br />
+            {latency} ms <br /> <br />
+            Model Results: <br />
+            {JSON.stringify(model_results)}
+          </div>
+
+          <br />
+        </div>
+      );
+    }
+
     default: {
       const { model_results } = model_response;
       return (

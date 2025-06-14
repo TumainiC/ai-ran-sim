@@ -42,27 +42,6 @@ def recommend_ai_services(ai_service_names: list[str]) -> str:
     return "AI services recommendation sent to the user."
 
 
-# client_ai_service_deployer = Agent(
-#     name="Client AI Service Deployer Assistant",
-#     handoff_description="Specialist agent for deploying AI services to devices and applications.",
-#     tools=[
-#         get_knowledge,
-#         get_knowledge_bulk,
-#     ],
-#     instructions=f"""{RECOMMENDED_PROMPT_PREFIX}
-
-# You're the second step in helping users to select and deploy the right AI services for their devices and applications connected to our simulated network.
-
-# Currently our telecom network has four base stations at different locations, each with its own edge AI service capabilities.
-
-# Your job is to chat with the user to find the maximum operational region (in terms of min_x, max_x, min_y, max_y, in meters)
-
-# When the user confirms a suitable AI service, you should hand off to the "Client AI Service Deployer Assistant" agent,
-# which will handle the deployment of the selected AI service to the user's device or application.
-
-#     """,
-# )
-
 client_ai_service_need_profiler = Agent(
     name="Client AI Service Need Profiler Assistant",
     handoff_description="Specialist agent for understanding user's real AI service needs and intentions.",
@@ -82,6 +61,7 @@ Always use the knowledge from the AI services knowledge base to answer user requ
 You can start with the query key "/docs/ai_services" for the guidance to better explore the AI services knowledge base.  
 
 Your job is to chat with the user and guide the user to find a suitable AI service in our knowledge base for their needs.
+Please focus only on the use case's AI service needs instead of other non-AI functionalities such as logging, monitorings, etc.
 
 Use the tool `recommend_ai_services` to recommend AI services based on the user's needs and preferences to allow the user to select from a list of AI services.
 """,
