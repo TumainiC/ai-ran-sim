@@ -73,7 +73,7 @@ export default function NetworkUserChat({
     <div className="flex flex-col h-full flex-1">
       {/* Messages */}
       <div
-        className="overflow-y-auto p-4 space-y-4 flex-1"
+        className="overflow-y-auto p-4 space-y-4 flex-1 text-2xl"
         ref={messagesEndRef}
       >
         {messages.map((msg, index) => renderMessage(index, msg))}

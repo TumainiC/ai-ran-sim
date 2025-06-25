@@ -408,7 +408,7 @@ class UE:
             return
 
         if len(self.ai_service_subscriptions) == 0:
-            logger.warning(f"UE {self.ue_imsi}: No AI service subscriptions available.")
+            # logger.warning(f"UE {self.ue_imsi}: No AI service subscriptions available.")
             self.ai_service_responses = {}
             return
 
@@ -444,8 +444,7 @@ class UE:
             )
             start_time_ms = time.time() * 1000  # Convert to milliseconds
             response = self.current_bs.on_ue_application_traffic(
-                self,
-                ai_service_request_data
+                self, ai_service_request_data
             )
             end_time_ms = time.time() * 1000  # Convert to milliseconds
 

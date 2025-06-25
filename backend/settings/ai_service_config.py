@@ -6,7 +6,7 @@ import cv2
 AI_SERVICE_UNDEPLOYMENT_COUNT_DOWN_STEPS = 20
 
 AI_SERVICE_SAMPLE_REQUEST_DATA = []
-AI_SERVICE_SAMPLE_IMAGE_FILES = ["puppy_in_cup.png", "dog_and_kitten.jpg"]
+AI_SERVICE_SAMPLE_IMAGE_FILES = ["puppy_in_cup.png", "dog_and_kitten.jpg", "squirrel.png"]
 
 
 for image_file_name in AI_SERVICE_SAMPLE_IMAGE_FILES:
