@@ -23,6 +23,7 @@ SUPPORTED_CELL_ATTRIBUTES = [
     "allocated_ul_prb",
     "current_dl_load",
     "current_ul_load",
+    "current_load",
     "position_x",
     "position_y",
 ]
