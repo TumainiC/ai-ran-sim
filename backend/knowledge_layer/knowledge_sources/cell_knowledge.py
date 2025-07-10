@@ -79,11 +79,11 @@ def get_ue_repr_list(sim, knowledge_router, query_key, params):
 
 
 # ------------------------------------------
-#     GET /cells/{ue_imsi}
+#     GET /cells/{cell_id}
 #       → List all attributes values for the given Cell
 # ------------------------------------------
 @knowledge_entry(
-    key="/cells/{ue_imsi}",
+    key="/cells/{cell_id}",
     tags=[KnowledgeTag.CELL],
     related=[],
 )
