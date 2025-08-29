@@ -6,4 +6,4 @@ set_default_openai_key(os.environ.get("OPENAI_API_KEY", ""))
 set_tracing_disabled(True)
 
 from .engineer_chat_agent import engineer_chat_agent
-
+from .xapp_generator_agent import xapp_generator_agent

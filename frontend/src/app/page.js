@@ -8,6 +8,7 @@ import LogDashboard from "./components/LogDashboard";
 import KnowledgeLayerDashboard from "./components/KnowledgeLayerDashboard";
 import NetworkEngineerChat from "./components/NetworkEngineerChat";
 import NetworkUserChat from "./components/NetworkUserChat/NetworkUserChat";
+import XAppGeneratorChat from "./components/XAppGeneratorChat";
 
 export default function Home() {
   const [websocket, setWebsocket] = useState(null);
@@ -239,6 +240,16 @@ export default function Home() {
               role="tab"
               className={
                 "tab " +
+                (rightTabListIndex === "xapp_generator_chat" ? "tab-active" : "")
+              }
+              onClick={() => setRightTabListIndex("xapp_generator_chat")}
+            >
+              xApp Generator
+            </a>
+            <a
+              role="tab"
+              className={
+                "tab " +
                 (rightTabListIndex === "log_dashboard" ? "tab-active" : "")
               }
               onClick={() => setRightTabListIndex("log_dashboard")}
@@ -266,6 +277,14 @@ export default function Home() {
 
             {rightTabListIndex === "knowledge_dashboard" && (
               <KnowledgeLayerDashboard
+                sendMessage={sendMessage}
+                registerMessageHandler={registerMessageHandler}
+                deregisterMessageHandler={deregisterMessageHandler}
+              />
+            )}
+
+            {rightTabListIndex === "xapp_generator_chat" && (
+              <XAppGeneratorChat
                 sendMessage={sendMessage}
                 registerMessageHandler={registerMessageHandler}
                 deregisterMessageHandler={deregisterMessageHandler}

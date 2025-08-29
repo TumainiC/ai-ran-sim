@@ -23,6 +23,7 @@ from knowledge_layer import KnowledgeRouter
 from functools import partial
 
 from intelligence_layer import engineer_chat_agent
+from intelligence_layer import xapp_generator_agent
 from intelligence_layer.ai_service_pipeline import handle_ai_service_pipeline_chat
 
 setup_logging()
@@ -39,6 +40,11 @@ COMMAND_HANDLERS = {
         stream_agent_chat,
         command="network_engineer_chat_response",
         agent_func=engineer_chat_agent,
+    ),
+    ("intelligence_layer", "xapp_generator_chat"): partial(
+        stream_agent_chat,
+        command="xapp_generator_chat_response",
+        agent_func=xapp_generator_agent,
     ),
     ("intelligence_layer", "network_user_action"): handle_network_user_action,
 }
