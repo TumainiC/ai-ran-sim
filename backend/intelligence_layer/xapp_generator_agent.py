@@ -2,6 +2,9 @@ import os
 import re
 from typing import List
 
+from intelligence_layer.agents.specification_agent import specification_agent
+from intelligence_layer.agents.code_generation_agent import code_generation_agent
+from intelligence_layer.agents.verification_agent import verification_agent
 from agents import Agent, function_tool
 from network_layer.simulation_engine import SimulationEngine
 
@@ -136,11 +139,12 @@ class {class_name}(xAppBase):
 
 xapp_generator_agent = Agent(
     name="xApp Generator Agent",
-    handoff_description="Agent for creating, listing, viewing, and reloading xApps",
+    handoff_description="Agent for creating, listing, viewing, reloading xApps, and specification follow-up.",
     instructions=(
         "You help users scaffold new RIC xApps and manage them. "
         "Use create_xapp to scaffold, list_xapps to enumerate, view_xapp_source to show code, and reload_xapps to reload. "
-        "Ask for clarification if the request is ambiguous."
+        "Ask for clarification if the request is ambiguous. "
+        "You also use the specification agent to ask follow-up questions and generate formal contracts from user requirements."
     ),
-    tools=[create_xapp, list_xapps, view_xapp_source, reload_xapps],
+    tools=[create_xapp, list_xapps, view_xapp_source, reload_xapps, specification_agent],
 )
